@@ -1,13 +1,13 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { Logo } from '@/components/logo';
 import { Mail, Lock, AlertCircle, ArrowRight } from 'lucide-react';
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const next = searchParams.get('next') || '/';
@@ -101,7 +101,7 @@ export default function LoginPage() {
             disabled={loading}
             className="w-full py-3 bg-forest hover:bg-forest-hover disabled:bg-forest/50 text-white font-semibold text-sm rounded-xl shadow-md transition-all flex items-center justify-center gap-2"
           >
-            {loading ? 'Signing in...' : 'Sign In'}
+            <span>{loading ? 'Signing in...' : 'Sign In'}</span>
             <ArrowRight className="w-4 h-4" />
           </button>
         </form>
@@ -114,5 +114,17 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-[75vh] flex items-center justify-center">
+        <div className="text-xs text-charcoal-muted">Loading sign in...</div>
+      </div>
+    }>
+      <LoginForm />
+    </Suspense>
   );
 }
