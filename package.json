@@ -5,7 +5,7 @@
   "description": "Uttarkunth Stays 3.1 — Himalayan Hospitality & Authentic Local Accommodations",
   "scripts": {
     "dev": "next dev",
-    "build": "opennextjs-cloudflare build --dangerouslyUseUnsupportedNextVersion",
+    "build": "next build",
     "start": "next start",
     "lint": "next lint",
     "build:worker": "opennextjs-cloudflare build --dangerouslyUseUnsupportedNextVersion",
