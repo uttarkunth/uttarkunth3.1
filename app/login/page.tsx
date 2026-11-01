@@ -48,50 +48,53 @@ function LoginForm() {
     <div className="min-h-[75vh] flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-md bg-white rounded-3xl p-8 border border-forest/15 shadow-soft space-y-6">
         <div className="text-center space-y-2">
-          <Logo className="justify-center" />
-          <h1 className="font-serif text-2xl sm:text-3xl font-bold text-forest mt-4">Welcome Back</h1>
-          <p className="text-xs text-charcoal-muted">Sign in to manage your bookings, trips, or host listings</p>
+          <div className="flex justify-center mb-4">
+            <Logo size="lg" />
+          </div>
+          <h1 className="font-serif text-2xl font-bold text-forest">Welcome Back</h1>
+          <p className="text-xs text-charcoal-muted">
+            Sign in to manage your bookings and mountain experiences
+          </p>
         </div>
 
         {errorMessage && (
-          <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded-xl flex items-start gap-2">
-            <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+          <div className="p-3.5 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700 flex items-start gap-2.5">
+            <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0 mt-0.5" />
             <span>{errorMessage}</span>
           </div>
         )}
 
         <form onSubmit={handleLogin} className="space-y-4">
           <div>
-            <label className="block text-xs font-semibold text-charcoal-muted mb-1">Email Address</label>
+            <label className="block text-xs font-semibold text-charcoal mb-1.5">
+              Email Address
+            </label>
             <div className="relative">
-              <Mail className="w-4 h-4 text-charcoal-muted absolute left-3 top-3.5" />
+              <Mail className="w-4 h-4 text-forest/40 absolute left-3.5 top-1/2 -translate-y-1/2" />
               <input
                 type="email"
                 required
-                placeholder="name@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full pl-9 pr-3 py-2.5 text-sm bg-ivory-warm border border-forest/20 rounded-xl focus:ring-2 focus:ring-forest focus:outline-none"
+                placeholder="you@domain.com"
+                className="w-full pl-10 pr-4 py-2.5 text-xs bg-sand/30 border border-forest/20 rounded-xl focus:outline-none focus:border-forest text-charcoal transition-colors"
               />
             </div>
           </div>
 
           <div>
-            <div className="flex items-center justify-between mb-1">
-              <label className="text-xs font-semibold text-charcoal-muted">Password</label>
-              <Link href="/forgot-password" className="text-xs font-medium text-ukorange hover:underline">
-                Forgot password?
-              </Link>
-            </div>
+            <label className="block text-xs font-semibold text-charcoal mb-1.5">
+              Password
+            </label>
             <div className="relative">
-              <Lock className="w-4 h-4 text-charcoal-muted absolute left-3 top-3.5" />
+              <Lock className="w-4 h-4 text-forest/40 absolute left-3.5 top-1/2 -translate-y-1/2" />
               <input
                 type="password"
                 required
-                placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full pl-9 pr-3 py-2.5 text-sm bg-ivory-warm border border-forest/20 rounded-xl focus:ring-2 focus:ring-forest focus:outline-none"
+                placeholder="••••••••"
+                className="w-full pl-10 pr-4 py-2.5 text-xs bg-sand/30 border border-forest/20 rounded-xl focus:outline-none focus:border-forest text-charcoal transition-colors"
               />
             </div>
           </div>
