@@ -139,7 +139,7 @@ export async function POST(req: NextRequest) {
         adults,
         children,
         rooms_count: 1,
-        special_requests: specialRequests || null,
+        special_requests: special_requests || null,
         status: 'pending',
         total_estimate: totalEstimate,
         guest_access_token_hash: guestAccessTokenHash
@@ -171,7 +171,7 @@ export async function POST(req: NextRequest) {
         check_out,
         adults,
         children,
-        special_requests: specialRequests || null,
+        special_requests: special_requests || null,
         estimated_total: totalEstimate,
         status: 'pending',
         guest_access_token_hash: guestAccessTokenHash
