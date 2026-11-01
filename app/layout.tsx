@@ -11,7 +11,7 @@ export const metadata: Metadata = {
   keywords: ['Uttarkunth Stays', 'Jari homestay', 'Kasol stays', 'Parvati Valley', 'Himachal Pradesh accommodation', 'Himalayan retreats', 'Yash Home Stay', 'Wonderway Retreat'],
   authors: [{ name: BRAND.founder }],
   alternates: {
-    canonical: '/',
+    canonical: './',
   },
   icons: {
     icon: '/logo.png',
