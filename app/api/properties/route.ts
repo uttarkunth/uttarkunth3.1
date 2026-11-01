@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/navigation';
+import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { EXISTING_PROPERTIES } from '@/lib/constants';
 
