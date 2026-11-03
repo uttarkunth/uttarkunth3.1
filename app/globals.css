@@ -1,0 +1,55 @@
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=Manrope:wght@300;400;500;600;700;800&family=Poppins:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Master Architecture Design System Tokens */
+  --forest: #263D32;
+  --forest-dark: #1A2B23;
+  --forest-hover: #1E3128;
+  --terracotta: #C55B23;
+  --terracotta-hover: #AB4E1D;
+  --warm-canvas: #F5F0E6;
+  --beige: #D9CCB8;
+  --charcoal: #29251F;
+  --charcoal-muted: #665E52;
+  --white: #FFFFFF;
+}
+
+body {
+  color: var(--charcoal);
+  background: var(--warm-canvas);
+  font-family: 'Manrope', 'Poppins', -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, h4, .font-serif {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+}
+
+::selection {
+  background-color: #263D32;
+  color: #F5F0E6;
+}
+
+/* Common Design System Utility Classes */
+@layer components {
+  .btn-primary {
+    @apply inline-flex items-center justify-center px-6 py-3 rounded-full bg-forest text-warm-canvas font-medium transition-all duration-200 hover:bg-forest-hover hover:shadow-lifted active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none;
+  }
+  
+  .btn-secondary {
+    @apply inline-flex items-center justify-center px-6 py-3 rounded-full border border-beige bg-warm-card text-charcoal font-medium transition-all duration-200 hover:border-forest hover:bg-white hover:shadow-soft active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none;
+  }
+
+  .btn-terracotta {
+    @apply inline-flex items-center justify-center px-6 py-3 rounded-full bg-terracotta text-white font-medium transition-all duration-200 hover:bg-terracotta-hover hover:shadow-warm active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none;
+  }
+
+  .badge-pillar {
+    @apply inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold tracking-wider uppercase border border-beige bg-warm-card text-charcoal-muted;
+  }
+}
