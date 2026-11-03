@@ -1,0 +1,41 @@
+{
+  "name": "uttarkunth3.1",
+  "version": "3.1.0",
+  "private": true,
+  "description": "Uttarkunth Stays 3.1 — Himalayan Hospitality & Authentic Local Accommodations",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "build:worker": "opennextjs-cloudflare build --dangerouslyUseUnsupportedNextVersion",
+    "preview": "opennextjs-cloudflare build --dangerouslyUseUnsupportedNextVersion && wrangler dev",
+    "deploy": "opennextjs-cloudflare build --dangerouslyUseUnsupportedNextVersion && wrangler deploy",
+    "test": "node --experimental-strip-types --test tests/booking-pricing.test.ts tests/date-validation.test.ts tests/commission.test.ts tests/authenticity.test.ts tests/account.test.ts tests/host-workspace.test.ts tests/admin.test.ts tests/security-audit.test.ts tests/products-marketplace.test.ts tests/phase2g-2h-ecosystem.test.ts"
+  },
+  "dependencies": {
+    "@opennextjs/cloudflare": "^1.3.0",
+    "@supabase/ssr": "^0.5.2",
+    "@supabase/supabase-js": "^2.49.1",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.475.0",
+    "next": "^14.2.35",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "tailwind-merge": "^3.0.1",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@types/node": "^20.17.19",
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5",
+    "autoprefixer": "^10.4.20",
+    "eslint": "^8.57.1",
+    "eslint-config-next": "^14.2.35",
+    "postcss": "^8.5.2",
+    "tailwindcss": "^3.4.17",
+    "typescript": "^5.7.3",
+    "wrangler": "^3.109.0"
+  }
+}

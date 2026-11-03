@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Uttarkunth Stays 3.0 — Aesthetic Himalayan Sanctuary</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            forest: {
+              DEFAULT: '#13612E',
+              dark: '#0B1C13',
+              deep: '#0F3820',
+              hover: '#0A401C',
+              light: '#EBF4ED'
+            },
+            terracotta: {
+              DEFAULT: '#C85A20',
+              hover: '#A94817',
+              soft: '#FBF0E9'
+            },
+            ivory: {
+              DEFAULT: '#FAF7F0',
+              warm: '#F3EFE6',
+              muted: '#E6DFC9'
+            },
+            charcoal: {
+              DEFAULT: '#29251F',
+              soft: '#4A443B',
+              muted: '#736B5E'
+            }
+          },
+          fontFamily: {
+            serif: ['"Cormorant Garamond"', 'Georgia', 'serif'],
+            sans: ['"Plus Jakarta Sans"', 'sans-serif']
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      background-color: #FAF7F0;
+      color: #29251F;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+    
+    /* Film Grain Overlay */
+    .film-grain {
+      background-image: radial-gradient(rgba(41, 37, 31, 0.05) 1px, transparent 0);
+      background-size: 24px 24px;
+    }
+
+    /* Sound wave animation */
+    @keyframes soundwave {
+      0%, 100% { height: 6px; }
+      50% { height: 26px; }
+    }
+    .wave-bar-1 { animation: soundwave 1.1s ease-in-out infinite; }
+    .wave-bar-2 { animation: soundwave 0.8s ease-in-out infinite 0.2s; }
+    .wave-bar-3 { animation: soundwave 1.3s ease-in-out infinite 0.4s; }
+    .wave-bar-4 { animation: soundwave 0.9s ease-in-out infinite 0.1s; }
+    .wave-bar-paused { animation-play-state: paused !important; height: 6px !important; }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-track { background: #FAF7F0; }
+    ::-webkit-scrollbar-thumb { background: #C85A20; border-radius: 9999px; }
+  </style>
+</head>
+<body class="film-grain min-h-screen relative selection:bg-terracotta selection:text-white">
+
+  <!-- ==========================================
+       1. FLOATING GLASSMORPHIC ISLAND NAV
+       ========================================== -->
+  <header class="fixed top-4 left-0 right-0 z-50 px-4 sm:px-8">
+    <div class="max-w-6xl mx-auto bg-ivory/80 backdrop-blur-xl border border-forest/10 rounded-full px-5 py-3 shadow-lg flex items-center justify-between transition-all duration-300">
+      
+      <!-- Brand Logo & Motto -->
+      <a href="#" class="flex items-center gap-3 group">
+        <div class="w-9 h-9 rounded-full bg-forest text-ivory flex items-center justify-center font-serif text-lg font-bold shadow-sm group-hover:scale-105 transition-transform">
+          उ
+        </div>
+        <div>
+          <span class="font-serif text-xl font-bold tracking-tight text-forest block leading-none">Uttarkunth</span>
+          <span class="text-[10px] tracking-widest uppercase font-semibold text-terracotta block mt-0.5">Stays 3.0 • Jari</span>
+        </div>
+      </a>
+
+      <!-- Center Links (Editorial) -->
+      <nav class="hidden md:flex items-center gap-8 text-xs uppercase tracking-widest font-semibold text-charcoal-soft">
+        <a href="#discovery" class="hover:text-forest transition-colors">The Stays</a>
+        <a href="#mountain-moods" class="hover:text-forest transition-colors">Valley Moods</a>
+        <a href="#philosophy" class="hover:text-forest transition-colors">Philosophy</a>
+        <button onclick="openDrawer('host')" class="hover:text-forest transition-colors">Host Stories</button>
+      </nav>
+
+      <!-- Action Button -->
+      <div class="flex items-center gap-3">
+        <button onclick="openBookingModal('yash')" class="hidden sm:inline-flex items-center gap-2 px-5 py-2 rounded-full bg-forest text-ivory text-xs font-semibold uppercase tracking-wider hover:bg-forest-hover shadow-sm transition-all hover:shadow-md">
+          <span>Reserve a Stay</span>
+          <svg class="w-3.5 h-3.5 text-terracotta" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+        </button>
+        <button onclick="openDrawer('host')" class="w-9 h-9 rounded-full border border-forest/20 flex items-center justify-center text-forest hover:bg-forest/5">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+        </button>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- ==========================================
+       2. EDITORIAL HERO SECTION
+       ========================================== -->
+  <section class="pt-32 pb-16 px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto">
+    <div class="text-center space-y-6">
+      
+      <!-- Tag Pill -->
+      <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/70 border border-forest/15 backdrop-blur-md shadow-sm">
+        <span class="w-2 h-2 rounded-full bg-terracotta animate-pulse"></span>
+        <span class="text-xs font-semibold uppercase tracking-widest text-forest">Parvati Valley • Himachal Pradesh</span>
+      </div>
+
+      <!-- Editorial Headline -->
+      <h1 class="font-serif text-5xl sm:text-7xl lg:text-8xl font-bold tracking-tight text-forest leading-[1.05]">
+        Where the Deodar Sings. <br>
+        <span class="italic font-normal text-terracotta">Sanctuary</span> in Jari.
+      </h1>
+
+      <p class="max-w-2xl mx-auto text-base sm:text-lg text-charcoal-soft font-sans leading-relaxed">
+        Step off the highway into unhurried Himalayan hospitality. Verified timber homestays, home-grown orchard meals, and direct host approval.
+      </p>
+
+      <!-- Pinterest-Style Floating Search Pill -->
+      <div class="pt-4 max-w-3xl mx-auto">
+        <div class="bg-white/90 backdrop-blur-xl border border-forest/15 p-2 sm:p-2.5 rounded-3xl sm:rounded-full shadow-xl flex flex-col sm:flex-row items-center gap-2 sm:gap-3">
+          
+          <div class="w-full sm:w-auto flex-1 px-4 py-2 text-left border-b sm:border-b-0 sm:border-r border-forest/10">
+            <span class="block text-[10px] uppercase font-bold tracking-wider text-forest/70">Location</span>
+            <span class="block text-sm font-semibold text-charcoal">Jari, Parvati Valley</span>
+          </div>
+
+          <div class="w-full sm:w-auto flex-1 px-4 py-2 text-left border-b sm:border-b-0 sm:border-r border-forest/10">
+            <span class="block text-[10px] uppercase font-bold tracking-wider text-forest/70">Dates</span>
+            <span class="block text-sm font-semibold text-charcoal">Oct 28 — Nov 02 (4 Nights)</span>
+          </div>
+
+          <div class="w-full sm:w-auto flex-1 px-4 py-2 text-left">
+            <span class="block text-[10px] uppercase font-bold tracking-wider text-forest/70">Travelers</span>
+            <span class="block text-sm font-semibold text-charcoal">2 Guests • 1 Room</span>
+          </div>
+
+          <button onclick="scrollToDiscovery()" class="w-full sm:w-auto px-7 py-3.5 rounded-full bg-forest hover:bg-forest-hover text-ivory font-semibold text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-md transition-all hover:scale-[1.02]">
+            <span>Explore Stays</span>
+            <svg class="w-3.5 h-3.5 text-terracotta" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ==========================================
+       3. MOUNTAIN MOODS INTERACTIVE FILTER
+       ========================================== -->
+  <section id="mountain-moods" class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    <div class="flex items-center justify-between pb-3 border-b border-forest/10">
+      <div>
+        <span class="text-[11px] uppercase tracking-widest font-bold text-terracotta">Slow Travel Experience</span>
+        <h3 class="font-serif text-2xl font-bold text-forest">Select Your Mountain Mood</h3>
+      </div>
+      <span class="text-xs text-charcoal-muted hidden sm:inline">Curated according to season & pace</span>
+    </div>
+
+    <!-- Mood Buttons -->
+    <div class="flex items-center gap-3 overflow-x-auto py-4 no-scrollbar">
+      <button onclick="filterMood('all', this)" class="mood-btn active px-4 py-2 rounded-full border border-forest bg-forest text-ivory text-xs font-semibold whitespace-nowrap transition-all shadow-sm flex items-center gap-2">
+        <span>✨ All Retreats</span>
+      </button>
+      <button onclick="filterMood('woodfire', this)" class="mood-btn px-4 py-2 rounded-full border border-forest/15 bg-white/70 text-charcoal text-xs font-semibold whitespace-nowrap hover:border-forest/50 transition-all flex items-center gap-2">
+        <span>🪵 Cedar Hearth & Woodfire</span>
+      </button>
+      <button onclick="filterMood('river', this)" class="mood-btn px-4 py-2 rounded-full border border-forest/15 bg-white/70 text-charcoal text-xs font-semibold whitespace-nowrap hover:border-forest/50 transition-all flex items-center gap-2">
+        <span>🌊 Parvati River Solitude</span>
+      </button>
+      <button onclick="filterMood('workation', this)" class="mood-btn px-4 py-2 rounded-full border border-forest/15 bg-white/70 text-charcoal text-xs font-semibold whitespace-nowrap hover:border-forest/50 transition-all flex items-center gap-2">
+        <span>💻 High-Speed Valley Workation</span>
+      </button>
+      <button onclick="filterMood('orchard', this)" class="mood-btn px-4 py-2 rounded-full border border-forest/15 bg-white/70 text-charcoal text-xs font-semibold whitespace-nowrap hover:border-forest/50 transition-all flex items-center gap-2">
+        <span>🍎 Apple Blossom & Orchard</span>
+      </button>
+    </div>
+  </section>
+
+  <!-- ==========================================
+       4. THE PINTEREST BENTO DISCOVERY GRID
+       ========================================== -->
+  <section id="discovery" class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
+
+      <!-- BENTO 1: YASH HOME STAY (FEATURE HERO - 2 COLS, 2 ROWS) -->
+      <div id="card-yash" class="stay-card md:col-span-2 lg:col-span-2 md:row-span-2 bg-white rounded-3xl overflow-hidden border border-forest/15 shadow-md hover:shadow-2xl transition-all duration-500 group flex flex-col justify-between" data-moods="woodfire workation orchard">
+        <div class="relative h-80 sm:h-96 w-full overflow-hidden bg-forest-dark">
+          <!-- Main Photo with Interactive Scrubber -->
+          <img id="yash-img" src="https://xyplgugxpmlnjsvlosdg.supabase.co/storage/v1/object/public/property-photos/Yash%20home%20stay/unnamed.png" alt="Yash Home Stay" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105">
+          
+          <div class="absolute inset-0 bg-gradient-to-t from-charcoal/90 via-charcoal/20 to-black/20"></div>
+
+          <!-- Pinterest Scrubber Indicators -->
+          <div class="absolute top-4 inset-x-4 flex items-center gap-1.5 z-20">
+            <div onclick="setYashPhoto(0)" class="h-1 flex-1 rounded-full bg-white cursor-pointer transition-all yash-indicator" id="yash-ind-0"></div>
+            <div onclick="setYashPhoto(1)" class="h-1 flex-1 rounded-full bg-white/40 cursor-pointer transition-all yash-indicator" id="yash-ind-1"></div>
+            <div onclick="setYashPhoto(2)" class="h-1 flex-1 rounded-full bg-white/40 cursor-pointer transition-all yash-indicator" id="yash-ind-2"></div>
+          </div>
+
+          <!-- Badges -->
+          <div class="absolute top-8 left-4 flex flex-wrap items-center gap-2 z-20">
+            <span class="px-3 py-1 bg-forest/90 backdrop-blur-md text-ivory text-[11px] font-semibold tracking-wide uppercase rounded-full">
+              Authentic Homestay
+            </span>
+            <span class="px-3 py-1 bg-terracotta/90 backdrop-blur-md text-white text-[11px] font-semibold tracking-wide uppercase rounded-full flex items-center gap-1">
+              ★ 4.98 • Host Yash
+            </span>
+          </div>
+
+          <!-- Floating Heart / Save -->
+          <button onclick="toggleSave(this)" class="absolute top-8 right-4 w-9 h-9 rounded-full bg-black/40 backdrop-blur-md text-white flex items-center justify-center hover:bg-black/60 transition-colors z-20">
+            <svg class="w-4 h-4 heart-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
+          </button>
+
+          <!-- Bottom Image Meta -->
+          <div class="absolute bottom-4 left-4 right-4 text-white z-20">
+            <span class="text-xs uppercase font-semibold text-terracotta tracking-widest block">Jari • Parvati Valley</span>
+            <h3 class="font-serif text-3xl font-bold text-ivory mt-0.5">Yash Home Stay</h3>
+          </div>
+        </div>
+
+        <!-- Card Body -->
+        <div class="p-6 space-y-4">
+          <p class="text-sm text-charcoal-soft line-clamp-2 leading-relaxed">
+            A peaceful timber homestay in Jari, surrounded by apple orchards and mountain trails. Welcoming, home-cooked local meals, and direct host care.
+          </p>
+
+          <!-- Amenities Pills -->
+          <div class="flex flex-wrap gap-2 text-[11px] font-medium text-forest">
+            <span class="px-2.5 py-1 bg-forest/5 rounded-md border border-forest/10">🪵 Deodar Wood Finish</span>
+            <span class="px-2.5 py-1 bg-forest/5 rounded-md border border-forest/10">📶 High-Speed Wi-Fi</span>
+            <span class="px-2.5 py-1 bg-forest/5 rounded-md border border-forest/10">🍲 Home Tandoor Meals</span>
+          </div>
+
+          <!-- Price & Reserve CTA -->
+          <div class="pt-3 border-t border-forest/10 flex items-center justify-between">
+            <div>
+              <span class="font-serif text-2xl font-bold text-forest">₹900</span>
+              <span class="text-xs text-charcoal-muted"> / night</span>
+            </div>
+            <button onclick="openBookingModal('yash')" class="px-5 py-2.5 bg-forest hover:bg-forest-hover text-ivory rounded-full text-xs font-semibold uppercase tracking-wider transition-all shadow-sm hover:shadow">
+              Request to Book
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- BENTO 2: EDITORIAL QUOTE TILE (1 COL, 1 ROW) -->
+      <div class="bg-forest text-ivory rounded-3xl p-6 flex flex-col justify-between border border-forest-deep shadow-md relative overflow-hidden">
+        <div class="absolute -right-6 -bottom-6 w-32 h-32 rounded-full bg-forest-hover/40 pointer-events-none"></div>
+        <div>
+          <span class="text-[10px] uppercase font-bold tracking-widest text-terracotta">Our Guiding Light</span>
+          <p class="font-serif text-2xl font-normal italic mt-3 leading-snug">
+            "Learn by Doing • Grow by Serving."
+          </p>
+        </div>
+        <div class="pt-6 border-t border-white/10 mt-6">
+          <span class="text-xs font-semibold block text-ivory/90">Gaurav Negi</span>
+          <span class="text-[11px] text-ivory/60 block">Founder, Uttarkunth</span>
+        </div>
+      </div>
+
+      <!-- BENTO 3: AMBIENT SOUNDSCAPE TILE (1 COL, 1 ROW) -->
+      <div class="bg-white rounded-3xl p-6 flex flex-col justify-between border border-forest/15 shadow-md">
+        <div>
+          <div class="flex items-center justify-between">
+            <span class="text-[10px] uppercase font-bold tracking-widest text-terracotta">Atmosphere</span>
+            <span id="sound-status" class="text-[10px] uppercase font-semibold text-charcoal-muted">Tap to Play</span>
+          </div>
+          <h4 class="font-serif text-xl font-bold text-forest mt-2">Parvati River & Cedar Breeze</h4>
+          <p class="text-xs text-charcoal-soft mt-1">Calm mountain waters flowing through the deodar grove.</p>
+        </div>
+
+        <!-- Animated Wavebars & Play Button -->
+        <div class="pt-4 flex items-center justify-between">
+          <div class="flex items-center gap-1.5 h-7">
+            <div id="bar-1" class="w-1 bg-forest rounded-full wave-bar-1 wave-bar-paused"></div>
+            <div id="bar-2" class="w-1 bg-terracotta rounded-full wave-bar-2 wave-bar-paused"></div>
+            <div id="bar-3" class="w-1 bg-forest rounded-full wave-bar-3 wave-bar-paused"></div>
+            <div id="bar-4" class="w-1 bg-terracotta rounded-full wave-bar-4 wave-bar-paused"></div>
+          </div>
+          <button onclick="toggleSoundscape()" id="sound-btn" class="w-10 h-10 rounded-full bg-forest text-ivory flex items-center justify-center hover:bg-forest-hover transition-transform hover:scale-105 shadow-sm">
+            <svg id="play-icon" class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+            <svg id="pause-icon" class="w-4 h-4 hidden" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- BENTO 4: WONDERWAY RETREAT (2 COLS, 1 ROW) -->
+      <div id="card-wonderway" class="stay-card md:col-span-2 lg:col-span-2 bg-white rounded-3xl overflow-hidden border border-forest/15 shadow-md hover:shadow-xl transition-all duration-500 group flex flex-col sm:flex-row" data-moods="river workation woodfire">
+        <div class="relative sm:w-1/2 h-56 sm:h-auto overflow-hidden bg-forest-dark">
+          <img src="https://xyplgugxpmlnjsvlosdg.supabase.co/storage/v1/object/public/property-photos/wonderway%20retreat/wonderway2.jpeg" alt="Wonderway Retreat" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105">
+          <div class="absolute inset-0 bg-gradient-to-t from-charcoal/80 via-transparent to-transparent"></div>
+          <div class="absolute top-3 left-3">
+            <span class="px-2.5 py-0.5 bg-forest/90 text-ivory text-[10px] font-semibold uppercase rounded-full">Mountain Retreat</span>
+          </div>
+          <div class="absolute bottom-3 left-3 text-white">
+            <span class="text-xs font-semibold text-terracotta">Jari, Kullu</span>
+          </div>
+        </div>
+
+        <div class="sm:w-1/2 p-6 flex flex-col justify-between space-y-3">
+          <div>
+            <h3 class="font-serif text-2xl font-bold text-forest">Wonderway Retreat</h3>
+            <p class="text-xs text-charcoal-soft line-clamp-2 mt-1">
+              A private mountain-view retreat in Jari with panoramic Parvati peaks, balcony tea sit-outs, and private kitchen access.
+            </p>
+          </div>
+
+          <div class="flex flex-wrap gap-1.5 text-[10px] text-forest font-medium">
+            <span class="px-2 py-0.5 bg-forest/5 rounded border border-forest/10">🌄 Valley Balcony</span>
+            <span class="px-2 py-0.5 bg-forest/5 rounded border border-forest/10">🅿️ Free Parking</span>
+          </div>
+
+          <div class="pt-2 border-t border-forest/10 flex items-center justify-between">
+            <div>
+              <span class="font-serif text-xl font-bold text-forest">₹3,500</span>
+              <span class="text-[11px] text-charcoal-muted"> / night</span>
+            </div>
+            <button onclick="openBookingModal('wonderway')" class="px-4 py-2 bg-forest hover:bg-forest-hover text-ivory rounded-full text-xs font-semibold tracking-wider uppercase transition-all">
+              Reserve
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- BENTO 5: LIVE VALLEY WEATHER TILE (1 COL, 1 ROW) -->
+      <div class="bg-ivory-warm rounded-3xl p-6 flex flex-col justify-between border border-forest/15 shadow-sm">
+        <div class="flex items-center justify-between">
+          <span class="text-[10px] uppercase font-bold tracking-widest text-forest/70">Valley Conditions</span>
+          <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+        </div>
+        <div class="my-2">
+          <div class="font-serif text-4xl font-bold text-forest">15°C</div>
+          <div class="text-xs font-semibold text-terracotta mt-0.5">Crisp Mountain Breeze</div>
+          <div class="text-[11px] text-charcoal-muted">Clear Skies over Parvati Pass</div>
+        </div>
+        <div class="text-[11px] text-charcoal-soft border-t border-forest/10 pt-2 flex justify-between">
+          <span>Altitude: 1,524m</span>
+          <span>Air: Pure Cedar</span>
+        </div>
+      </div>
+
+      <!-- BENTO 6: MEET THE HOST DRAWER TRIGGER (1 COL, 1 ROW) -->
+      <div onclick="openDrawer('host')" class="cursor-pointer bg-white rounded-3xl p-6 flex flex-col justify-between border border-forest/15 shadow-md hover:border-forest/40 hover:shadow-lg transition-all group">
+        <div>
+          <div class="w-10 h-10 rounded-full bg-terracotta/10 text-terracotta flex items-center justify-center font-bold text-sm mb-3">
+            🛖
+          </div>
+          <span class="text-[10px] uppercase font-bold tracking-widest text-terracotta">Village Custodians</span>
+          <h4 class="font-serif text-xl font-bold text-forest mt-1 group-hover:text-terracotta transition-colors">Meet Host Yash</h4>
+          <p class="text-xs text-charcoal-soft mt-1">3rd-generation timber craftsman and apple orchardist in Jari.</p>
+        </div>
+        <div class="pt-3 flex items-center gap-1.5 text-xs font-semibold text-forest">
+          <span>Read Village Story</span>
+          <svg class="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ==========================================
+       5. SLIDE-OVER HOST & HERITAGE DRAWER
+       ========================================== -->
+  <div id="host-drawer" class="fixed inset-0 z-50 pointer-events-none transition-all duration-500 opacity-0">
+    <!-- Backdrop -->
+    <div onclick="closeDrawer()" class="absolute inset-0 bg-charcoal/50 backdrop-blur-sm pointer-events-auto"></div>
+    
+    <!-- Drawer Content -->
+    <div class="absolute right-0 top-0 bottom-0 w-full max-w-md bg-ivory shadow-2xl p-6 sm:p-8 overflow-y-auto pointer-events-auto transform translate-x-full transition-transform duration-500 ease-out border-l border-forest/20 flex flex-col justify-between">
+      <div>
+        <div class="flex items-center justify-between pb-4 border-b border-forest/10">
+          <span class="text-xs font-bold uppercase tracking-widest text-terracotta">Heritage & People</span>
+          <button onclick="closeDrawer()" class="w-8 h-8 rounded-full border border-forest/20 flex items-center justify-center text-charcoal hover:bg-forest/5">✕</button>
+        </div>
+
+        <div class="mt-6 space-y-6">
+          <div class="w-20 h-20 rounded-2xl bg-forest/10 overflow-hidden border border-forest/20">
+            <img src="https://xyplgugxpmlnjsvlosdg.supabase.co/storage/v1/object/public/property-photos/Yash%20home%20stay/unnamed.png" alt="Host Yash" class="w-full h-full object-cover">
+          </div>
+
+          <div>
+            <h3 class="font-serif text-3xl font-bold text-forest">Yash Pal & Family</h3>
+            <span class="text-xs uppercase font-semibold text-terracotta tracking-wider">Custodian of Yash Home Stay • Jari</span>
+          </div>
+
+          <p class="text-sm text-charcoal-soft leading-relaxed font-sans">
+            "Our family has tended apple trees in Jari for over eighty years. When we built the homestay, we used local deodar timber and hand-cut slate roofs following our ancestor's Kath-Kuni architectural principles."
+          </p>
+
+          <div class="bg-white p-4 rounded-2xl border border-forest/15 space-y-2">
+            <span class="text-xs font-bold uppercase tracking-wider text-forest block">Host's Secret Valley Tips</span>
+            <ul class="text-xs text-charcoal-soft space-y-1.5 list-disc list-inside">
+              <li>Morning hike up to Mateura pine forest (30 mins from home).</li>
+              <li>Local freshly pounded siddu with ghee at the Jari village square.</li>
+              <li>Quiet sunset point overlooking the Parvati-Malana river confluence.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="pt-6 border-t border-forest/10">
+        <button onclick="openBookingModal('yash'); closeDrawer();" class="w-full py-3 rounded-full bg-forest text-ivory text-xs font-bold uppercase tracking-wider hover:bg-forest-hover shadow-md transition-all">
+          Stay with Yash's Family
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================
+       6. INTERACTIVE BOOKING ESTIMATOR MODAL
+       ========================================== -->
+  <div id="booking-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 opacity-0 pointer-events-none transition-all duration-300">
+    <div onclick="closeBookingModal()" class="absolute inset-0 bg-charcoal/60 backdrop-blur-sm"></div>
+
+    <div class="relative bg-white max-w-lg w-full rounded-3xl p-6 sm:p-8 shadow-2xl border border-forest/20 space-y-6 transform scale-95 transition-transform duration-300">
+      
+      <div class="flex items-center justify-between border-b border-forest/10 pb-4">
+        <div>
+          <span class="text-[10px] uppercase font-bold tracking-widest text-terracotta">Direct Host Approval</span>
+          <h3 id="modal-property-title" class="font-serif text-2xl font-bold text-forest">Yash Home Stay</h3>
+        </div>
+        <button onclick="closeBookingModal()" class="w-8 h-8 rounded-full border border-forest/20 flex items-center justify-center text-charcoal hover:bg-forest/5">✕</button>
+      </div>
+
+      <!-- Dates & Nights Selector -->
+      <div class="grid grid-cols-2 gap-3 text-left">
+        <div class="p-3 rounded-xl border border-forest/15 bg-ivory">
+          <label class="block text-[10px] font-bold uppercase tracking-wider text-forest/70">Check-in</label>
+          <input type="date" value="2026-10-28" class="bg-transparent text-xs font-bold text-charcoal w-full outline-none mt-1">
+        </div>
+        <div class="p-3 rounded-xl border border-forest/15 bg-ivory">
+          <label class="block text-[10px] font-bold uppercase tracking-wider text-forest/70">Check-out</label>
+          <input type="date" value="2026-11-01" class="bg-transparent text-xs font-bold text-charcoal w-full outline-none mt-1">
+        </div>
+      </div>
+
+      <!-- Price Breakdown -->
+      <div class="bg-forest/5 p-4 rounded-2xl border border-forest/10 space-y-2 text-xs">
+        <div class="flex justify-between text-charcoal-soft">
+          <span id="price-calc-label">₹900 × 4 nights</span>
+          <span id="price-calc-val" class="font-semibold text-charcoal">₹3,600</span>
+        </div>
+        <div class="flex justify-between text-emerald-700 font-medium">
+          <span>Platform Commission (12-Mo Intro)</span>
+          <span class="font-bold">₹0 (0% Promo)</span>
+        </div>
+        <div class="flex justify-between text-charcoal-soft">
+          <span>Host Care & Clean Linens</span>
+          <span class="font-semibold text-charcoal">Included</span>
+        </div>
+        <div class="pt-2 border-t border-forest/10 flex justify-between text-sm font-bold text-forest">
+          <span>Estimated Total</span>
+          <span id="modal-total-price">₹3,600</span>
+        </div>
+      </div>
+
+      <!-- Notice -->
+      <div class="text-[11px] text-charcoal-muted leading-tight flex items-start gap-2">
+        <span class="text-terracotta font-bold text-sm">ℹ️</span>
+        <span>No instant automated charges. The host reviews your request within 4 hours to verify mountain conditions and prepare your welcome.</span>
+      </div>
+
+      <!-- Submit CTA -->
+      <button onclick="confirmRequest()" class="w-full py-3.5 bg-forest hover:bg-forest-hover text-ivory text-xs font-bold uppercase tracking-wider rounded-full shadow-md hover:shadow-lg transition-all">
+        Send Booking Request to Host
+      </button>
+
+    </div>
+  </div>
+
+  <!-- ==========================================
+       7. EDITORIAL FOOTER
+       ========================================== -->
+  <footer class="mt-20 border-t border-forest/15 bg-ivory-warm py-12 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6 text-center md:text-left">
+      <div>
+        <span class="font-serif text-2xl font-bold text-forest">Uttarkunth Stays 3.0</span>
+        <p class="text-xs text-charcoal-soft mt-1">Authentic Himalayan Hospitality • Jari, Parvati Valley, Himachal Pradesh</p>
+      </div>
+      <div class="flex items-center gap-6 text-xs uppercase tracking-wider font-semibold text-forest">
+        <a href="#discovery" class="hover:text-terracotta">Stays</a>
+        <a href="#mountain-moods" class="hover:text-terracotta">Moods</a>
+        <span class="text-terracotta">info@uttarkunth.com</span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ==========================================
+       JAVASCRIPT INTERACTIONS
+       ========================================== -->
+  <script>
+    // Photo scrubber for Yash Home Stay
+    const yashPhotos = [
+      "https://xyplgugxpmlnjsvlosdg.supabase.co/storage/v1/object/public/property-photos/Yash%20home%20stay/unnamed.png",
+      "https://xyplgugxpmlnjsvlosdg.supabase.co/storage/v1/object/public/property-photos/Yash%20home%20stay/64749a66-252f-4c8f-a67e-028ce7557ce6.jpeg",
+      "https://xyplgugxpmlnjsvlosdg.supabase.co/storage/v1/object/public/property-photos/Yash%20home%20stay/17e473d2-e8a8-4904-85f2-0fccdb760b2e.jpeg"
+    ];
+
+    function setYashPhoto(index) {
+      document.getElementById('yash-img').src = yashPhotos[index];
+      for (let i = 0; i < 3; i++) {
+        const ind = document.getElementById(`yash-ind-${i}`);
+        if (i === index) {
+          ind.classList.remove('bg-white/40');
+          ind.classList.add('bg-white');
+        } else {
+          ind.classList.remove('bg-white');
+          ind.classList.add('bg-white/40');
+        }
+      }
+    }
+
+    // Mountain Mood Filter
+    function filterMood(mood, btn) {
+      document.querySelectorAll('.mood-btn').forEach(b => {
+        b.classList.remove('active', 'bg-forest', 'text-ivory');
+        b.classList.add('bg-white/70', 'text-charcoal');
+      });
+      btn.classList.add('active', 'bg-forest', 'text-ivory');
+      btn.classList.remove('bg-white/70', 'text-charcoal');
+
+      const cards = document.querySelectorAll('.stay-card');
+      cards.forEach(c => {
+        const moods = c.getAttribute('data-moods') || '';
+        if (mood === 'all' || moods.includes(mood)) {
+          c.style.display = '';
+        } else {
+          c.style.display = 'none';
+        }
+      });
+    }
+
+    // Ambient Soundscape Toggle
+    let isPlaying = false;
+    function toggleSoundscape() {
+      isPlaying = !isPlaying;
+      const bars = [document.getElementById('bar-1'), document.getElementById('bar-2'), document.getElementById('bar-3'), document.getElementById('bar-4')];
+      const playIcon = document.getElementById('play-icon');
+      const pauseIcon = document.getElementById('pause-icon');
+      const status = document.getElementById('sound-status');
+
+      if (isPlaying) {
+        bars.forEach(b => b.classList.remove('wave-bar-paused'));
+        playIcon.classList.add('hidden');
+        pauseIcon.classList.remove('hidden');
+        status.innerText = "Playing River Flow";
+        status.classList.add('text-terracotta');
+      } else {
+        bars.forEach(b => b.classList.add('wave-bar-paused'));
+        playIcon.classList.remove('hidden');
+        pauseIcon.classList.add('hidden');
+        status.innerText = "Tap to Play";
+        status.classList.remove('text-terracotta');
+      }
+    }
+
+    // Host Drawer
+    function openDrawer(type) {
+      const drawer = document.getElementById('host-drawer');
+      const drawerContent = drawer.querySelector('.max-w-md');
+      drawer.classList.remove('opacity-0', 'pointer-events-none');
+      drawer.classList.add('opacity-100');
+      drawerContent.classList.remove('translate-x-full');
+      drawerContent.classList.add('translate-x-0');
+    }
+
+    function closeDrawer() {
+      const drawer = document.getElementById('host-drawer');
+      const drawerContent = drawer.querySelector('.max-w-md');
+      drawer.classList.add('opacity-0', 'pointer-events-none');
+      drawer.classList.remove('opacity-100');
+      drawerContent.classList.add('translate-x-full');
+      drawerContent.classList.remove('translate-x-0');
+    }
+
+    // Booking Modal
+    function openBookingModal(property) {
+      const modal = document.getElementById('booking-modal');
+      const modalContent = modal.querySelector('.max-w-lg');
+      const title = document.getElementById('modal-property-title');
+      const label = document.getElementById('price-calc-label');
+      const val = document.getElementById('price-calc-val');
+      const total = document.getElementById('modal-total-price');
+
+      if (property === 'wonderway') {
+        title.innerText = "Wonderway Retreat";
+        label.innerText = "₹3,500 × 4 nights";
+        val.innerText = "₹14,000";
+        total.innerText = "₹14,000";
+      } else {
+        title.innerText = "Yash Home Stay";
+        label.innerText = "₹900 × 4 nights";
+        val.innerText = "₹3,600";
+        total.innerText = "₹3,600";
+      }
+
+      modal.classList.remove('opacity-0', 'pointer-events-none');
+      modal.classList.add('opacity-100');
+      modalContent.classList.remove('scale-95');
+      modalContent.classList.add('scale-100');
+    }
+
+    function closeBookingModal() {
+      const modal = document.getElementById('booking-modal');
+      const modalContent = modal.querySelector('.max-w-lg');
+      modal.classList.add('opacity-0', 'pointer-events-none');
+      modal.classList.remove('opacity-100');
+      modalContent.classList.add('scale-95');
+      modalContent.classList.remove('scale-100');
+    }
+
+    function confirmRequest() {
+      alert("✅ Request sent! Host will review within 4 hours. You will receive an SMS and email notification.");
+      closeBookingModal();
+    }
+
+    function toggleSave(btn) {
+      const icon = btn.querySelector('.heart-icon');
+      if (icon.getAttribute('fill') === 'none') {
+        icon.setAttribute('fill', '#C85A20');
+        icon.setAttribute('stroke', '#C85A20');
+      } else {
+        icon.setAttribute('fill', 'none');
+        icon.setAttribute('stroke', 'currentColor');
+      }
+    }
+
+    function scrollToDiscovery() {
+      document.getElementById('discovery').scrollIntoView({ behavior: 'smooth' });
+    }
+  </script>
+</body>
+</html>

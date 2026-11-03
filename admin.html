@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Curator Desk — Uttarkunth Administration</title>
+  <link rel="stylesheet" href="./css/brand.css?v=3.2">
+  <link rel="stylesheet" href="./css/portal.css?v=3.2">
+</head>
+<body>
+
+  <div class="portal-layout">
+    <!-- Sidebar -->
+    <aside class="portal-sidebar" style="background-color:#15231C;">
+      <a class="portal-sidebar-brand" href="/">
+        <img src="./assets/uttarkunth-logo-white.svg" alt="Uttarkunth" class="footer-logo" style="height:36px;">
+        <span style="font-family:var(--serif);font-size:18px;font-weight:600;">Curator Desk</span>
+      </a>
+
+      <ul class="portal-nav">
+        <li><a href="/admin" class="active"><span>⚡</span> Overview &amp; Bookings</a></li>
+        <li><a href="#assignments"><span>🔑</span> Host Assignments</a></li>
+        <li><a href="#moderation"><span>🛡️</span> Listing Moderation</a></li>
+        <li><a href="/"><span>←</span> Public Brand Site</a></li>
+      </ul>
+
+      <div class="portal-user-chip">
+        <span>Curator Status:</span>
+        <strong id="admin-user-display">Super Administrator</strong>
+        <button onclick="window.UKAuth.signOut(); window.location.reload();" style="background:none;border:none;color:var(--terracotta);font-size:12px;cursor:pointer;margin-top:8px;">Sign Out</button>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="portal-content">
+      <!-- Unauthenticated Prompt -->
+      <div id="admin-login-prompt" hidden style="max-width:480px;margin:80px auto;background:var(--surface);padding:40px;border-radius:16px;border:1px solid var(--line);text-align:center;">
+        <h2 style="font-family:var(--serif);margin-bottom:12px;">Curator Authentication</h2>
+        <p style="color:var(--stone);margin-bottom:24px;font-size:14px;">Sign in with your verified administrator account to manage listings and platform operations.</p>
+        <button class="btn-primary" onclick="window.openAuthModal('signin')" style="width:100%;">Sign In as Curator</button>
+      </div>
+
+      <!-- Authenticated View -->
+      <div id="admin-dashboard-view">
+        <header class="portal-header">
+          <div>
+            <span class="editorial-label">Uttarkunth Platform Administration</span>
+            <h1>Curator Overview &amp; Oversight</h1>
+          </div>
+        </header>
+
+        <!-- Operational Host Assignment Section (Solves Hostless Yash & Wonderway) -->
+        <section id="assignments" style="margin-bottom:36px;background:var(--surface);padding:28px;border-radius:14px;border:1px solid var(--line);">
+          <span class="editorial-label" style="margin-bottom:6px;">Operational Tool</span>
+          <h2 style="font-family:var(--serif);font-size:1.35rem;margin-bottom:8px;">Assign Homestay Ownership</h2>
+          <p style="font-size:13px;color:var(--stone);margin-bottom:20px;">Bind unassigned database homestays (where host_id IS NULL) to verified host account UUIDs.</p>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:16px;">
+            <div>
+              <label style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:4px;">Property</label>
+              <select id="assign-prop-id" style="width:100%;padding:10px;border-radius:6px;border:1px solid var(--line);background:#FFF;">
+                <option value="3c62cf64-b0d7-4148-8df0-7d35ef6f6f96">Yash Home Stay (Jari, Kullu)</option>
+                <option value="a0bebeeb-0fe5-46b3-9eb3-97fb34b65dd0">Wonderway Retreat (Tirthan)</option>
+              </select>
+            </div>
+            <div>
+              <label style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:4px;">Verified Host User UUID</label>
+              <input type="text" id="assign-host-uuid" placeholder="e.g. 550e8400-e29b-41d4-a716-446655440000" style="width:100%;padding:10px;border-radius:6px;border:1px solid var(--line);">
+            </div>
+            <div style="display:flex;align-items:flex-end;">
+              <button class="btn-primary" onclick="assignHostAction()" style="padding:10px 24px;">Assign Host</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- Master Booking Oversight Queue -->
+        <section style="margin-bottom:48px;">
+          <h2 style="font-family:var(--serif);font-size:1.4rem;margin-bottom:18px;">Platform Booking Queue (Including Hostless Requests)</h2>
+          <div id="admin-queue-list">
+            <p style="padding:24px;text-align:center;color:var(--muted);">Loading bookings from Supabase database...</p>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <!-- Shared Auth Modal -->
+  <div id="auth-modal" class="modal-overlay">
+    <div class="modal-card">
+      <button class="modal-close" onclick="window.closeAuthModal()">✕</button>
+      <h3 style="font-family:var(--serif);font-size:1.6rem;margin-bottom:8px;">Curator Sign In</h3>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:20px;">Use your administrator account email.</p>
+      <form onsubmit="event.preventDefault(); window.UKAuth.signInWithPassword(document.getElementById('admin-email').value, document.getElementById('admin-password').value).then(() => window.location.reload()).catch(e => alert(e.message));">
+        <div style="margin-bottom:14px;">
+          <label style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);">Admin Email</label>
+          <input type="email" id="admin-email" required style="width:100%;padding:10px;border:1px solid var(--line);border-radius:6px;margin-top:4px;">
+        </div>
+        <div style="margin-bottom:20px;">
+          <label style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);">Password</label>
+          <input type="password" id="admin-password" required style="width:100%;padding:10px;border:1px solid var(--line);border-radius:6px;margin-top:4px;">
+        </div>
+        <button type="submit" class="btn-primary" style="width:100%;">Authenticate</button>
+      </form>
+    </div>
+  </div>
+
+  <script src="./js/supabase-client.js?v=3.2"></script>
+  <script src="./js/admin-portal.js?v=3.2"></script>
+  <script>
+    async function assignHostAction() {
+      const propId = document.getElementById("assign-prop-id").value;
+      const hostUuid = document.getElementById("assign-host-uuid").value.trim();
+      if (!hostUuid) { alert("Please provide a valid host UUID."); return; }
+      
+      const token = window.UKAuth.getBearerToken();
+      const res = await fetch("/api/admin/review", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
+        body: JSON.stringify({ action: "assign_host", property_id: propId, host_uuid: hostUuid })
+      });
+      if (res.ok) {
+        alert("Host ownership assigned successfully!");
+        window.location.reload();
+      } else {
+        const err = await res.json();
+        alert(err.error || "Failed to assign host.");
+      }
+    }
+  </script>
+</body>
+</html>
