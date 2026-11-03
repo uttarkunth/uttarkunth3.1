@@ -9,7 +9,7 @@ interface LogoProps {
 }
 
 export function Logo({ className = '', variant = 'light', showTagline = false }: LogoProps) {
-  // Uttarkunth official brand identity: Preserved original logo with transparent background
+  // Uttarkunth official brand identity: Preserved original logo in brand Terracotta (#C55B23)
   return (
     <Link 
       href="/" 
@@ -22,9 +22,18 @@ export function Logo({ className = '', variant = 'light', showTagline = false }:
           alt="Uttarkunth"
           width={40}
           height={40}
-          className="object-contain"
+          className="object-contain text-terracotta [filter:url(#uttarkunth-terracotta-logo)]"
+          referrerPolicy="no-referrer"
           priority
         />
+        <svg className="sr-only w-0 h-0 absolute" aria-hidden="true" focusable="false">
+          <filter id="uttarkunth-terracotta-logo" colorInterpolationFilters="sRGB">
+            <feColorMatrix
+              type="matrix"
+              values="0 0 0 0 0.772549  0 0 0 0 0.356863  0 0 0 0 0.137255  0 0 0 1 0"
+            />
+          </filter>
+        </svg>
       </div>
       <div className="flex flex-col">
         <span className={`font-serif text-2xl font-bold tracking-tight leading-none ${variant === 'dark' ? 'text-warm-canvas' : 'text-forest'}`}>
