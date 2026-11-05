@@ -65,6 +65,13 @@ function StaffLoginContent() {
       const roleRes = await fetch('/api/auth/role', { cache: 'no-store' });
       const roleData = await roleRes.json();
 
+      if (roleData?.canCompleteFounderSetup) {
+        router.replace('/staff/founder-setup');
+        router.refresh();
+        setLoading(false);
+        return;
+      }
+
       if (!roleData?.isAdmin || !roleData?.staffProfile) {
         await supabase.auth.signOut();
         setError(
@@ -74,10 +81,16 @@ function StaffLoginContent() {
         return;
       }
 
-      // Check Authenticator Assurance Level (TOTP MFA)
+      // Staff without a verified TOTP factor must enroll before entering a protected portal.
       const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
       const { data: factorsData } = await supabase.auth.mfa.listFactors();
       const verifiedTotpFactor = factorsData?.totp?.find((f) => f.status === 'verified');
+
+      if (!verifiedTotpFactor) {
+        setError('Mandatory TOTP security is not enrolled yet. Select “Enroll TOTP Factor” below and verify the authenticator to continue.');
+        setLoading(false);
+        return;
+      }
 
       if (verifiedTotpFactor && aalData?.currentLevel !== 'aal2') {
         const { data: challengeData, error: challengeErr } = await supabase.auth.mfa.challenge({
