@@ -21,6 +21,19 @@ describe('Phase 4 corrective security migration', () => {
     assert.ok(!migrationSql.includes('SET agreements_completed = true'));
   });
 
+
+  it('replaces the profile trigger so timestamps or one aggregate flag cannot fabricate acceptance', () => {
+    const start = migrationSql.indexOf('CREATE OR REPLACE FUNCTION public.sync_staff_profile_cols()');
+    const end = migrationSql.indexOf('$func$;', start);
+    assert.ok(start >= 0 && end > start);
+    const trigger = migrationSql.slice(start, end);
+    assert.ok(trigger.includes('Explicit consent only'));
+    assert.ok(!trigger.includes('NEW.agreements_completed := true'));
+    assert.ok(!trigger.includes('NEW.all_agreements_accepted := true'));
+    assert.ok(!trigger.includes('NEW.privacy_notice_accepted := true'));
+    assert.ok(!trigger.includes('NEW.privacy_notice_accepted_at IS NOT NULL'));
+  });
+
   it('preserves the live host helper signature but derives identity only from auth.uid()', () => {
     const start = migrationSql.indexOf('CREATE OR REPLACE FUNCTION public.is_property_host');
     const end = migrationSql.indexOf('REVOKE ALL ON FUNCTION public.is_property_host', start);
