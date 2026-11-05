@@ -698,7 +698,8 @@ CREATE POLICY "Private pillar docs restricted to owner or Staff AAL2"
       AND (
         (storage.foldername(name))[1] = auth.uid()::text
         OR (storage.foldername(name))[2] = auth.uid()::text
-        OR public.has_staff_permission_for_user(auth.uid(), 'stays.hosts.verify')
+        OR public.has_staff_permission_for_user(auth.uid(), 'property.review')
+        OR public.has_staff_permission_for_user(auth.uid(), 'property.assign_host')
       )
     )
     OR (
@@ -716,7 +717,7 @@ CREATE POLICY "Private pillar docs restricted to owner or Staff AAL2"
         (storage.foldername(name))[1] = auth.uid()::text
         OR (storage.foldername(name))[2] = auth.uid()::text
         OR public.has_staff_permission_for_user(auth.uid(), 'community.moderate')
-        OR public.has_staff_permission_for_user(auth.uid(), 'community.applications.review')
+        OR public.has_staff_permission_for_user(auth.uid(), 'community.moderate')
       )
     )
   );
