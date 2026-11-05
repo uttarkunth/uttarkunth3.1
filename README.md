@@ -1,111 +1,88 @@
-# Uttarkunth — Himalayan Stays & Creative Production
+# Uttarkunth 3.1 — Unified Himalayan Ecosystem Platform
 
-Production-ready, full-stack web application for **Uttarkunth** (`uttarkunth.com`), architected for deployment on **Cloudflare Pages**, **Cloudflare Workers (Cron Triggers)**, and **Supabase PostgreSQL & Auth**.
+**Learn by Doing • Grow by Serving 💜**
 
----
-
-## 🏔️ Brand & Architecture Overview
-
-Uttarkunth combines two distinct cultural offerings under one identity:
-1. **Uttarkunth Stays:** Authentic boutique stays, ancestral homestays, riverside camps, and heritage cottages across Himachal Pradesh (Jari, Kasol, Dharamshala, Manali, Shimla, Kareri, Kullu Valley).
-2. **Uttarkunth Production:** High-altitude filmmaking, cinematic storytelling, remote expedition documentation, and production logistics.
-
-### Three Integrated Workspaces
-- **Guest Experience (`/` and `/stays`):** Editorial parent homepage with 10-second hero video loop, founder monologue, and a dedicated Stay-in-Bharat-inspired Stays search, filter matrix, 8-photo property showcase, room availability selector, and Guest Dashboard (`/trips`).
-- **Host Desk (`/host-portal.html` or `/host`):** Live host workspace to accept/decline booking requests with 1 click, view stay metrics, and block calendar dates.
-- **Curator Desk (`/admin.html` or `/admin`):** Master platform operations desk for Uttarkunth team to review properties, assign operational hosts to unmanaged listings, and manage system bookings.
+**Website:** [https://uttarkunth.com](https://uttarkunth.com)  
+**Staff Portal Hostname:** `team.uttarkunth.com` (routes to `/staff/login` and `/admin/*`)  
+**Repository:** `uttarkunth/uttarkunth3.1`  
+**Stack:** Next.js 14 App Router (`14.2.35`), TypeScript (`5.7.3`), Tailwind CSS (`3.4.17`), Supabase Auth / PostgreSQL / Private Storage, OpenNext for Cloudflare (`@opennextjs/cloudflare`), Cloudflare Workers.
 
 ---
 
-## 📁 Repository Structure
+## 1. Platform Ecosystem Overview
 
-```text
-uttarkunth3/
-├── index.html                   # Master Public Site (SPA: Home, Stays, Production, About, Contact, Trips)
-├── host-portal.html             # Host Desk Workspace
-├── admin.html                   # Curator / Admin Desk Workspace
-├── _redirects                   # Cloudflare Pages edge routing rules (clean URLs & portal redirects)
-├── .gitignore                   # Ignores .env, .wrangler, node_modules, secrets
-├── README.md                    # Project overview and GitHub upload guide
-├── DEPLOYMENT.md                # Cloudflare Pages & Workers deployment instructions
-├── assets/                      # Brand assets
-│   ├── uttarkunth-logo.svg      # Terracotta SVG brand mark
-│   ├── uttarkunth-logo.webp     # Lossless WebP mark
-│   ├── uttarkunth-hero-video.webm # 10s silent high-altitude loop
-│   └── gaurav-negi-founder.webp # Founder portrait
-├── css/                         # Scoped, zero-dependency stylesheets
-│   ├── brand.css                # Brand colors (#C55B23, #1E3128), typography, header, footer, modals
-│   ├── stays.css                # Stays search bar, 11 categories, Stay in Bharat property detail engine
-│   └── portal.css               # Host & Curator desk cards, queues, calendars, metrics
-├── js/                          # Modular vanilla JavaScript
-│   ├── supabase-client.js       # Client Auth & Session SDK (Anon key only)
-│   ├── app.js                   # Client SPA router & view controller
-│   ├── stays-engine.js          # Search, filters, Stay in Bharat property detail & booking form
-│   ├── guest-dashboard.js       # Guest trips loader, countdown timers, WhatsApp bridge
-│   ├── host-portal.js           # Host Desk controller (1-click accept/decline, calendar blocking)
-│   └── admin-portal.js          # Curator Desk controller (listing review, host assignment)
-├── functions/api/               # Cloudflare Pages Functions (Web Standards Fetch API)
-│   ├── _middleware.js           # CORS security headers & origin allowlist
-│   ├── bookings.js              # POST booking request (traps GiST 23P01) & availability check
-│   ├── host.js                  # GET host booking queue & POST host decisions
-│   ├── stays/
-│   │   └── search.js            # Public stay search & filter API
-│   ├── guest/
-│   │   ├── bookings.js          # GET guest bookings & POST guest self-cancellation
-│   │   └── saved.js             # GET / POST guest saved stays (wishlist)
-│   ├── host/
-│   │   └── blocks.js            # POST host manual room date blocking
-│   └── admin/
-│       ├── bookings.js          # GET admin master booking queue & hostless decisions
-│       └── review.js            # POST property listing review & host assignment
-├── workers/expiry/              # Cloudflare Worker Cron Trigger (Booking Expiry)
-│   ├── wrangler.toml            # Worker configuration (Hourly cron: 0 * * * *)
-│   └── worker-expiry.js         # Auto-expires pending booking requests older than 48 hours
-└── supabase/migrations/         # Supabase PostgreSQL schema & migration references
-    ├── 20261022_stays_booking_foundation.sql
-    ├── 20261026_listing_review_lifecycle.sql
-    ├── 20261027_guest_bookings.sql
-    └── 20261028_saved_stays_and_blocks.sql
+Uttarkunth 3.1 unites four public pillars with a strictly separated internal staff governance architecture:
+
+1. **Uttarkunth Stays (`/stays`):** Curated Himalayan homestays in Jari, Parvati Valley, Kullu, Uttarakhand, and Jammu & Kashmir (`Yash Home Stay`, `Wonderway Retreat`), with request-only booking, room-level concurrency protection, 0% default commission, and direct host settlement.
+2. **Uttarkunth Products / Marketplace (`/products`):** Authentic Himalayan crafts, woollens, and mountain harvests with a two-layer Seller Brand & Private Business Verification system (15-character Indian GSTIN Modulo-36 validation, Official GST Portal verification workflow, and configurable category licence checklists).
+3. **Uttarkunth Productions (`/production`):** Independent Himalayan documentaries (*Aaj Ka Devta*, *Ruk Gayi Gupt Bali*), filmmaker collaboration registry, co-production pitch workflow, honest telemetry status (`Analytics not connected`), and filmmaker takedown/archival requests.
+4. **Uttarkunth Community (`/community`):** Karmayog philosophy, Living University vision, 9 grassroots mountain initiatives, fellowship applications, and oral history story submissions.
+5. **Unified Member Account (`/account`):** Every public registrant joins as a common **Uttarkunth Member** (`/signup` or `/register`). Capabilities (Homestay Host, Verified Seller, Filmmaker, Fellowship Applicant) are derived strictly from verified database records (`lib/roles.ts`), never from self-declared `user_metadata.role`.
+6. **Private Staff Portal & Founder Governance (`/staff/login`, `/staff/onboard`, `/admin/*`):** Completely isolated internal staff identity (`public.staff_profiles`), Founder-controlled single-use expiring invitations (`public.staff_invitations`), 8 mandatory SHA-256 hashed staff agreements (`public.staff_agreement_acceptances`), immutable `UK-STAFF-YYYY-XXXX` IDs, 8 departmental roles, 18+ granular permissions, TOTP MFA (`aal2`) enforcement, Dual Authorisation (`public.staff_dual_approvals`), and append-only audit logs (`public.staff_audit_log`).
+
+---
+
+## 2. Supported Dependency Versions
+
+| Package | Version | Purpose |
+|---|---|---|
+| `next` | `^14.2.35` | Next.js 14 App Router framework |
+| `react` / `react-dom` | `^18.3.1` | React 18 UI runtime |
+| `@opennextjs/cloudflare` | `^1.3.0` | OpenNext adapter for Cloudflare Workers |
+| `@supabase/supabase-js` | `^2.49.1` | Supabase database & storage client |
+| `@supabase/ssr` | `^0.5.2` | Cookie-based SSR Auth session management |
+| `zod` | `^3.24.2` | Request payload & schema validation |
+| `wrangler` | `^3.109.0` | Cloudflare Workers CLI |
+| `typescript` | `^5.7.3` | Static type checking |
+
+---
+
+## 3. Clean Installation & Verification Steps
+
+```bash
+# 1. Install dependencies cleanly
+npm install
+
+# 2. Copy .env.example to .env.local and populate your Supabase credentials
+cp .env.example .env.local
+
+# 3. Run TypeScript static analysis
+npx tsc --noEmit
+
+# 4. Run Next.js ESLint checks
+npm run lint
+
+# 5. Run the automated test suite (11 test files, including 26 Phase 2 security & governance scenarios)
+npm test
+
+# 6. Build the production Next.js application
+npm run build
+
+# 7. Build the Cloudflare Worker bundle (.open-next/worker.js and .open-next/assets)
+npm run build:worker
 ```
 
 ---
 
-## 🚀 How to Upload to GitHub
+## 4. Required Environment Variables
 
-Since Antigravity does not connect directly to your GitHub account, you can easily initialize and upload this repository manually:
+Create `.env.local` for local development (never commit `.env` or `.env.local`):
 
-### Option A: Using Git CLI (Recommended)
-1. Extract the `uttarkunth3.zip` archive into a folder on your computer.
-2. Open terminal in the `uttarkunth3` directory:
-   ```bash
-   git init
-   git branch -M main
-   git add .
-   git commit -m "feat: initial commit of Uttarkunth 3.0 Cloudflare full-stack platform"
-   ```
-3. Create a new empty repository on [GitHub](https://github.com/new) named `uttarkunth` (or `uttarkunth3`).
-4. Add your GitHub remote and push:
-   ```bash
-   git remote add origin https://github.com/<YOUR_GITHUB_USERNAME>/uttarkunth.git
-   git push -u origin main
-   ```
+```env
+NEXT_PUBLIC_SUPABASE_URL=https://xyplgugxpmlnjsvlosdg.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=<your-supabase-anon-public-key>
+SUPABASE_SERVICE_ROLE_KEY=<your-supabase-service-role-secret-key>
+ALLOWED_ORIGINS=https://uttarkunth.com,https://team.uttarkunth.com,http://localhost:3000
+```
 
-### Option B: Using GitHub Desktop or Web Upload
-1. Create a new repository on GitHub.
-2. Drag and drop the extracted files from `uttarkunth3` directly into the repository.
-3. Commit and push changes to `main`.
+- **`SUPABASE_SERVICE_ROLE_KEY`** is strictly server-only (`lib/supabase/admin.ts`). If missing, `createAdminClient()` throws an explicit configuration error and never falls back to the public anon key.
 
 ---
 
-## 💻 Local Testing with Cloudflare Wrangler
+## 5. Architecture & Audit Documentation
 
-To preview the frontend and Cloudflare Pages Functions locally before deploying:
-
-1. Ensure Node.js is installed (`node -v`).
-2. Run Wrangler inside the `uttarkunth3` root:
-   ```bash
-   npx wrangler pages dev .
-   ```
-3. Open `http://localhost:8788` in your browser.
-
-See **[DEPLOYMENT.md](file:///C:/Users/Rahul%20Negi/.gemini/antigravity/scratch/uttarkunth3/DEPLOYMENT.md)** for detailed instructions on connecting to Cloudflare Pages, configuring environment variables, deploying the scheduled expiry worker, and executing staging tests.
+- [`docs/audit/CODEBASE_COMPARISON.md`](docs/audit/CODEBASE_COMPARISON.md) — Complete SHA-256 inventory and file-by-file comparison between Project A (AI Studio) and Project B (Antigravity).
+- [`docs/security/SECURITY_REMEDIATION.md`](docs/security/SECURITY_REMEDIATION.md) — Detailed report of all 12 security vulnerabilities remediated and their automated verification tests.
+- [`docs/database/MIGRATION_REVIEW.md`](docs/database/MIGRATION_REVIEW.md) — Database schema, RLS policies, private storage buckets (`staff-hr-docs`, `seller-verification-docs`), non-recursive `SECURITY DEFINER` helpers, and ordered migration plan.
+- [`docs/testing/FINAL_TEST_REPORT.md`](docs/testing/FINAL_TEST_REPORT.md) — Complete verification and test execution report.
+- [`DEPLOYMENT.md`](DEPLOYMENT.md) — Step-by-step Cloudflare Workers, `team.uttarkunth.com`, Cloudflare Access, and Supabase configuration guide.
