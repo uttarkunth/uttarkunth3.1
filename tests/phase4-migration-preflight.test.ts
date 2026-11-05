@@ -61,6 +61,14 @@ describe('Phase 4 corrective security migration', () => {
     assert.ok(!trigger.includes('NEW.all_agreements_accepted := true'));
     assert.ok(!trigger.includes('NEW.privacy_notice_accepted := true'));
     assert.ok(!trigger.includes('NEW.privacy_notice_accepted_at IS NOT NULL'));
+    assert.ok(!migrationSql.includes('NEW.founder_approved_at := now()'));
+    assert.ok(migrationSql.includes('CREATE POLICY "seller_own_verification_docs_insert"'));
+    const insertPolicyStart = migrationSql.indexOf('CREATE POLICY "seller_own_verification_docs_insert"');
+    const insertPolicyEnd = migrationSql.indexOf(';', insertPolicyStart);
+    const insertPolicy = migrationSql.slice(insertPolicyStart, insertPolicyEnd);
+    assert.ok(insertPolicy.includes('TO authenticated'));
+    assert.ok(insertPolicy.includes('auth.uid() = seller_user_id'));
+
   });
 
   it('preserves the live host helper signature but derives identity only from auth.uid()', () => {
