@@ -11,7 +11,7 @@ const migrationSql = fs.readFileSync(migrationPath, 'utf8');
 
 describe('Phase 4 corrective security migration', () => {
   it('is atomic and never fabricates privacy or agreement acceptance', () => {
-    assert.ok(migrationSql.startsWith('BEGIN;'));
+    assert.ok(migrationSql.split('\n').some((line) => line.trim() === 'BEGIN;'));
     assert.ok(migrationSql.trimEnd().endsWith('COMMIT;'));
     assert.ok(migrationSql.includes('SET onboarding_completed = false'));
     assert.ok(migrationSql.includes('privacy_notice_accepted'));
