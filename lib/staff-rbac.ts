@@ -1283,8 +1283,14 @@ export async function requireStaffPermission(
       session_revoked_at: staffRow.session_revoked_at || null,
       custom_permissions: Array.from(new Set(assignedPermissions)),
       revoked_permissions: Array.from(new Set(revokedPermissions)),
+      // A profile is considered complete only when every explicit consent and approval flag is true.
+      // The pure evaluator denies access when this aggregate gate is false.
       agreements_completed: Boolean(
-        staffRow.agreements_completed ?? staffRow.all_agreements_accepted ?? false
+        staffRow.founder_approved === true &&
+        staffRow.privacy_notice_accepted === true &&
+        staffRow.agreements_completed === true &&
+        staffRow.all_agreements_accepted === true &&
+        staffRow.onboarding_completed === true
       ),
     };
 
