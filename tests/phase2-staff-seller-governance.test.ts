@@ -1260,7 +1260,8 @@ describe('TASK 9 — 12 Strict Verification Scenarios', () => {
     );
     assert.ok(recoveryRoute.includes('await supabase.auth.getUser()'));
     assert.ok(recoveryRoute.includes('if (authError || !user?.id || !user.email)'));
-    assert.ok(recoveryRoute.includes('profile.founder_approved_by !== user.id'));
+    assert.ok(recoveryRoute.includes('!profile.founder_approved_by'));
+    assert.ok(!recoveryRoute.includes('profile.founder_approved_by !== user.id'));
     assert.ok(recoveryRoute.includes('profile.privacy_notice_accepted !== true'));
     assert.ok(recoveryRoute.includes("eq('action', 'staff_mfa_recovery_requested')"));
     assert.ok(!recoveryRoute.includes('00000000-0000-0000-0000-000000000000'));
@@ -1284,6 +1285,19 @@ describe('TASK 9 — 12 Strict Verification Scenarios', () => {
     assert.ok(!dashboard.includes("from('platform_admins')"));
     assert.ok(dashboard.includes("staffProfile.privacy_notice_accepted !== true"));
     assert.ok(dashboard.includes("staffProfile.onboarding_completed !== true"));
+  });
+
+
+  it('Admin dashboard loads only aggregate fields for pillar queues and limits audit details to Founder', () => {
+    const dashboard = fs.readFileSync(
+      path.join(process.cwd(), 'app', 'admin', 'dashboard', 'page.tsx'),
+      'utf8'
+    );
+    assert.ok(dashboard.includes(".from('filmmaker_profiles')\n    .select('id, status')"));
+    assert.ok(dashboard.includes(".from('production_proposals')\n    .select('id, status')"));
+    assert.ok(dashboard.includes(".from('community_stories')\n    .select('id, moderation_status')"));
+    assert.ok(dashboard.includes("if (roleCode === 'founder')"));
+    assert.ok(!dashboard.includes(".from('platform_admins')"));
   });
 
 });
