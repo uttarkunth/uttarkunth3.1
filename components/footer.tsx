@@ -18,7 +18,7 @@ export function Footer() {
             <div className="p-3.5 bg-forest/40 border border-beige/20 rounded-xl max-w-sm">
               <span className="text-xs uppercase tracking-widest text-terracotta font-semibold block mb-1">Our Philosophy</span>
               <p className="font-serif italic text-base text-warm-canvas font-medium">
-                "{BRAND.philosophy}"
+                &ldquo;{BRAND.philosophy}&rdquo;
               </p>
               <p className="text-xs text-beige/80 mt-1 font-sans">
                 {BRAND.motto}
