@@ -51,15 +51,22 @@ export default async function AdminDashboardPage() {
     spErr ||
     !staffProfile ||
     staffProfile.status !== 'active' ||
+    staffProfile.session_revoked_at ||
+    staffProfile.founder_approved !== true ||
     !staffProfile.staff_id ||
-    !staffProfile.founder_approved_at
+    !staffProfile.founder_approved_at ||
+    !staffProfile.founder_approved_by ||
+    staffProfile.privacy_notice_accepted !== true ||
+    staffProfile.agreements_completed !== true ||
+    staffProfile.all_agreements_accepted !== true ||
+    staffProfile.onboarding_completed !== true
   ) {
     redirect('/staff/login?error=unauthorized');
   }
 
   const rawRole = (staffProfile.role_slug || staffProfile.role_code) as StaffRoleCode;
   const roleCode: StaffRoleCode =
-    rawRole in STAFF_ROLE_DEFINITIONS ? rawRole : 'operations_admin';
+    Object.prototype.hasOwnProperty.call(STAFF_ROLE_DEFINITIONS, rawRole) ? rawRole : 'operations_admin';
   const roleDef = STAFF_ROLE_DEFINITIONS[roleCode];
   const staffId = staffProfile.staff_id;
 
@@ -124,19 +131,14 @@ export default async function AdminDashboardPage() {
   const pendingParticipations = partList.filter((p) => p.status === 'pending');
 
   // 6. Staff Registry & Audit Log
-  const { data: allAdmins } = await adminClient
-    .from('platform_admins')
-    .select('user_id, email, role, created_at');
-  let activeStaffCount = (allAdmins || []).length;
+  let activeStaffCount = 0;
 
   let pendingStaffOnboardingCount = 0;
   try {
     const { data: activeStaffRows } = await (adminClient.from('staff_profiles' as any) as any)
       .select('id')
       .eq('status', 'active');
-    if (activeStaffRows && activeStaffRows.length > activeStaffCount) {
-      activeStaffCount = activeStaffRows.length;
-    }
+    activeStaffCount = (activeStaffRows || []).length;
 
     const { data: pendingStaff } = await (adminClient.from('staff_profiles' as any) as any)
       .select('id')
@@ -146,12 +148,16 @@ export default async function AdminDashboardPage() {
     // Table pending migration
   }
 
-  const { data: auditLogs } = await adminClient
-    .from('admin_audit_log')
-    .select('*')
-    .order('created_at', { ascending: false })
-    .limit(10);
-  const logs = auditLogs || [];
+  // Audit reasons and actor identity are Founder-only, even though all staff may see queue counts.
+  let logs: any[] = [];
+  if (roleCode === 'founder') {
+    const { data: auditLogs } = await adminClient
+      .from('admin_audit_log')
+      .select('id, action, target_type, target_id, details, created_at')
+      .order('created_at', { ascending: false })
+      .limit(10);
+    logs = auditLogs || [];
+  }
 
   return (
     <div className="pb-16 bg-ivory min-h-screen">
