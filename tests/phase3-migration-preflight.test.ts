@@ -202,4 +202,31 @@ describe('Phase A & B — Database Migration Preflight & Contract Verification',
     assert.equal(validFounderResult.code, 'OK');
     assert.equal(validFounderResult.normalizedNewEmail, 'founder@uttarkunth.com');
   });
+
+  it('Phase 3 host checker derives identity from auth.uid and cannot inspect arbitrary user IDs', () => {
+    assert.match(phase3Sql, /CREATE OR REPLACE FUNCTION public\\.is_property_host\\(p_property_id uuid\\)/);
+    assert.match(phase3Sql, /public\\.is_property_host\\(id\\)/);
+    assert.doesNotMatch(phase3Sql, /p_user_id uuid DEFAULT auth\\.uid\\(\\)/);
+    assert.match(phase3Sql, /REVOKE ALL ON FUNCTION public\\.is_property_host\\(uuid\\) FROM PUBLIC, anon/);
+  });
+
+  it('Phase 3 admin access always requires accepted staff agreements, including Founder', () => {
+    const fnStart = phase3Sql.indexOf('CREATE OR REPLACE FUNCTION public.is_platform_admin_for_user');
+    const fnEnd = phase3Sql.indexOf('REVOKE ALL ON FUNCTION public.is_platform_admin_for_user', fnStart);
+    assert.ok(fnStart >= 0 && fnEnd > fnStart);
+    const adminFunction = phase3Sql.slice(fnStart, fnEnd);
+    assert.match(adminFunction, /COALESCE\\(sp\\.agreements_completed, false\\) = true/);
+    assert.match(adminFunction, /COALESCE\\(sp\\.all_agreements_accepted, false\\) = true/);
+    assert.doesNotMatch(adminFunction, /sp\\.role_slug = 'founder'\\s+OR/);
+    assert.doesNotMatch(adminFunction, /FROM public\\.platform_admins pa/);
+  });
+
+  it('Phase 3 private verification and HR documents are owner-or-Founder-AAL2 only', () => {
+    assert.match(phase3Sql, /CREATE OR REPLACE FUNCTION public\\.is_active_founder\\(\\)/);
+    assert.match(phase3Sql, /sp\\.staff_id = 'UK-STAFF-2026-0001'/);
+    assert.match(phase3Sql, /REVOKE ALL ON FUNCTION public\\.is_active_founder\\(\\) FROM PUBLIC, anon/);
+    assert.match(phase3Sql, /public\\.is_active_founder\\(\\) AND public\\.current_session_is_aal2\\(\\)/);
+    assert.doesNotMatch(phase3Sql, /public\\.is_platform_admin\\(\\) AND public\\.current_session_is_aal2\\(\\)/);
+  });
+
 });
