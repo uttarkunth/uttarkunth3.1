@@ -102,7 +102,7 @@ describe('Phase 4 corrective security migration', () => {
     assert.ok(migrationSql.includes('AND public.current_session_is_aal2()'));
   });
 
-  it('uses an invoker Founder helper and narrows all existing private storage policies', () => {
+  it('uses pillar-specific permissions and narrows all existing private storage policies', () => {
     const start = migrationSql.indexOf('CREATE OR REPLACE FUNCTION public.is_active_founder()');
     const end = migrationSql.indexOf('REVOKE ALL ON FUNCTION public.is_active_founder()', start);
     assert.ok(start >= 0 && end > start);
@@ -111,11 +111,23 @@ describe('Phase 4 corrective security migration', () => {
     assert.ok(helper.includes("sp.staff_id = 'UK-STAFF-2026-0001'"));
     assert.ok(helper.includes('sp.privacy_notice_accepted = true'));
 
-    const allowed = 'public.is_active_founder() AND public.current_session_is_aal2()';
-    assert.equal(migrationSql.split(allowed).length - 1, 3);
+    assert.ok(migrationSql.includes("public.has_staff_permission_for_user(auth.uid(), 'seller.verify_documents')"));
+    assert.ok(migrationSql.includes("public.has_staff_permission_for_user(auth.uid(), 'staff.hr_docs.view')"));
+    assert.ok(migrationSql.includes("public.has_staff_permission_for_user(auth.uid(), 'stays.hosts.verify')"));
+    assert.ok(migrationSql.includes("public.has_staff_permission_for_user(auth.uid(), 'productions.review_proposal')"));
+    assert.ok(migrationSql.includes("public.has_staff_permission_for_user(auth.uid(), 'community.moderate')"));
     assert.ok(!migrationSql.includes('public.is_platform_admin() AND public.current_session_is_aal2()'));
+    assert.ok(!migrationSql.includes('public.is_active_founder() AND public.current_session_is_aal2()'));
     assert.ok(migrationSql.includes('DROP POLICY IF EXISTS "Sellers can access own verification docs"'));
     assert.ok(migrationSql.includes('DROP POLICY IF EXISTS "Staff HR docs restricted to owner or Founder AAL2"'));
     assert.ok(migrationSql.includes('DROP POLICY IF EXISTS "Private pillar docs restricted to owner or Staff AAL2"'));
+  });  it('seller verification API separates document access from approval access and always requires AAL2', () => {
+    const api = fs.readFileSync(path.join(process.cwd(), 'app', 'api', 'admin', 'products', 'route.ts'), 'utf8');
+    assert.ok(api.includes("requireStaffPermission('seller.verify_documents', { requireMfaAal2: true })"));
+    assert.ok(api.includes("requireStaffPermission('seller.approve', { requireMfaAal2: true })"));
+    assert.ok(api.includes('if (canViewVerificationDocuments)'));
+    assert.ok(!api.includes('requireMfaAal2: false'));
   });
+
+
 });
