@@ -1,7 +1,8 @@
 # UTTARKUNTH 3.1 — DATABASE MIGRATION REVIEW & RECONCILIATION
 
 **Target Supabase Project:** `xyplgugxpmlnjsvlosdg`  
-**Status:** Staged Locally (`PENDING PRODUCTION APPROVAL` — Not Applied to Live Supabase)
+**Working Branch:** `uttarkunthmain2`  
+**Status:** Staged Locally & Remote (`PENDING PRODUCTION APPROVAL` — Not Applied to Live Production)
 
 ---
 
@@ -27,7 +28,7 @@
 | `public.profiles` | Table | Common public member profile (`id`, `full_name`, `preferred_name`, `phone`, `city`, `state`, `country`, `bio`, `avatar_url`, `interests`). |
 | `public.public_member_profiles` | View | Safe public projection of `public.profiles` excluding private contact fields (`phone`). |
 | `public.staff_roles` | Table | Catalog of 8 internal staff roles (`founder`, `operations_admin`, `property_reviewer`, `marketplace_reviewer`, `productions_editor`, `community_manager`, `support_executive`, `finance_compliance_reviewer`). |
-| `public.staff_permissions` & `public.staff_role_permissions` | Tables | Granular staff permission catalog and role-to-permission mapping. |
+| `public.staff_permissions` & `public.staff_role_permissions` | Tables | Granular staff permission catalog (18+ permissions) and role-to-permission mapping. |
 | `public.staff_invitations` | Table | Single-use, expiring, Founder-controlled staff invitations storing SHA-256 `token_hash`. |
 | `public.staff_profiles` | Table | Internal staff identity records (`user_id`, immutable `staff_id`, `role_slug`/`role_code`, `custom_permissions`, `revoked_permissions`, `status`, `session_revoked_at`). |
 | `public.staff_permission_assignments` | Table | Granular `allow`/`revoke` permission overrides per staff member. |
@@ -44,16 +45,27 @@
 
 ## 3. Reconciled Columns & Non-Recursive `SECURITY DEFINER` Helpers
 
-1. **Dual-Column Compatibility Triggers (`trg_sync_staff_profile_role`, `trg_sync_staff_invitation_role`)**:
-   - Synchronize `role_slug` and `role_code` automatically on `staff_profiles` and `staff_invitations`.
+1. **Canonical Column Standardization & Compatibility Triggers (`trg_sync_staff_profile_role`, `trg_sync_staff_invitation_role`)**:
+   - Reconciled on `role_slug`, `permission_key`, `founder_approved_at`, and `founder_approved_by`.
+   - Automatic synchronization triggers keep `role_slug` and `role_code` aligned for zero-downtime backward compatibility.
 2. **Immutable Staff ID Trigger (`trg_prevent_staff_id_mutation`)**:
    - Blocks any `UPDATE` attempting to change `staff_profiles.staff_id` once assigned (`UK-STAFF-YYYY-XXXX`).
 3. **Append-Only Audit Trigger (`trg_prevent_staff_audit_log_mutation`)**:
    - Blocks any `UPDATE` or `DELETE` on `public.staff_audit_log`.
-4. **Non-Recursive `SECURITY DEFINER` Functions**:
+4. **Hardened Founder Provisioning Procedure (`public.provision_founder_account`)**:
+   - Locked down to `service_role` and trusted database owner (`REVOKE ALL ON FUNCTION public.provision_founder_account FROM PUBLIC, anon, authenticated; GRANT EXECUTE ON FUNCTION public.provision_founder_account TO service_role;`).
+   - Checks that the provided Auth UUID exists in `auth.users` and that the submitted email matches `auth.users.email`.
+   - Eliminates false MFA assertions, fabricated agreements, fake passport numbers, and dummy phone numbers.
+   - Verification query:
+     ```sql
+     SELECT
+       has_function_privilege('anon', 'public.provision_founder_account(uuid, text, text, text)', 'EXECUTE') AS anon_can_exec,
+       has_function_privilege('authenticated', 'public.provision_founder_account(uuid, text, text, text)', 'EXECUTE') AS auth_can_exec,
+       has_function_privilege('service_role', 'public.provision_founder_account(uuid, text, text, text)', 'EXECUTE') AS service_role_can_exec;
+     ```
+5. **Non-Recursive `SECURITY DEFINER` Functions**:
    - `public.is_active_staff_for_user(p_user_id uuid)`
    - `public.has_staff_permission_for_user(p_user_id uuid, p_perm text)`
-   - `public.provision_founder_account(p_user_id uuid, p_official_email text, p_full_legal_name text, p_verified_mobile text)`
 
 ---
 
