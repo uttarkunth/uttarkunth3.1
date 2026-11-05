@@ -59,7 +59,7 @@ export function ProductInterestForm({ initialCategories = [], userEmail }: Produ
           <h3 className="font-serif text-base font-bold">Register for Collection Previews</h3>
         </div>
         <p className="text-xs text-charcoal-muted">
-          Select categories you'd like preview access to when the 2027 Himalayan harvest and artisan batches open.
+          Select categories you&apos;d like preview access to when the 2027 Himalayan harvest and artisan batches open.
         </p>
       </div>
 
