@@ -59,7 +59,7 @@ export function StaffGovernanceClient({
 
   // Invitation Form State
   const [inviteEmail, setInviteEmail] = useState('');
-  const [inviteDepartment, setInviteDepartment] = useState('Marketplace & Compliance');
+  const [inviteDepartment, setInviteDepartment] = useState('products');
   const [inviteDesignation, setInviteDesignation] = useState('Marketplace & Seller Reviewer');
   const [inviteRole, setInviteRole] = useState<StaffRoleCode>('marketplace_reviewer');
   const [inviteEmploymentCategory, setInviteEmploymentCategory] = useState<
@@ -607,13 +607,19 @@ export function StaffGovernanceClient({
                 <label className="block text-xs font-semibold text-charcoal mb-1">
                   Department *
                 </label>
-                <input suppressHydrationWarning
-                  type="text"
-                  required
+                <select suppressHydrationWarning
                   value={inviteDepartment}
                   onChange={(e) => setInviteDepartment(e.target.value)}
-                  className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-forest/20"
-                />
+                  className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-forest/20 bg-white"
+                >
+                  <option value="stays">stays — UTTARKUNTH STAYS (Operational Pillar 01)</option>
+                  <option value="products">products — UTTARKUNTH PRODUCTS (Operational Pillar 02)</option>
+                  <option value="productions">productions — UTTARKUNTH PRODUCTIONS (Operational Pillar 03)</option>
+                  <option value="community">community — UTTARKUNTH COMMUNITY (Operational Pillar 04)</option>
+                  <option value="founder_office">
+                    founder_office — FOUNDER OFFICE (Central Admin &amp; Shared Functions)
+                  </option>
+                </select>
               </div>
 
               <div>
@@ -819,7 +825,7 @@ export function StaffGovernanceClient({
                     </button>
                     <button suppressHydrationWarning
                       onClick={() => handleReviewApplication(app.id, 'reject')}
-                      className="px-3.5 py-2 bg-red-100 hover:bg-red-200 text-red-900 font-semibold rounded-xl"
+                      className="px-3.5 py-2 bg-red-100 hover:bg-red-200 text-red-900 rounded-xl font-semibold"
                     >
                       Reject Application
                     </button>

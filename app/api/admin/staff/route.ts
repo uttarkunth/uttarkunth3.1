@@ -8,6 +8,7 @@ import {
   verifyAllStaffAgreementsCompleted,
   STAFF_ROLE_DEFINITIONS,
   REQUIRED_STAFF_AGREEMENTS,
+  resolveOperationalDepartment,
   type StaffRoleSlug,
   type StaffPermission,
   type HighRiskActionType,
@@ -149,7 +150,10 @@ export async function POST(req: NextRequest) {
 
       const roleSlug = (body.role_slug || body.role_code || 'marketplace_reviewer') as StaffRoleSlug;
       const roleDef = STAFF_ROLE_DEFINITIONS[roleSlug] || STAFF_ROLE_DEFINITIONS.marketplace_reviewer;
-      const department = String(body.department || roleDef.department || 'operations').trim();
+      const department = resolveOperationalDepartment(
+        body.department || roleDef.department,
+        roleSlug
+      );
       const designation = String(
         body.designation || body.proposed_designation || roleDef.title
       ).trim();
