@@ -839,7 +839,7 @@ export function StaffGovernanceClient({
               Authoritative 8-Role &amp; 18-Permission Departmental Matrix
             </h2>
             <p className="text-xs text-charcoal-muted mt-1">
-              Server-side API handlers enforce <code className="font-mono">requireStaffPermission(permission)</code> on every request. No staff role other than Founder/Operations Admin can cross departmental boundaries.
+              Server-side API handlers enforce <code className="font-mono">requireStaffPermission(permission)</code> on every request. Departmental access is limited by role permissions. Cross-pillar shared services remain under Founder Office governance and do not create additional operational departments.
             </p>
           </div>
 
