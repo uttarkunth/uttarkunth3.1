@@ -55,7 +55,7 @@ function StaffOnboardingContent() {
 
   // Professional fields
   const [designation, setDesignation] = useState('');
-  const [department, setDepartment] = useState('Operations');
+  const [department, setDepartment] = useState('');
   const [employmentCategory, setEmploymentCategory] = useState<
     'full_time' | 'part_time' | 'contractor' | 'advisor' | 'fellow'
   >('full_time');
@@ -540,17 +540,16 @@ function StaffOnboardingContent() {
                 </label>
                 <select
                   value={department}
-                  onChange={(e) => setDepartment(e.target.value)}
-                  className="w-full bg-[#161513] border border-white/20 px-4 py-2.5 text-sm text-[#FBF9F5]"
+                  disabled
+                  aria-readonly="true"
+                  className="w-full bg-[#161513] border border-white/20 px-4 py-2.5 text-sm text-[#FBF9F5] disabled:opacity-80"
                 >
-                  <option value="Executive & Governance">Executive & Governance</option>
-                  <option value="Operations">Operations</option>
-                  <option value="Stays & Host Relations">Stays & Host Relations</option>
-                  <option value="Marketplace & Compliance">Marketplace & Compliance</option>
-                  <option value="Uttarkunth Productions">Uttarkunth Productions</option>
-                  <option value="Community & Impact">Community & Impact</option>
-                  <option value="Member Support">Member Support</option>
-                  <option value="Finance, Legal & Compliance">Finance, Legal & Compliance</option>
+                  <option value="">Assigned by invitation</option>
+                  <option value="founder_office">Founder Office — Central Shared Services</option>
+                  <option value="stays">Uttarkunth Stays</option>
+                  <option value="products">Uttarkunth Products</option>
+                  <option value="productions">Uttarkunth Productions</option>
+                  <option value="community">Uttarkunth Community</option>
                 </select>
               </div>
               <div>
