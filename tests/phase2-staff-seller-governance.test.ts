@@ -1204,4 +1204,18 @@ describe('TASK 9 — 12 Strict Verification Scenarios', () => {
     assert.match(staffLogin, /if \(!verifiedTotpFactor\)/);
   });
 
+
+  it('Application admin authorization fails closed until privacy, agreements, onboarding and approval are complete', () => {
+    const authSource = fs.readFileSync(path.join(process.cwd(), 'lib', 'auth.ts'), 'utf8');
+    const roleRoute = fs.readFileSync(path.join(process.cwd(), 'app', 'api', 'auth', 'role', 'route.ts'), 'utf8');
+    assert.ok(authSource.includes('staffRow.privacy_notice_accepted !== true'));
+    assert.ok(authSource.includes('staffRow.agreements_completed !== true'));
+    assert.ok(authSource.includes('staffRow.all_agreements_accepted !== true'));
+    assert.ok(authSource.includes('staffRow.onboarding_completed !== true'));
+    assert.ok(authSource.includes('staffRow.founder_approved !== true'));
+    assert.ok(roleRoute.includes('row.privacy_notice_accepted !== true'));
+    assert.ok(roleRoute.includes('row.onboarding_completed !== true'));
+    assert.ok(roleRoute.includes('row.founder_approved_by === user.id'));
+  });
+
 });
