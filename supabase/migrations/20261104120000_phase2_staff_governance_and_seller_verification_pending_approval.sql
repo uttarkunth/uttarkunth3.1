@@ -413,17 +413,10 @@ BEGIN
     NEW.identity_document_ref := NEW.identity_document_reference;
   END IF;
 
-  IF NEW.all_agreements_accepted = true AND NEW.agreements_completed = false THEN
-    NEW.agreements_completed := true;
-  ELSIF NEW.agreements_completed = true AND NEW.all_agreements_accepted = false THEN
-    NEW.all_agreements_accepted := true;
-  END IF;
-
-  IF NEW.privacy_notice_accepted = true AND NEW.privacy_notice_accepted_at IS NULL THEN
-    NEW.privacy_notice_accepted_at := now();
-  ELSIF NEW.privacy_notice_accepted_at IS NOT NULL AND NEW.privacy_notice_accepted = false THEN
-    NEW.privacy_notice_accepted := true;
-  END IF;
+  -- Consent and agreement flags are explicit user acceptances.
+  -- Never derive acceptance from timestamps or mirror one aggregate flag into another.
+  -- The onboarding API writes both aggregate flags only after all eight current
+  -- agreement acceptance rows and the privacy notice acknowledgement are saved.
 
   IF NEW.founder_approved_at IS NULL AND NEW.approved_at IS NOT NULL THEN
     NEW.founder_approved_at := NEW.approved_at;
