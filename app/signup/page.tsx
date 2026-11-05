@@ -2,18 +2,16 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { Logo } from '@/components/logo';
-import { Mail, Lock, User, AlertCircle, CheckCircle2, Home } from 'lucide-react';
+import { Mail, Lock, User, Phone, AlertCircle, CheckCircle2, Sparkles } from 'lucide-react';
 
 export default function SignUpPage() {
-  const router = useRouter();
-
   const [fullName, setFullName] = useState('');
+  const [preferredName, setPreferredName] = useState('');
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
-  const [accountType, setAccountType] = useState<'guest' | 'host'>('guest');
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -31,14 +29,31 @@ export default function SignUpPage() {
         options: {
           data: {
             full_name: fullName.trim(),
-            role: accountType
+            preferred_name: preferredName.trim() || fullName.trim(),
+            phone: phone.trim() || undefined,
           },
-          emailRedirectTo: `${window.location.origin}/api/auth/callback`
-        }
+          emailRedirectTo: `${window.location.origin}/api/auth/callback`,
+        },
       });
 
       if (error) {
         throw error;
+      }
+
+      if (data?.session) {
+        try {
+          await fetch('/api/account/profile', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              full_name: fullName.trim(),
+              preferred_name: preferredName.trim() || fullName.trim(),
+              phone: phone.trim(),
+            }),
+          });
+        } catch {
+          // Profile row will be created on first account visit or via database trigger
+        }
       }
 
       setSuccess(true);
@@ -54,8 +69,16 @@ export default function SignUpPage() {
       <div className="w-full max-w-md bg-white rounded-3xl p-8 border border-forest/15 shadow-soft space-y-6">
         <div className="text-center space-y-2">
           <Logo className="justify-center" />
-          <h1 className="font-serif text-2xl sm:text-3xl font-bold text-forest mt-4">Join Uttarkunth</h1>
-          <p className="text-xs text-charcoal-muted">Create your account to request stays or host travelers</p>
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-forest/10 text-forest text-[11px] font-semibold uppercase tracking-wider mt-3">
+            <Sparkles className="w-3 h-3 text-ukorange" />
+            <span>Universal Himalayan Member Identity</span>
+          </div>
+          <h1 className="font-serif text-2xl sm:text-3xl font-bold text-forest pt-1">
+            Join Uttarkunth
+          </h1>
+          <p className="text-xs text-charcoal-muted leading-relaxed">
+            Create one unified Uttarkunth Member account to book stays, apply as a homestay host, artisan seller, filmmaker, or Karmayog contributor.
+          </p>
         </div>
 
         {success ? (
@@ -65,7 +88,7 @@ export default function SignUpPage() {
             </div>
             <h3 className="font-serif text-xl font-bold text-forest">Verification Email Sent</h3>
             <p className="text-xs text-charcoal-muted leading-relaxed">
-              We've sent a confirmation link to <strong>{email}</strong>. Please check your inbox and click the link to activate your account.
+              We&rsquo;ve sent a confirmation link to <strong>{email}</strong>. Please check your inbox and click the link to activate your Uttarkunth Member account.
             </p>
             <Link
               href="/login"
@@ -84,39 +107,10 @@ export default function SignUpPage() {
             )}
 
             <form onSubmit={handleSignUp} className="space-y-4">
-              {/* Account Type Selector */}
               <div>
-                <label className="block text-xs font-semibold text-charcoal-muted mb-1.5">I want to</label>
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setAccountType('guest')}
-                    className={`py-2 px-3 rounded-xl text-xs font-semibold border flex items-center justify-center gap-1.5 transition-colors ${
-                      accountType === 'guest'
-                        ? 'bg-forest text-white border-forest'
-                        : 'bg-ivory-warm border-forest/20 text-charcoal hover:bg-forest/5'
-                    }`}
-                  >
-                    <User className="w-3.5 h-3.5" />
-                    Book Stays (Guest)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setAccountType('host')}
-                    className={`py-2 px-3 rounded-xl text-xs font-semibold border flex items-center justify-center gap-1.5 transition-colors ${
-                      accountType === 'host'
-                        ? 'bg-forest text-white border-forest'
-                        : 'bg-ivory-warm border-forest/20 text-charcoal hover:bg-forest/5'
-                    }`}
-                  >
-                    <Home className="w-3.5 h-3.5" />
-                    List Homestay (Host)
-                  </button>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-charcoal-muted mb-1">Full Name</label>
+                <label className="block text-xs font-semibold text-charcoal-muted mb-1">
+                  Full Legal / Display Name *
+                </label>
                 <div className="relative">
                   <User className="w-4 h-4 text-charcoal-muted absolute left-3 top-3.5" />
                   <input
@@ -131,7 +125,25 @@ export default function SignUpPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-charcoal-muted mb-1">Email Address</label>
+                <label className="block text-xs font-semibold text-charcoal-muted mb-1">
+                  Preferred Name (Optional)
+                </label>
+                <div className="relative">
+                  <User className="w-4 h-4 text-charcoal-muted absolute left-3 top-3.5" />
+                  <input
+                    type="text"
+                    placeholder="How hosts and community members should address you"
+                    value={preferredName}
+                    onChange={(e) => setPreferredName(e.target.value)}
+                    className="w-full pl-9 pr-3 py-2.5 text-sm bg-ivory-warm border border-forest/20 rounded-xl focus:ring-2 focus:ring-forest focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-charcoal-muted mb-1">
+                  Email Address *
+                </label>
                 <div className="relative">
                   <Mail className="w-4 h-4 text-charcoal-muted absolute left-3 top-3.5" />
                   <input
@@ -146,14 +158,32 @@ export default function SignUpPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-charcoal-muted mb-1">Password</label>
+                <label className="block text-xs font-semibold text-charcoal-muted mb-1">
+                  Mobile / Contact Number (Optional)
+                </label>
+                <div className="relative">
+                  <Phone className="w-4 h-4 text-charcoal-muted absolute left-3 top-3.5" />
+                  <input
+                    type="tel"
+                    placeholder="+91 98765 43210"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    className="w-full pl-9 pr-3 py-2.5 text-sm bg-ivory-warm border border-forest/20 rounded-xl focus:ring-2 focus:ring-forest focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-charcoal-muted mb-1">
+                  Password *
+                </label>
                 <div className="relative">
                   <Lock className="w-4 h-4 text-charcoal-muted absolute left-3 top-3.5" />
                   <input
                     type="password"
                     required
-                    minLength={6}
-                    placeholder="Minimum 6 characters"
+                    minLength={8}
+                    placeholder="Minimum 8 characters"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     className="w-full pl-9 pr-3 py-2.5 text-sm bg-ivory-warm border border-forest/20 rounded-xl focus:ring-2 focus:ring-forest focus:outline-none"
@@ -166,13 +196,16 @@ export default function SignUpPage() {
                 disabled={loading}
                 className="w-full py-3 bg-forest hover:bg-forest-hover disabled:bg-forest/50 text-white font-semibold text-sm rounded-xl shadow-md transition-all mt-2"
               >
-                {loading ? 'Creating Account...' : 'Create Account'}
+                {loading ? 'Creating Member Account...' : 'Create Uttarkunth Account'}
               </button>
             </form>
 
             <div className="text-center pt-4 border-t border-forest/10 text-xs text-charcoal-muted">
               Already have an account?{' '}
-              <Link href="/login" className="font-semibold text-forest hover:text-ukorange transition-colors">
+              <Link
+                href="/login"
+                className="font-semibold text-forest hover:text-ukorange transition-colors"
+              >
                 Sign In
               </Link>
             </div>
