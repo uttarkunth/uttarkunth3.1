@@ -1163,10 +1163,10 @@ describe('TASK 9 — 12 Strict Verification Scenarios', () => {
       path.join(process.cwd(), 'app', 'api', 'staff', 'onboard', 'route.ts'),
       'utf8'
     );
-    assert.match(onboardingRoute, /body\\.privacy_notice_accepted !== true/);
-    assert.match(onboardingRoute, /a\\.accepted === true/);
-    assert.match(onboardingRoute, /submittedVersion !== reqAgr\\.version/);
-    assert.match(onboardingRoute, /submitted\\.document_hash !== canonicalHash/);
+    assert.match(onboardingRoute, /body\.privacy_notice_accepted !== true/);
+    assert.match(onboardingRoute, /a\.accepted === true/);
+    assert.match(onboardingRoute, /submittedVersion !== reqAgr\.version/);
+    assert.match(onboardingRoute, /submitted\.document_hash !== canonicalHash/);
     assert.match(onboardingRoute, /agreements_completed: false/);
     assert.match(onboardingRoute, /all_agreements_accepted: false/);
     assert.match(onboardingRoute, /agreements_completed: true/);
@@ -1188,18 +1188,18 @@ describe('TASK 9 — 12 Strict Verification Scenarios', () => {
       'utf8'
     );
 
-    assert.match(roleRoute, /row\\.staff_id === 'UK-STAFF-2026-0001'/);
-    assert.match(roleRoute, /row\\.founder_approved_by === user\\.id/);
+    assert.match(roleRoute, /row\.staff_id === 'UK-STAFF-2026-0001'/);
+    assert.match(roleRoute, /row\.founder_approved_by === user\.id/);
     assert.match(roleRoute, /founderCount === 1/);
     assert.match(roleRoute, /canCompleteFounderSetup/);
-    assert.match(founderSetupRoute, /profile\\.role_slug === 'founder'/);
-    assert.match(founderSetupRoute, /profile\\.staff_id === 'UK-STAFF-2026-0001'/);
-    assert.match(founderSetupRoute, /context\\.user\\.id/);
-    assert.match(founderSetupRoute, /submitted\\.accepted !== true/);
-    assert.match(founderSetupRoute, /body\\?\\.privacy_notice_accepted !== true/);
+    assert.match(founderSetupRoute, /profile\.role_slug === 'founder'/);
+    assert.match(founderSetupRoute, /profile\.staff_id === 'UK-STAFF-2026-0001'/);
+    assert.match(founderSetupRoute, /context\.user\.id/);
+    assert.match(founderSetupRoute, /submitted\.accepted !== true/);
+    assert.match(founderSetupRoute, /body\?\.privacy_notice_accepted !== true/);
     assert.match(founderSetupRoute, /agreements_completed: true/);
-    assert.match(staffLogin, /router\\.replace\\('\\/staff\\/founder-setup'\\)/);
-    assert.match(staffLogin, /if \\(!verifiedTotpFactor\\)/);
+    assert.match(staffLogin, /router\.replace\('\/staff\/founder-setup'\)/);
+    assert.match(staffLogin, /if \(!verifiedTotpFactor\)/);
   });
 
 });
