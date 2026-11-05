@@ -365,6 +365,24 @@ export const HIGH_RISK_ACTIONS_REQUIRING_DUAL_APPROVAL: ReadonlyArray<HighRiskAc
   'destructive_published_record_action',
 ];
 
+
+/**
+ * Accepts only same-origin absolute paths for post-authentication navigation.
+ * External, protocol-relative, and scheme-like redirects are rejected.
+ * Kept in this browser-safe module so client login and server auth callbacks share the rule.
+ */
+export function sanitizeInternalRedirectPath(
+  rawNext: string | null | undefined,
+  fallback: string = '/'
+): string {
+  if (!rawNext || typeof rawNext !== 'string') return fallback;
+  const trimmed = rawNext.trim();
+  if (!trimmed.startsWith('/')) return fallback;
+  if (trimmed.startsWith('//') || trimmed.startsWith('/\\')) return fallback;
+  if (/^\/[a-zA-Z0-9+.-]+:/.test(trimmed)) return fallback;
+  return trimmed;
+}
+
 export function formatImmutableStaffId(year: number, sequenceNumber: number): string {
   const safeYear = year >= 2026 && year <= 2100 ? year : 2026;
   const seq = Math.max(1, Math.floor(sequenceNumber));
