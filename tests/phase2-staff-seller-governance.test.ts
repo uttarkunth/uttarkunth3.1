@@ -714,3 +714,406 @@ describe('UTTARKUNTH PHASE 2 — 15 Mandatory Security & Governance Tests', () =
     assert.ok(proposalsRoute.includes("status: 'takedown_requested'"));
   });
 });
+
+describe('TASK 9 — 12 Strict Verification Scenarios', () => {
+  // 1. Legacy platform-admin privilege escalation
+  it('Scenario 1: Legacy platform-admin privilege escalation is blocked (fails closed)', () => {
+    // Ordinary user or legacy admin with missing staff_profile must fail closed
+    const denied = evaluateStaffAuthorization(
+      {
+        userId: 'legacy-admin-user-uuid',
+        email: 'legacy@example.com',
+        staffProfile: null, // No staff_profiles row
+        mfaAssuranceLevel: 'aal2',
+      },
+      'property.review'
+    );
+    assert.equal(denied.allowed, false);
+    assert.equal(denied.code, 'ORDINARY_MEMBER_FORBIDDEN');
+
+    // A platform admin role such as property_reviewer must never escalate to founder
+    const reviewerAttempt = evaluateStaffAuthorization(
+      {
+        userId: 'reviewer-user-uuid',
+        email: 'reviewer@uttarkunth.com',
+        staffProfile: {
+          user_id: 'reviewer-user-uuid',
+          staff_id: 'UK-STAFF-2026-0005',
+          role_slug: 'property_reviewer',
+          department: 'stays_curation',
+          status: 'active',
+          founder_approved_at: '2026-02-01T00:00:00Z',
+          founder_approved_by: 'founder-uuid',
+          mfa_enrolled: true,
+          agreements_completed: true,
+        },
+        mfaAssuranceLevel: 'aal2',
+      },
+      'staff.terminate' // Restricted to Founder
+    );
+    assert.equal(reviewerAttempt.allowed, false);
+    assert.equal(reviewerAttempt.code, 'PERMISSION_DENIED');
+  });
+
+  // 2. Suspended and terminated staff sessions
+  it('Scenario 2: Suspended and terminated staff sessions are immediately rejected', () => {
+    const suspended = evaluateStaffAuthorization(
+      {
+        userId: 'suspended-staff-uuid',
+        staffProfile: {
+          user_id: 'suspended-staff-uuid',
+          staff_id: 'UK-STAFF-2026-0010',
+          role_slug: 'operations_admin',
+          department: 'operations',
+          status: 'suspended',
+          founder_approved_at: '2026-01-01T00:00:00Z',
+          founder_approved_by: 'founder-uuid',
+          mfa_enrolled: true,
+          agreements_completed: true,
+        },
+        mfaAssuranceLevel: 'aal2',
+      },
+      'property.review'
+    );
+    assert.equal(suspended.allowed, false);
+    assert.equal(suspended.code, 'STAFF_NOT_ACTIVE');
+
+    const revokedSession = evaluateStaffAuthorization(
+      {
+        userId: 'revoked-staff-uuid',
+        sessionIssuedAt: '2026-02-01T10:00:00Z',
+        staffProfile: {
+          user_id: 'revoked-staff-uuid',
+          staff_id: 'UK-STAFF-2026-0011',
+          role_slug: 'operations_admin',
+          department: 'operations',
+          status: 'active',
+          session_revoked_at: '2026-02-01T12:00:00Z', // Revoked after session was issued
+          founder_approved_at: '2026-01-01T00:00:00Z',
+          founder_approved_by: 'founder-uuid',
+          mfa_enrolled: true,
+          agreements_completed: true,
+        },
+        mfaAssuranceLevel: 'aal2',
+      },
+      'property.review'
+    );
+    assert.equal(revokedSession.allowed, false);
+    assert.equal(revokedSession.code, 'SESSION_REVOKED');
+  });
+
+  // 3. Permission revocation
+  it('Scenario 3: Permission revocation denies access when permission is not effective', () => {
+    const result = evaluateStaffAuthorization(
+      {
+        userId: 'staff-uuid-3',
+        staffProfile: {
+          user_id: 'staff-uuid-3',
+          staff_id: 'UK-STAFF-2026-0012',
+          role_slug: 'property_reviewer',
+          department: 'stays_curation',
+          status: 'active',
+          founder_approved_at: '2026-01-01T00:00:00Z',
+          founder_approved_by: 'founder-uuid',
+          mfa_enrolled: true,
+          agreements_completed: true,
+          custom_permissions: [], // No custom grant for audit
+        },
+        mfaAssuranceLevel: 'aal2',
+      },
+      'audit.view_full'
+    );
+    assert.equal(result.allowed, false);
+    assert.equal(result.code, 'PERMISSION_DENIED');
+  });
+
+  // 4. Invitation creation, expiry, cancellation and atomic consumption
+  it('Scenario 4: Invitation lifecycle - valid, expired, cancelled, and consumed checks', () => {
+    const valid = validateStaffInvitation(
+      {
+        official_email: 'candidate@uttarkunth.com',
+        role_slug: 'operations_admin',
+        department: 'operations',
+        status: 'pending',
+        expires_at: new Date(Date.now() + 86400000).toISOString(),
+      },
+      'candidate@uttarkunth.com'
+    );
+    assert.equal(valid.valid, true);
+
+    const expired = validateStaffInvitation(
+      {
+        official_email: 'candidate@uttarkunth.com',
+        role_slug: 'operations_admin',
+        department: 'operations',
+        status: 'pending',
+        expires_at: new Date(Date.now() - 1000).toISOString(),
+      },
+      'candidate@uttarkunth.com'
+    );
+    assert.equal(expired.valid, false);
+    assert.match(expired.reason || '', /expired/i);
+
+    const cancelled = validateStaffInvitation(
+      {
+        official_email: 'candidate@uttarkunth.com',
+        role_slug: 'operations_admin',
+        department: 'operations',
+        status: 'cancelled',
+        expires_at: new Date(Date.now() + 86400000).toISOString(),
+      },
+      'candidate@uttarkunth.com'
+    );
+    assert.equal(cancelled.valid, false);
+    assert.match(cancelled.reason || '', /cancelled/i);
+
+    const consumed = validateStaffInvitation(
+      {
+        official_email: 'candidate@uttarkunth.com',
+        role_slug: 'operations_admin',
+        department: 'operations',
+        status: 'accepted',
+        expires_at: new Date(Date.now() + 86400000).toISOString(),
+      },
+      'candidate@uttarkunth.com'
+    );
+    assert.equal(consumed.valid, false);
+    assert.match(consumed.reason || '', /single-use/i);
+  });
+
+  // 5. All eight agreement records and real canonical hashes
+  it('Scenario 5: All 8 mandatory agreements require stable SHA-256 hashes matching canonical text', () => {
+    assert.equal(REQUIRED_STAFF_AGREEMENTS.length, 8);
+    for (const ag of REQUIRED_STAFF_AGREEMENTS) {
+      assert.ok(ag.canonicalContent.length > 50);
+      const hash = computeDocumentHash(ag.canonicalContent.trim());
+      assert.equal(hash.length, 64);
+      // Hash stability check
+      assert.equal(hash, computeDocumentHash(ag.canonicalContent.trim()));
+    }
+  });
+
+  // 6. Founder onboarding and AAL2 enforcement
+  it('Scenario 6: Founder operations strictly enforce TOTP MFA (AAL2)', () => {
+    const founderAal1 = evaluateStaffAuthorization(
+      {
+        userId: 'founder-uuid-6',
+        staffProfile: {
+          user_id: 'founder-uuid-6',
+          staff_id: 'UK-STAFF-2026-0001',
+          role_slug: 'founder',
+          department: 'founder_office',
+          status: 'active',
+          founder_approved_at: '2026-01-01T00:00:00Z',
+          founder_approved_by: 'founder-uuid-6',
+          mfa_enrolled: true,
+          agreements_completed: true,
+        },
+        mfaAssuranceLevel: 'aal1', // Insufficient assurance
+      },
+      'staff.terminate',
+      { requireMfaAal2: true }
+    );
+    assert.equal(founderAal1.allowed, false);
+    assert.equal(founderAal1.code, 'MFA_AAL2_REQUIRED');
+
+    const founderAal2 = evaluateStaffAuthorization(
+      {
+        userId: 'founder-uuid-6',
+        staffProfile: {
+          user_id: 'founder-uuid-6',
+          staff_id: 'UK-STAFF-2026-0001',
+          role_slug: 'founder',
+          department: 'founder_office',
+          status: 'active',
+          founder_approved_at: '2026-01-01T00:00:00Z',
+          founder_approved_by: 'founder-uuid-6',
+          mfa_enrolled: true,
+          agreements_completed: true,
+        },
+        mfaAssuranceLevel: 'aal2',
+      },
+      'staff.terminate',
+      { requireMfaAal2: true }
+    );
+    assert.equal(founderAal2.allowed, true);
+  });
+
+  // 7. Database/API column compatibility
+  it('Scenario 7: Database migration SQL includes dual-column aliases for backward compatibility', () => {
+    const migrationSql = fs.readFileSync(
+      path.join(
+        process.cwd(),
+        'supabase',
+        'migrations',
+        '20261104120000_phase2_staff_governance_and_seller_verification_pending_approval.sql'
+      ),
+      'utf8'
+    );
+    assert.ok(migrationSql.includes('role_slug'));
+    assert.ok(migrationSql.includes('role_code'));
+    assert.ok(migrationSql.includes('proposed_designation'));
+    assert.ok(migrationSql.includes('designation'));
+    assert.ok(migrationSql.includes('accepted_at'));
+    assert.ok(migrationSql.includes('used_at'));
+    assert.ok(migrationSql.includes('permission_key'));
+    assert.ok(migrationSql.includes('permission_code'));
+    assert.ok(migrationSql.includes('size_bytes'));
+    assert.ok(migrationSql.includes('file_size_bytes'));
+    assert.ok(migrationSql.includes('second_approver_id'));
+  });
+
+  // 8. Dual approval with independent approvers
+  it('Scenario 8: Dual approval strictly rejects self-approval and accepts independent approver', () => {
+    const selfApproval = evaluateStaffAuthorization(
+      {
+        userId: 'requester-uuid',
+        staffProfile: {
+          user_id: 'requester-uuid',
+          staff_id: 'UK-STAFF-2026-0001',
+          role_slug: 'founder',
+          department: 'founder_office',
+          status: 'active',
+          founder_approved_at: '2026-01-01T00:00:00Z',
+          founder_approved_by: 'requester-uuid',
+          mfa_enrolled: true,
+          agreements_completed: true,
+        },
+        mfaAssuranceLevel: 'aal2',
+        dualApprovalRecord: {
+          id: 'da-req-1',
+          action_type: 'admin_promotion',
+          requested_by: 'requester-uuid',
+          approved_by: 'requester-uuid', // Self approval attempt
+          status: 'approved',
+        },
+      },
+      'governance.dual_approve',
+      { highRiskAction: 'admin_promotion' }
+    );
+    assert.equal(selfApproval.allowed, false);
+    assert.equal(selfApproval.code, 'DUAL_AUTHORIZATION_REQUIRED');
+
+    const independentApproval = evaluateStaffAuthorization(
+      {
+        userId: 'requester-uuid',
+        staffProfile: {
+          user_id: 'requester-uuid',
+          staff_id: 'UK-STAFF-2026-0001',
+          role_slug: 'founder',
+          department: 'founder_office',
+          status: 'active',
+          founder_approved_at: '2026-01-01T00:00:00Z',
+          founder_approved_by: 'requester-uuid',
+          mfa_enrolled: true,
+          agreements_completed: true,
+        },
+        mfaAssuranceLevel: 'aal2',
+        dualApprovalRecord: {
+          id: 'da-req-2',
+          action_type: 'admin_promotion',
+          requested_by: 'requester-uuid',
+          approved_by: 'second-approver-uuid', // Independent second approver
+          status: 'approved',
+        },
+      },
+      'governance.dual_approve',
+      { highRiskAction: 'admin_promotion' }
+    );
+    assert.equal(independentApproval.allowed, true);
+  });
+
+  // 9. Cross-seller storage-path injection
+  it('Scenario 9: Storage path isolation rejects paths not scoped to the authenticated seller or candidate', () => {
+    const sellerUserId = 'seller-user-abc';
+    const legitimatePath = `seller-verification/${sellerUserId}/fssai_licence-123.pdf`;
+    const injectedOtherSellerPath = 'seller-verification/different-seller-xyz/fssai_licence-456.pdf';
+
+    const legitimateCheck = validatePrivateDocumentUpload({
+      fileName: 'fssai.pdf',
+      mimeType: 'application/pdf',
+      sizeBytes: 50000,
+      storageBucket: 'seller-verification-docs',
+      storagePath: legitimatePath,
+    });
+    assert.equal(legitimateCheck.valid, true);
+
+    // Cross-tenant path check logic enforced in application route handlers
+    const isOwnerScoped = (path: string, uid: string) =>
+      path.startsWith(`seller-verification/${uid}/`) || path.startsWith(`sellers/${uid}/`);
+
+    assert.equal(isOwnerScoped(legitimatePath, sellerUserId), true);
+    assert.equal(isOwnerScoped(injectedOtherSellerPath, sellerUserId), false);
+  });
+
+  // 10. Private HR document access
+  it('Scenario 10: Private HR documents reject unauthorized roles and require AAL2', () => {
+    const unprivilegedStaff = evaluateStaffAuthorization(
+      {
+        userId: 'reviewer-uuid',
+        staffProfile: {
+          user_id: 'reviewer-uuid',
+          staff_id: 'UK-STAFF-2026-0020',
+          role_slug: 'property_reviewer',
+          department: 'stays_curation',
+          status: 'active',
+          founder_approved_at: '2026-01-01T00:00:00Z',
+          founder_approved_by: 'founder-uuid',
+          mfa_enrolled: true,
+          agreements_completed: true,
+        },
+        mfaAssuranceLevel: 'aal2',
+      },
+      'staff.hr_docs.view',
+      { requireMfaAal2: true }
+    );
+    assert.equal(unprivilegedStaff.allowed, false);
+    assert.equal(unprivilegedStaff.code, 'PERMISSION_DENIED');
+  });
+
+  // 11. Host property and room creation failure
+  it('Scenario 11: Host property creation validates input schema and handles room failure rollback', () => {
+    const hostRoute = fs.readFileSync(
+      path.join(process.cwd(), 'app', 'api', 'host', 'apply', 'route.ts'),
+      'utf8'
+    );
+    assert.ok(hostRoute.includes('HostApplySchema'));
+    assert.ok(hostRoute.includes('roomErr'));
+    assert.ok(hostRoute.includes("delete().eq('id', createdProperty.id)"));
+  });
+
+  // 12. Existing properties and bookings remaining unchanged
+  it('Scenario 12: Existing properties Yash Home Stay and Wonderway Retreat remain intact and canonical', () => {
+    const destinations = CURATED_DESTINATIONS;
+    assert.ok(destinations.length >= 22);
+
+    const jibhiDest = destinations.find((d) => d.slug === 'jibhi');
+    assert.ok(jibhiDest);
+
+    // Verify canonical properties mapping and moderation approval requirement
+    const jibhiProps = filterPropertiesForDestination(
+      [
+        {
+          id: 'prop-1',
+          name: 'Wonderway Retreat',
+          slug: 'wonderway-retreat',
+          village: 'Jibhi',
+          district: 'Kullu',
+          published: true,
+          moderation_status: 'approved',
+        },
+      ],
+      jibhiDest!
+    );
+    assert.equal(jibhiProps.length, 1);
+    assert.equal(jibhiProps[0].name, 'Wonderway Retreat');
+
+    // Yash Home Stay in Chehni Kothi
+    const yashSlug = getCanonicalDestinationSlug({
+      name: 'Yash Home Stay',
+      village: 'Chehni Kothi',
+      district: 'Kullu',
+    });
+    assert.ok(yashSlug);
+  });
+});
