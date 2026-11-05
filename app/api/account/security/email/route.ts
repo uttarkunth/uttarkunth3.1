@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { checkIsPlatformAdmin } from '@/lib/auth';
 import {
   recordStaffAuditLog,
   validateEmailChangeRequest,
@@ -43,8 +44,6 @@ export async function POST(req: NextRequest) {
 
     const adminClient = createAdminClient();
     let staffRow: any = null;
-    let isPlatformAdmin = false;
-
     try {
       const { data: sp } = await (adminClient.from('staff_profiles' as any) as any)
         .select('id, user_id, staff_id, role_slug, official_email, status')
@@ -55,18 +54,8 @@ export async function POST(req: NextRequest) {
       staffRow = null;
     }
 
-    try {
-      const { data: pa } = await adminClient
-        .from('platform_admins')
-        .select('user_id, role, email')
-        .eq('user_id', user.id)
-        .maybeSingle();
-      if (pa) isPlatformAdmin = true;
-    } catch {
-      isPlatformAdmin = false;
-    }
-
-    const isPrivilegedStaffOrFounder = Boolean(staffRow || isPlatformAdmin);
+    // Only a currently authorized staff identity receives the additional AAL2 email-change gate.
+    const isPrivilegedStaffOrFounder = await checkIsPlatformAdmin(user.id);
 
     const body = await req.json().catch(() => ({}));
     const validation = validateEmailChangeRequest({
@@ -84,7 +73,7 @@ export async function POST(req: NextRequest) {
           actorUserId: user.id,
           actorEmail: user.email,
           staffId: staffRow?.staff_id || null,
-          roleSlug: staffRow?.role_slug || (isPlatformAdmin ? 'founder' : null),
+          roleSlug: staffRow?.role_slug || null,
           action: 'account_email_change_rejected',
           targetType: 'auth_user',
           targetId: user.id,
@@ -125,7 +114,7 @@ export async function POST(req: NextRequest) {
           actorUserId: user.id,
           actorEmail: user.email,
           staffId: staffRow?.staff_id || null,
-          roleSlug: staffRow?.role_slug || (isPlatformAdmin ? 'founder' : null),
+          roleSlug: staffRow?.role_slug || null,
           action: 'account_email_change_reauth_failed',
           targetType: 'auth_user',
           targetId: user.id,
@@ -158,7 +147,7 @@ export async function POST(req: NextRequest) {
       actorUserId: user.id,
       actorEmail: user.email,
       staffId: staffRow?.staff_id || null,
-      roleSlug: staffRow?.role_slug || (isPlatformAdmin ? 'founder' : null),
+      roleSlug: staffRow?.role_slug || null,
       action: 'account_email_change_initiated',
       targetType: 'auth_user',
       targetId: user.id,
