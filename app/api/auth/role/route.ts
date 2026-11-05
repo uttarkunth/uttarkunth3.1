@@ -19,7 +19,7 @@ export async function GET() {
       adminClient.from('staff_profiles' as any) as any
     )
       .select(
-        'user_id, staff_id, role_slug, role_code, department, status, founder_approved, founder_approved_by, founder_approved_at, agreements_completed, all_agreements_accepted, privacy_notice_accepted, mfa_enrolled, session_revoked_at'
+        'user_id, staff_id, role_slug, role_code, department, status, founder_approved, founder_approved_by, founder_approved_at, agreements_completed, all_agreements_accepted, privacy_notice_accepted, onboarding_completed, mfa_enrolled, session_revoked_at'
       )
       .eq('user_id', user.id)
       .maybeSingle();
@@ -49,7 +49,12 @@ export async function GET() {
       Boolean(row.founder_approved_at) &&
       row.founder_approved_by === user.id &&
       !row.session_revoked_at &&
-      row.agreements_completed !== true;
+      (
+        row.agreements_completed !== true ||
+        row.all_agreements_accepted !== true ||
+        row.privacy_notice_accepted !== true ||
+        row.onboarding_completed !== true
+      );
 
     const staffProfile = {
       staff_id: row.staff_id || null,
@@ -57,7 +62,7 @@ export async function GET() {
       department: row.department || null,
       status: row.status || null,
       founder_approved: row.founder_approved === true,
-      agreements_completed: row.agreements_completed === true || row.all_agreements_accepted === true,
+      agreements_completed: row.agreements_completed === true && row.all_agreements_accepted === true,
       privacy_notice_accepted: row.privacy_notice_accepted === true,
       mfa_enrolled: row.mfa_enrolled === true,
     };
