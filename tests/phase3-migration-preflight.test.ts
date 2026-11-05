@@ -240,8 +240,13 @@ describe('Phase A & B — Database Migration Preflight & Contract Verification',
     assert.ok(founderHelper.includes("sp.staff_id = 'UK-STAFF-2026-0001'"));
     assert.ok(founderHelper.includes('sp.privacy_notice_accepted = true'));
     assert.ok(phase3Sql.includes('REVOKE ALL ON FUNCTION public.is_active_founder() FROM PUBLIC, anon'));
+    const storagePolicyStart = phase3Sql.indexOf(
+      'DROP POLICY IF EXISTS "Sellers can access own verification docs"'
+    );
+    assert.ok(storagePolicyStart >= 0, 'Private storage policy section must exist');
+    const storagePolicySection = phase3Sql.slice(storagePolicyStart);
     assert.equal(
-      phase3Sql.split('public.is_active_founder() AND public.current_session_is_aal2()').length - 1,
+      storagePolicySection.split('public.is_active_founder() AND public.current_session_is_aal2()').length - 1,
       3
     );
     assert.ok(!phase3Sql.includes('public.is_platform_admin() AND public.current_session_is_aal2()'));
