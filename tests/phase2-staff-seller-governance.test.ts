@@ -1173,4 +1173,33 @@ describe('TASK 9 — 12 Strict Verification Scenarios', () => {
     assert.match(onboardingRoute, /Only after every required agreement row has been persisted/);
   });
 
+
+  it('Founder first-login consent is restricted to the provisioned single Founder and records genuine acceptance', () => {
+    const roleRoute = fs.readFileSync(
+      path.join(process.cwd(), 'app', 'api', 'auth', 'role', 'route.ts'),
+      'utf8'
+    );
+    const founderSetupRoute = fs.readFileSync(
+      path.join(process.cwd(), 'app', 'api', 'staff', 'founder-setup', 'route.ts'),
+      'utf8'
+    );
+    const staffLogin = fs.readFileSync(
+      path.join(process.cwd(), 'app', 'staff', 'login', 'page.tsx'),
+      'utf8'
+    );
+
+    assert.match(roleRoute, /row\\.staff_id === 'UK-STAFF-2026-0001'/);
+    assert.match(roleRoute, /row\\.founder_approved_by === user\\.id/);
+    assert.match(roleRoute, /founderCount === 1/);
+    assert.match(roleRoute, /canCompleteFounderSetup/);
+    assert.match(founderSetupRoute, /profile\\.role_slug === 'founder'/);
+    assert.match(founderSetupRoute, /profile\\.staff_id === 'UK-STAFF-2026-0001'/);
+    assert.match(founderSetupRoute, /context\\.user\\.id/);
+    assert.match(founderSetupRoute, /submitted\\.accepted !== true/);
+    assert.match(founderSetupRoute, /body\\?\\.privacy_notice_accepted !== true/);
+    assert.match(founderSetupRoute, /agreements_completed: true/);
+    assert.match(staffLogin, /router\\.replace\\('\\/staff\\/founder-setup'\\)/);
+    assert.match(staffLogin, /if \\(!verifiedTotpFactor\\)/);
+  });
+
 });
