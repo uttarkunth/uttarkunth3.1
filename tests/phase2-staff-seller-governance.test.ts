@@ -1157,4 +1157,20 @@ describe('TASK 9 — 12 Strict Verification Scenarios', () => {
       /department text NOT NULL CHECK \(department IN \('founder_office', 'stays', 'products', 'productions', 'community'\)\)/
     );
   });
+
+  it('Staff onboarding requires explicit privacy consent and all exact-version agreement confirmations', () => {
+    const onboardingRoute = fs.readFileSync(
+      path.join(process.cwd(), 'app', 'api', 'staff', 'onboard', 'route.ts'),
+      'utf8'
+    );
+    assert.match(onboardingRoute, /body\\.privacy_notice_accepted !== true/);
+    assert.match(onboardingRoute, /a\\.accepted === true/);
+    assert.match(onboardingRoute, /submittedVersion !== reqAgr\\.version/);
+    assert.match(onboardingRoute, /submitted\\.document_hash !== canonicalHash/);
+    assert.match(onboardingRoute, /agreements_completed: false/);
+    assert.match(onboardingRoute, /all_agreements_accepted: false/);
+    assert.match(onboardingRoute, /agreements_completed: true/);
+    assert.match(onboardingRoute, /Only after every required agreement row has been persisted/);
+  });
+
 });
