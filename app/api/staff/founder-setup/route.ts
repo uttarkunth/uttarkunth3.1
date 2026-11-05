@@ -80,7 +80,9 @@ export async function GET() {
     return NextResponse.json({
       ok: true,
       alreadyCompleted: context.profile.agreements_completed === true &&
-        context.profile.privacy_notice_accepted === true,
+        context.profile.all_agreements_accepted === true &&
+        context.profile.privacy_notice_accepted === true &&
+        context.profile.onboarding_completed === true,
       staffProfile: {
         staff_id: context.profile.staff_id,
         designation: context.profile.designation,
