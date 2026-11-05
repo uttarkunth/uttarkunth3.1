@@ -19,7 +19,7 @@ export async function GET() {
       adminClient.from('staff_profiles' as any) as any
     )
       .select(
-        'user_id, staff_id, role_slug, role_code, department, status, founder_approved, founder_approved_by, agreements_completed, all_agreements_accepted, privacy_notice_accepted, mfa_enrolled, session_revoked_at'
+        'user_id, staff_id, role_slug, role_code, department, status, founder_approved, founder_approved_by, founder_approved_at, agreements_completed, all_agreements_accepted, privacy_notice_accepted, mfa_enrolled, session_revoked_at'
       )
       .eq('user_id', user.id)
       .maybeSingle();
@@ -46,6 +46,7 @@ export async function GET() {
       row.staff_id === 'UK-STAFF-2026-0001' &&
       row.status === 'active' &&
       row.founder_approved === true &&
+      Boolean(row.founder_approved_at) &&
       row.founder_approved_by === user.id &&
       !row.session_revoked_at &&
       row.agreements_completed !== true;
