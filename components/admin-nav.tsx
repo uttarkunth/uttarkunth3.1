@@ -16,7 +16,6 @@ import {
   Film,
   Heart,
   UserCog,
-  Briefcase,
 } from 'lucide-react';
 
 interface StaffRolePayload {
@@ -24,7 +23,6 @@ interface StaffRolePayload {
   role: string;
   role_title: string;
   department: string;
-  operational_department?: string;
   allowed_modules: string[];
 }
 
@@ -45,32 +43,23 @@ export function AdminNav() {
       });
   }, []);
 
-  const isFounder = staffProfile?.role === 'founder';
-
   const allLinks = [
     {
       href: '/admin/dashboard',
-      label: isFounder ? 'Command Centre' : 'Overview',
+      label: 'Overview',
       icon: Shield,
       active: pathname === '/admin/dashboard' || pathname === '/admin',
       alwaysAllowed: true,
     },
     {
-      href: '/staff',
-      label: 'Staff Portal',
-      icon: Briefcase,
-      active: pathname === '/staff',
-      alwaysAllowed: true,
-    },
-    {
       href: '/admin/staff',
-      label: 'Hiring & Governance',
+      label: 'Staff & Governance',
       icon: UserCog,
       active: pathname === '/admin/staff',
     },
     {
       href: '/admin/properties',
-      label: 'Stays',
+      label: 'Properties',
       icon: Home,
       active: pathname === '/admin/properties',
     },
@@ -100,7 +89,7 @@ export function AdminNav() {
     },
     {
       href: '/admin/settings',
-      label: 'Finance & Agreements',
+      label: 'Agreements',
       icon: Percent,
       active: pathname === '/admin/settings',
     },
@@ -112,7 +101,7 @@ export function AdminNav() {
     },
     {
       href: '/admin/audit',
-      label: 'Audit & Quality',
+      label: 'Audit Log',
       icon: FileText,
       active: pathname === '/admin/audit',
     },
@@ -122,7 +111,7 @@ export function AdminNav() {
   const visibleLinks = allLinks.filter((l) => {
     if (l.alwaysAllowed) return true;
     if (!staffProfile?.allowed_modules || staffProfile.allowed_modules.length === 0) {
-      return false;
+      return true;
     }
     return staffProfile.allowed_modules.includes(l.href);
   });

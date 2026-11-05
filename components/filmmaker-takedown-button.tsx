@@ -67,7 +67,7 @@ export function FilmmakerTakedownButton({
         </p>
       )}
       {!open ? (
-        <button suppressHydrationWarning
+        <button
           type="button"
           onClick={() => setOpen(true)}
           className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-red-50 text-red-800 border border-red-200 rounded-xl text-[11px] font-semibold transition-colors"
@@ -83,7 +83,7 @@ export function FilmmakerTakedownButton({
           <label className="block text-[11px] font-semibold text-charcoal">
             Reason for Takedown / Removal Request *
           </label>
-          <input suppressHydrationWarning
+          <input
             type="text"
             required
             value={reason}
@@ -92,7 +92,7 @@ export function FilmmakerTakedownButton({
             className="w-full px-3 py-1.5 text-xs rounded-lg border border-forest/20"
           />
           <div className="flex items-center gap-2">
-            <button suppressHydrationWarning
+            <button
               type="submit"
               disabled={loading}
               className="inline-flex items-center gap-1 px-3 py-1.5 bg-red-700 hover:bg-red-800 text-white rounded-lg text-[11px] font-semibold"
@@ -100,7 +100,7 @@ export function FilmmakerTakedownButton({
               {loading && <Loader2 className="w-3 h-3 animate-spin" />}
               <span>Submit Takedown Request</span>
             </button>
-            <button suppressHydrationWarning
+            <button
               type="button"
               onClick={() => setOpen(false)}
               className="px-2.5 py-1.5 text-charcoal-muted hover:text-charcoal text-[11px]"

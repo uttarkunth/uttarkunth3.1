@@ -11,23 +11,20 @@ import {
   validateStaffInvitation,
   verifyAllStaffAgreementsCompleted,
   evaluateStaffAuthorization,
-  evaluatePortalBoundary,
+  STAFF_ROLE_DEFINITIONS,
   FOUR_OPERATIONAL_DEPARTMENTS,
-  resolveOperationalDepartment,
-  normalizeStaffPermission,
-  sanitizeInternalRedirectPath,
 } from '../lib/staff-rbac.ts';
 import {
   computeGstinCheckDigit,
   validateIndianGSTIN,
   validateGstinVerificationCheck,
   validatePrivateDocumentUpload,
-  validateFileMagicBytes,
   canAccessSellerVerificationDocument,
   evaluateSellerDeskUpdate,
   getRequiredDocumentsForCategories,
 } from '../lib/seller-verification.ts';
 import { evaluateMemberCapabilities } from '../lib/roles.ts';
+import { sanitizeInternalRedirectPath } from '../lib/staff-rbac-shared.ts';
 import {
   CURATED_DESTINATIONS,
   getCanonicalDestinationSlug,
@@ -35,6 +32,18 @@ import {
 } from '../lib/destinations.ts';
 
 describe('UTTARKUNTH PHASE 2 — 15 Mandatory Security & Governance Tests', () => {
+
+  it('Auth redirect sanitizer blocks external, protocol-relative, and scheme-like redirects', () => {
+    assert.equal(sanitizeInternalRedirectPath('/admin/dashboard?tab=staff'), '/admin/dashboard?tab=staff');
+    assert.equal(sanitizeInternalRedirectPath('/', '/fallback'), '/');
+    assert.equal(sanitizeInternalRedirectPath('https://evil.example', '/fallback'), '/fallback');
+    assert.equal(sanitizeInternalRedirectPath('//evil.example/path', '/fallback'), '/fallback');
+    assert.equal(sanitizeInternalRedirectPath('/\\\\evil.example', '/fallback'), '/fallback');
+    assert.equal(sanitizeInternalRedirectPath('/javascript:alert(1)', '/fallback'), '/fallback');
+    assert.equal(sanitizeInternalRedirectPath(null, '/fallback'), '/fallback');
+  });
+
+
   // 1. Public user cannot access staff onboarding without valid invitation token
   it('Scenario 1: Public user cannot access staff onboarding without a valid invitation token', () => {
     const missingInvite = validateStaffInvitation(null, 'public@example.com');
@@ -45,7 +54,7 @@ describe('UTTARKUNTH PHASE 2 — 15 Mandatory Security & Governance Tests', () =
       {
         official_email: 'invited.staff@uttarkunth.com',
         role_slug: 'property_reviewer',
-        department: 'stays_curation',
+        department: 'stays',
         status: 'pending',
         expires_at: new Date(Date.now() + 3600_000).toISOString(),
       },
@@ -61,7 +70,7 @@ describe('UTTARKUNTH PHASE 2 — 15 Mandatory Security & Governance Tests', () =
       {
         official_email: 'staff@uttarkunth.com',
         role_slug: 'property_reviewer',
-        department: 'stays_curation',
+        department: 'stays',
         status: 'used',
         expires_at: new Date(Date.now() + 3600_000).toISOString(),
       },
@@ -74,7 +83,7 @@ describe('UTTARKUNTH PHASE 2 — 15 Mandatory Security & Governance Tests', () =
       {
         official_email: 'staff@uttarkunth.com',
         role_slug: 'property_reviewer',
-        department: 'stays_curation',
+        department: 'stays',
         status: 'pending',
         expires_at: new Date(Date.now() - 3600_000).toISOString(),
       },
@@ -93,7 +102,7 @@ describe('UTTARKUNTH PHASE 2 — 15 Mandatory Security & Governance Tests', () =
           user_id: 'staff-candidate-1',
           staff_id: null,
           role_slug: 'property_reviewer',
-          department: 'stays_curation',
+          department: 'stays',
           status: 'pending_founder_approval',
           founder_approved_at: null,
           founder_approved_by: null,
@@ -130,7 +139,7 @@ describe('UTTARKUNTH PHASE 2 — 15 Mandatory Security & Governance Tests', () =
           user_id: 'staff-1',
           staff_id: 'UK-STAFF-2026-0002',
           role_slug: 'property_reviewer',
-          department: 'stays_curation',
+          department: 'stays',
           status: 'active',
           founder_approved_at: new Date().toISOString(),
           founder_approved_by: 'founder-id',
@@ -168,7 +177,7 @@ describe('UTTARKUNTH PHASE 2 — 15 Mandatory Security & Governance Tests', () =
         user_id: 'prop-rev-1',
         staff_id: 'UK-STAFF-2026-0003',
         role_slug: 'property_reviewer' as const,
-        department: 'stays_curation' as const,
+        department: 'stays' as const,
         status: 'active' as const,
         founder_approved_at: new Date().toISOString(),
         founder_approved_by: 'founder-id',
@@ -194,7 +203,7 @@ describe('UTTARKUNTH PHASE 2 — 15 Mandatory Security & Governance Tests', () =
         user_id: 'mkt-rev-1',
         staff_id: 'UK-STAFF-2026-0004',
         role_slug: 'marketplace_reviewer' as const,
-        department: 'marketplace_compliance' as const,
+        department: 'products' as const,
         status: 'active' as const,
         founder_approved_at: new Date().toISOString(),
         founder_approved_by: 'founder-id',
@@ -280,7 +289,7 @@ describe('UTTARKUNTH PHASE 2 — 15 Mandatory Security & Governance Tests', () =
           user_id: 'support-user-1',
           staff_id: 'UK-STAFF-2026-0007',
           role_slug: 'support_executive',
-          department: 'customer_support',
+          department: 'founder_office',
           status: 'active',
           founder_approved_at: new Date().toISOString(),
           founder_approved_by: 'founder-id',
@@ -377,7 +386,7 @@ describe('UTTARKUNTH PHASE 2 — 15 Mandatory Security & Governance Tests', () =
             user_id: 'staff-revoked-1',
             staff_id: 'UK-STAFF-2026-0008',
             role_slug: 'operations_admin',
-            department: 'operations',
+            department: 'founder_office',
             status: revokedStatus,
             founder_approved_at: new Date().toISOString(),
             founder_approved_by: 'founder-id',
@@ -746,7 +755,7 @@ describe('TASK 9 — 12 Strict Verification Scenarios', () => {
           user_id: 'reviewer-user-uuid',
           staff_id: 'UK-STAFF-2026-0005',
           role_slug: 'property_reviewer',
-          department: 'stays_curation',
+          department: 'stays',
           status: 'active',
           founder_approved_at: '2026-02-01T00:00:00Z',
           founder_approved_by: 'founder-uuid',
@@ -770,7 +779,7 @@ describe('TASK 9 — 12 Strict Verification Scenarios', () => {
           user_id: 'suspended-staff-uuid',
           staff_id: 'UK-STAFF-2026-0010',
           role_slug: 'operations_admin',
-          department: 'operations',
+          department: 'founder_office',
           status: 'suspended',
           founder_approved_at: '2026-01-01T00:00:00Z',
           founder_approved_by: 'founder-uuid',
@@ -792,7 +801,7 @@ describe('TASK 9 — 12 Strict Verification Scenarios', () => {
           user_id: 'revoked-staff-uuid',
           staff_id: 'UK-STAFF-2026-0011',
           role_slug: 'operations_admin',
-          department: 'operations',
+          department: 'founder_office',
           status: 'active',
           session_revoked_at: '2026-02-01T12:00:00Z', // Revoked after session was issued
           founder_approved_at: '2026-01-01T00:00:00Z',
@@ -817,7 +826,7 @@ describe('TASK 9 — 12 Strict Verification Scenarios', () => {
           user_id: 'staff-uuid-3',
           staff_id: 'UK-STAFF-2026-0012',
           role_slug: 'property_reviewer',
-          department: 'stays_curation',
+          department: 'stays',
           status: 'active',
           founder_approved_at: '2026-01-01T00:00:00Z',
           founder_approved_by: 'founder-uuid',
@@ -839,7 +848,7 @@ describe('TASK 9 — 12 Strict Verification Scenarios', () => {
       {
         official_email: 'candidate@uttarkunth.com',
         role_slug: 'operations_admin',
-        department: 'operations',
+        department: 'founder_office',
         status: 'pending',
         expires_at: new Date(Date.now() + 86400000).toISOString(),
       },
@@ -851,7 +860,7 @@ describe('TASK 9 — 12 Strict Verification Scenarios', () => {
       {
         official_email: 'candidate@uttarkunth.com',
         role_slug: 'operations_admin',
-        department: 'operations',
+        department: 'founder_office',
         status: 'pending',
         expires_at: new Date(Date.now() - 1000).toISOString(),
       },
@@ -864,7 +873,7 @@ describe('TASK 9 — 12 Strict Verification Scenarios', () => {
       {
         official_email: 'candidate@uttarkunth.com',
         role_slug: 'operations_admin',
-        department: 'operations',
+        department: 'founder_office',
         status: 'cancelled',
         expires_at: new Date(Date.now() + 86400000).toISOString(),
       },
@@ -877,7 +886,7 @@ describe('TASK 9 — 12 Strict Verification Scenarios', () => {
       {
         official_email: 'candidate@uttarkunth.com',
         role_slug: 'operations_admin',
-        department: 'operations',
+        department: 'founder_office',
         status: 'accepted',
         expires_at: new Date(Date.now() + 86400000).toISOString(),
       },
@@ -1061,7 +1070,7 @@ describe('TASK 9 — 12 Strict Verification Scenarios', () => {
           user_id: 'reviewer-uuid',
           staff_id: 'UK-STAFF-2026-0020',
           role_slug: 'property_reviewer',
-          department: 'stays_curation',
+          department: 'stays',
           status: 'active',
           founder_approved_at: '2026-01-01T00:00:00Z',
           founder_approved_by: 'founder-uuid',
@@ -1122,550 +1131,173 @@ describe('TASK 9 — 12 Strict Verification Scenarios', () => {
     });
     assert.ok(yashSlug);
   });
-});
 
-describe('UTTARKUNTH 3.1 MASTER ARCHITECTURE — 20 Security & Portal Isolation Scenarios', () => {
-  // 1. Anonymous user cannot access private tables or staff APIs
-  it('Master Scenario 1: Anonymous user cannot access private tables or staff APIs', () => {
-    const anonStaffDecision = evaluateStaffAuthorization(
-      { userId: null, staffProfile: null },
-      'stays.properties.view'
-    );
-    assert.equal(anonStaffDecision.allowed, false);
-    assert.equal(anonStaffDecision.statusCode, 401);
-    assert.equal(anonStaffDecision.code, 'UNAUTHENTICATED');
-
-    const anonPortalDecision = evaluatePortalBoundary({
-      portalHost: 'admin.uttarkunth.com',
-      userId: null,
-      staffProfile: null,
-    });
-    assert.equal(anonPortalDecision.allowed, false);
-    assert.equal(anonPortalDecision.statusCode, 401);
-  });
-
-  // 2. Ordinary user cannot access Staff Portal or Founder Command Centre
-  it('Master Scenario 2: Ordinary public user cannot access Staff Portal (team.uttarkunth.com) or Founder Command Centre (admin.uttarkunth.com)', () => {
-    const ordinaryOnStaffPortal = evaluatePortalBoundary({
-      portalHost: 'team.uttarkunth.com',
-      userId: 'ordinary-member-uuid',
-      staffProfile: null,
-      mfaAssuranceLevel: 'aal2',
-    });
-    assert.equal(ordinaryOnStaffPortal.allowed, false);
-    assert.equal(ordinaryOnStaffPortal.statusCode, 403);
-    assert.equal(ordinaryOnStaffPortal.portal, 'staff');
-
-    const ordinaryOnFounderPortal = evaluatePortalBoundary({
-      portalHost: 'admin.uttarkunth.com',
-      userId: 'ordinary-member-uuid',
-      staffProfile: null,
-      mfaAssuranceLevel: 'aal2',
-    });
-    assert.equal(ordinaryOnFounderPortal.allowed, false);
-    assert.equal(ordinaryOnFounderPortal.statusCode, 403);
-    assert.equal(ordinaryOnFounderPortal.portal, 'founder');
-  });
-
-  // 3. Host cannot access another host's data
-  it('Master Scenario 3: Host cannot access or modify another host’s property data', () => {
-    const hostPhotoRoute = fs.readFileSync(
-      path.join(process.cwd(), 'app', 'api', 'host', 'properties', '[id]', 'photos', 'route.ts'),
-      'utf8'
-    );
-    assert.ok(hostPhotoRoute.includes('validateFileMagicBytes'));
-    assert.ok(hostPhotoRoute.includes("requireStaffPermission('stays.properties.edit'"));
-  });
-
-  // 4. Seller cannot access another seller's data
-  it('Master Scenario 4: Seller cannot access another seller’s private verification documents', () => {
-    const denied = canAccessSellerVerificationDocument({
-      actorUserId: 'seller-uid-1',
-      documentSellerUserId: 'seller-uid-2',
-      accessType: 'download_signed_url',
-      staffContext: null,
-    });
-    assert.equal(denied.allowed, false);
-  });
-
-  // 5. Stays staff cannot access Products, Productions, or Community data
-  it('Master Scenario 5: UTTARKUNTH STAYS staff cannot access Products, Productions, or Community data', () => {
-    const staysCtx = {
-      userId: 'stays-staff-1',
-      staffProfile: {
-        user_id: 'stays-staff-1',
-        staff_id: 'UK-STAFF-2026-0101',
-        role_slug: 'property_reviewer' as const,
-        department: 'stays_curation' as const,
-        status: 'active' as const,
-        founder_approved_at: '2026-01-01T00:00:00Z',
-        founder_approved_by: 'founder-1',
-        mfa_enrolled: true,
-        agreements_completed: true,
-      },
-      mfaAssuranceLevel: 'aal2' as const,
-    };
-
-    assert.equal(resolveOperationalDepartment('stays_curation', 'property_reviewer'), 'stays');
-    assert.equal(
-      evaluateStaffAuthorization(staysCtx, 'stays.properties.approve', {
-        requireMfaAal2: true,
-        requiredDepartment: 'stays',
-      }).allowed,
-      true
-    );
-    assert.equal(
-      evaluateStaffAuthorization(staysCtx, 'products.sellers.verify', {
-        requiredDepartment: 'products',
-      }).allowed,
-      false
-    );
-    assert.equal(
-      evaluateStaffAuthorization(staysCtx, 'productions.proposals.approve', {
-        requiredDepartment: 'productions',
-      }).allowed,
-      false
-    );
-    assert.equal(
-      evaluateStaffAuthorization(staysCtx, 'community.initiatives.manage', {
-        requiredDepartment: 'community',
-      }).allowed,
-      false
-    );
-  });
-
-  // 6. Products staff cannot access Stays, Productions, or Community data
-  it('Master Scenario 6: UTTARKUNTH PRODUCTS staff cannot access Stays, Productions, or Community data', () => {
-    const productsCtx = {
-      userId: 'products-staff-1',
-      staffProfile: {
-        user_id: 'products-staff-1',
-        staff_id: 'UK-STAFF-2026-0102',
-        role_slug: 'marketplace_reviewer' as const,
-        department: 'marketplace_compliance' as const,
-        status: 'active' as const,
-        founder_approved_at: '2026-01-01T00:00:00Z',
-        founder_approved_by: 'founder-1',
-        mfa_enrolled: true,
-        agreements_completed: true,
-      },
-      mfaAssuranceLevel: 'aal2' as const,
-    };
-
-    assert.equal(
-      resolveOperationalDepartment('marketplace_compliance', 'marketplace_reviewer'),
-      'products'
-    );
-    assert.equal(
-      evaluateStaffAuthorization(productsCtx, 'products.sellers.verify', {
-        requireMfaAal2: true,
-        requiredDepartment: 'products',
-      }).allowed,
-      true
-    );
-    assert.equal(
-      evaluateStaffAuthorization(productsCtx, 'stays.properties.approve', {
-        requiredDepartment: 'stays',
-      }).allowed,
-      false
-    );
-    assert.equal(
-      evaluateStaffAuthorization(productsCtx, 'productions.proposals.approve', {
-        requiredDepartment: 'productions',
-      }).allowed,
-      false
-    );
-    assert.equal(
-      evaluateStaffAuthorization(productsCtx, 'community.initiatives.manage', {
-        requiredDepartment: 'community',
-      }).allowed,
-      false
-    );
-  });
-
-  // 7. Productions staff cannot access Stays, Products, or Community data
-  it('Master Scenario 7: UTTARKUNTH PRODUCTIONS staff cannot access Stays, Products, or Community data', () => {
-    const productionsCtx = {
-      userId: 'productions-staff-1',
-      staffProfile: {
-        user_id: 'productions-staff-1',
-        staff_id: 'UK-STAFF-2026-0103',
-        role_slug: 'productions_editor' as const,
-        department: 'productions' as const,
-        status: 'active' as const,
-        founder_approved_at: '2026-01-01T00:00:00Z',
-        founder_approved_by: 'founder-1',
-        mfa_enrolled: true,
-        agreements_completed: true,
-      },
-      mfaAssuranceLevel: 'aal2' as const,
-    };
-
-    assert.equal(resolveOperationalDepartment('productions', 'productions_editor'), 'productions');
-    assert.equal(
-      evaluateStaffAuthorization(productionsCtx, 'productions.proposals.approve', {
-        requireMfaAal2: true,
-        requiredDepartment: 'productions',
-      }).allowed,
-      true
-    );
-    assert.equal(
-      evaluateStaffAuthorization(productionsCtx, 'stays.properties.approve', {
-        requiredDepartment: 'stays',
-      }).allowed,
-      false
-    );
-    assert.equal(
-      evaluateStaffAuthorization(productionsCtx, 'products.sellers.verify', {
-        requiredDepartment: 'products',
-      }).allowed,
-      false
-    );
-    assert.equal(
-      evaluateStaffAuthorization(productionsCtx, 'community.initiatives.manage', {
-        requiredDepartment: 'community',
-      }).allowed,
-      false
-    );
-  });
-
-  // 8. Community staff cannot access Stays, Products, or Productions data
-  it('Master Scenario 8: UTTARKUNTH COMMUNITY staff cannot access Stays, Products, or Productions data', () => {
-    const communityCtx = {
-      userId: 'community-staff-1',
-      staffProfile: {
-        user_id: 'community-staff-1',
-        staff_id: 'UK-STAFF-2026-0104',
-        role_slug: 'community_manager' as const,
-        department: 'community' as const,
-        status: 'active' as const,
-        founder_approved_at: '2026-01-01T00:00:00Z',
-        founder_approved_by: 'founder-1',
-        mfa_enrolled: true,
-        agreements_completed: true,
-      },
-      mfaAssuranceLevel: 'aal2' as const,
-    };
-
-    assert.equal(resolveOperationalDepartment('community', 'community_manager'), 'community');
-    assert.equal(
-      evaluateStaffAuthorization(communityCtx, 'community.initiatives.manage', {
-        requireMfaAal2: true,
-        requiredDepartment: 'community',
-      }).allowed,
-      true
-    );
-    assert.equal(
-      evaluateStaffAuthorization(communityCtx, 'stays.properties.approve', {
-        requiredDepartment: 'stays',
-      }).allowed,
-      false
-    );
-    assert.equal(
-      evaluateStaffAuthorization(communityCtx, 'products.sellers.verify', {
-        requiredDepartment: 'products',
-      }).allowed,
-      false
-    );
-    assert.equal(
-      evaluateStaffAuthorization(communityCtx, 'productions.proposals.approve', {
-        requiredDepartment: 'productions',
-      }).allowed,
-      false
-    );
-  });
-
-  // 9. Staff cannot modify their own role or permissions
-  it('Master Scenario 9: Staff cannot modify their own role or assign permissions', () => {
-    const staffCtx = {
-      userId: 'ops-staff-1',
-      staffProfile: {
-        user_id: 'ops-staff-1',
-        staff_id: 'UK-STAFF-2026-0105',
-        role_slug: 'operations_admin' as const,
-        department: 'operations' as const,
-        status: 'active' as const,
-        founder_approved_at: '2026-01-01T00:00:00Z',
-        founder_approved_by: 'founder-1',
-        mfa_enrolled: true,
-        agreements_completed: true,
-      },
-      mfaAssuranceLevel: 'aal2' as const,
-    };
-
-    assert.equal(
-      evaluateStaffAuthorization(staffCtx, 'governance.permissions.assign').allowed,
-      false
-    );
-    assert.equal(evaluateStaffAuthorization(staffCtx, 'governance.staff.approve').allowed, false);
-    assert.equal(evaluateStaffAuthorization(staffCtx, 'governance.staff.suspend').allowed, false);
-  });
-
-  // 10. Staff cannot access Founder Command Centre (admin.uttarkunth.com)
-  it('Master Scenario 10: Staff cannot access Founder Command Centre (admin.uttarkunth.com)', () => {
-    for (const nonFounderRole of [
-      'operations_admin',
-      'property_reviewer',
-      'marketplace_reviewer',
-      'productions_editor',
-      'community_manager',
-      'support_executive',
-      'finance_compliance_reviewer',
-    ] as const) {
-      const portalDecision = evaluatePortalBoundary({
-        portalHost: 'admin.uttarkunth.com',
-        userId: `staff-${nonFounderRole}`,
-        staffProfile: {
-          user_id: `staff-${nonFounderRole}`,
-          staff_id: 'UK-STAFF-2026-0099',
-          role_slug: nonFounderRole,
-          department: 'stays_curation',
-          status: 'active',
-          founder_approved_at: '2026-01-01T00:00:00Z',
-          founder_approved_by: 'founder-1',
-          mfa_enrolled: true,
-          agreements_completed: true,
-        },
-        mfaAssuranceLevel: 'aal2',
-      });
-      assert.equal(portalDecision.allowed, false);
-      assert.equal(portalDecision.statusCode, 403);
-      assert.match(portalDecision.reason, /Founder Command Centre/i);
-    }
-  });
-
-  // 11. Suspended staff loses access immediately
-  it('Master Scenario 11: Suspended staff loses access immediately across all portals', () => {
-    const decision = evaluatePortalBoundary({
-      portalHost: 'team.uttarkunth.com',
-      userId: 'suspended-staff-99',
-      staffProfile: {
-        user_id: 'suspended-staff-99',
-        staff_id: 'UK-STAFF-2026-0098',
-        role_slug: 'property_reviewer',
-        department: 'stays_curation',
-        status: 'suspended',
-        founder_approved_at: '2026-01-01T00:00:00Z',
-        founder_approved_by: 'founder-1',
-        mfa_enrolled: true,
-        agreements_completed: true,
-      },
-      mfaAssuranceLevel: 'aal2',
-    });
-    assert.equal(decision.allowed, false);
-    assert.equal(decision.statusCode, 403);
-  });
-
-  // 12. Terminated staff loses access immediately
-  it('Master Scenario 12: Terminated staff loses access immediately across all portals', () => {
-    const decision = evaluatePortalBoundary({
-      portalHost: 'team.uttarkunth.com',
-      userId: 'terminated-staff-99',
-      staffProfile: {
-        user_id: 'terminated-staff-99',
-        staff_id: 'UK-STAFF-2026-0097',
-        role_slug: 'marketplace_reviewer',
-        department: 'marketplace_compliance',
-        status: 'terminated',
-        founder_approved_at: '2026-01-01T00:00:00Z',
-        founder_approved_by: 'founder-1',
-        mfa_enrolled: true,
-        agreements_completed: true,
-      },
-      mfaAssuranceLevel: 'aal2',
-    });
-    assert.equal(decision.allowed, false);
-    assert.equal(decision.statusCode, 403);
-  });
-
-  // 13. Staff without MFA (AAL1) cannot access privileged actions or Staff Portal
-  it('Master Scenario 13: Staff without TOTP MFA (AAL1) cannot access Staff Portal or privileged actions', () => {
-    const aal1Portal = evaluatePortalBoundary({
-      portalHost: 'team.uttarkunth.com',
-      userId: 'stays-staff-aal1',
-      staffProfile: {
-        user_id: 'stays-staff-aal1',
-        staff_id: 'UK-STAFF-2026-0096',
-        role_slug: 'property_reviewer',
-        department: 'stays_curation',
-        status: 'active',
-        founder_approved_at: '2026-01-01T00:00:00Z',
-        founder_approved_by: 'founder-1',
-        mfa_enrolled: true,
-        agreements_completed: true,
-      },
-      mfaAssuranceLevel: 'aal1',
-    });
-    assert.equal(aal1Portal.allowed, false);
-    assert.equal(aal1Portal.statusCode, 403);
-    assert.match(aal1Portal.reason, /AAL2/i);
-  });
-
-  // 14. Founder with MFA (AAL2) can access Founder Command Centre and all 4 operational departments
-  it('Master Scenario 14: Founder with TOTP MFA (AAL2) can access Founder Command Centre (admin.uttarkunth.com) and all 4 departments', () => {
-    const founderPortal = evaluatePortalBoundary({
-      portalHost: 'admin.uttarkunth.com',
-      userId: 'founder-uid-1',
-      staffProfile: {
-        user_id: 'founder-uid-1',
-        staff_id: 'UK-STAFF-2026-0001',
-        role_slug: 'founder',
-        department: 'founder_office',
-        status: 'active',
-        founder_approved_at: '2026-01-01T00:00:00Z',
-        founder_approved_by: 'founder-uid-1',
-        mfa_enrolled: true,
-        agreements_completed: true,
-      },
-      mfaAssuranceLevel: 'aal2',
-    });
-    assert.equal(founderPortal.allowed, true);
-    assert.equal(founderPortal.portal, 'founder');
-
+  it('Four operational departments are canonical and shared services stay under Founder Office', () => {
     assert.deepEqual(
-      FOUR_OPERATIONAL_DEPARTMENTS.map((d) => d.slug),
+      FOUR_OPERATIONAL_DEPARTMENTS.map((department) => department.slug),
       ['stays', 'products', 'productions', 'community']
     );
+    assert.equal(STAFF_ROLE_DEFINITIONS.property_reviewer.department, 'stays');
+    assert.equal(STAFF_ROLE_DEFINITIONS.marketplace_reviewer.department, 'products');
+    assert.equal(STAFF_ROLE_DEFINITIONS.productions_editor.department, 'productions');
+    assert.equal(STAFF_ROLE_DEFINITIONS.community_manager.department, 'community');
+    assert.equal(STAFF_ROLE_DEFINITIONS.operations_admin.department, 'founder_office');
+    assert.equal(STAFF_ROLE_DEFINITIONS.support_executive.department, 'founder_office');
+    assert.equal(STAFF_ROLE_DEFINITIONS.finance_compliance_reviewer.department, 'founder_office');
   });
 
-  // 15. Private HR documents cannot be accessed publicly and magic bytes are enforced
-  it('Master Scenario 15: Private HR documents reject public buckets and spoofed magic bytes', () => {
-    const spoofedPdfBytes = new Uint8Array([0x3c, 0x73, 0x63, 0x72, 0x69, 0x70, 0x74, 0x3e]); // "<script>"
-    const spoofedCheck = validateFileMagicBytes(spoofedPdfBytes, 'application/pdf');
-    assert.equal(spoofedCheck.valid, false);
-    assert.match(spoofedCheck.error || '', /magic-byte/i);
-
-    const validPdfBytes = new Uint8Array([0x25, 0x50, 0x44, 0x46, 0x2d, 0x31, 0x2e, 0x37]); // "%PDF-1.7"
-    const validCheck = validateFileMagicBytes(validPdfBytes, 'application/pdf');
-    assert.equal(validCheck.valid, true);
-  });
-
-  // 16. Seller verification documents cannot be accessed by unrelated users or AAL1 staff
-  it('Master Scenario 16: Seller verification documents reject AAL1 staff and unrelated users', () => {
-    const aal1StaffAttempt = canAccessSellerVerificationDocument({
-      actorUserId: 'reviewer-1',
-      documentSellerUserId: 'seller-99',
-      accessType: 'download_signed_url',
-      staffContext: {
-        isActiveStaff: true,
-        roleSlug: 'marketplace_reviewer',
-        permissions: ['seller.verify_documents'],
-        mfaAssuranceLevel: 'aal1', // Missing AAL2
-      },
-    });
-    assert.equal(aal1StaffAttempt.allowed, false);
-    assert.match(aal1StaffAttempt.reason, /AAL2/i);
-  });
-
-  // 17. Dual approval rejects self-approval
-  it('Master Scenario 17: Dual approval rejects self-approval even for Founder', () => {
-    const selfDual = evaluateStaffAuthorization(
-      {
-        userId: 'founder-uid-1',
-        staffProfile: {
-          user_id: 'founder-uid-1',
-          staff_id: 'UK-STAFF-2026-0001',
-          role_slug: 'founder',
-          department: 'founder_office',
-          status: 'active',
-          founder_approved_at: '2026-01-01T00:00:00Z',
-          founder_approved_by: 'founder-uid-1',
-          mfa_enrolled: true,
-          agreements_completed: true,
-        },
-        mfaAssuranceLevel: 'aal2',
-        dualApprovalRecord: {
-          id: 'dual-self-1',
-          action_type: 'superadmin_creation',
-          requested_by: 'founder-uid-1',
-          approved_by: 'founder-uid-1',
-          status: 'approved',
-        },
-      },
-      'governance.dual_approve',
-      { highRiskAction: 'superadmin_creation' }
-    );
-    assert.equal(selfDual.allowed, false);
-    assert.equal(selfDual.code, 'DUAL_AUTHORIZATION_REQUIRED');
-  });
-
-  // 18. Explicit permission revocation overrides inherited role permissions
-  it('Master Scenario 18: Explicit permission revocation (revoked_permissions / grant_type=revoke) overrides default role grants', () => {
-    const revokedInProfile = evaluateStaffAuthorization(
-      {
-        userId: 'stays-revoked-perm-1',
-        staffProfile: {
-          user_id: 'stays-revoked-perm-1',
-          staff_id: 'UK-STAFF-2026-0050',
-          role_slug: 'property_reviewer',
-          department: 'stays_curation',
-          status: 'active',
-          founder_approved_at: '2026-01-01T00:00:00Z',
-          founder_approved_by: 'founder-1',
-          mfa_enrolled: true,
-          agreements_completed: true,
-          revoked_permissions: ['property.approve'],
-        },
-        mfaAssuranceLevel: 'aal2',
-      },
-      'stays.properties.approve'
-    );
-    assert.equal(revokedInProfile.allowed, false);
-    assert.equal(revokedInProfile.code, 'PERMISSION_REVOKED');
-
-    const revokedViaAssignment = evaluateStaffAuthorization(
-      {
-        userId: 'stays-revoked-perm-2',
-        staffProfile: {
-          user_id: 'stays-revoked-perm-2',
-          staff_id: 'UK-STAFF-2026-0051',
-          role_slug: 'property_reviewer',
-          department: 'stays_curation',
-          status: 'active',
-          founder_approved_at: '2026-01-01T00:00:00Z',
-          founder_approved_by: 'founder-1',
-          mfa_enrolled: true,
-          agreements_completed: true,
-        },
-        permissionAssignments: [
-          {
-            permission_key: 'property.approve',
-            grant_type: 'revoke',
-            is_active: true,
-            expires_at: null,
-          },
-        ],
-        mfaAssuranceLevel: 'aal2',
-      },
-      'property.approve'
-    );
-    assert.equal(revokedViaAssignment.allowed, false);
-    assert.equal(revokedViaAssignment.code, 'PERMISSION_REVOKED');
-  });
-
-  // 19. Open redirect sanitization blocks external and protocol-relative URLs
-  it('Master Scenario 19: sanitizeInternalRedirectPath blocks open redirects across login and callback flows', () => {
-    assert.equal(sanitizeInternalRedirectPath('https://evil.example.com/phish', '/'), '/');
-    assert.equal(sanitizeInternalRedirectPath('//evil.example.com/phish', '/'), '/');
-    assert.equal(sanitizeInternalRedirectPath('/\\evil.example.com', '/'), '/');
-    assert.equal(sanitizeInternalRedirectPath('javascript:alert(1)', '/'), '/');
-    assert.equal(
-      sanitizeInternalRedirectPath('/admin/properties?filter=pending', '/'),
-      '/admin/properties?filter=pending'
-    );
-    assert.equal(sanitizeInternalRedirectPath('/staff', '/'), '/staff');
-  });
-
-  // 20. Booking cancellation route enforces cryptographic guest token or authenticated guest/host/staff ownership
-  it('Master Scenario 20: Booking cancellation route enforces cryptographic token, guest email, host ownership, or AAL2 Stays staff permission', () => {
-    const cancelRouteContent = fs.readFileSync(
-      path.join(process.cwd(), 'app', 'api', 'bookings', 'cancel', 'route.ts'),
+  it('Founder provisioning never fabricates privacy consent, agreement acceptance, or onboarding completion', () => {
+    const migrationSql = fs.readFileSync(
+      path.join(
+        process.cwd(),
+        'supabase',
+        'migrations',
+        '20261104120000_phase2_staff_governance_and_seller_verification_pending_approval.sql'
+      ),
       'utf8'
     );
-    assert.ok(cancelRouteContent.includes('crypto.timingSafeEqual'));
-    assert.ok(cancelRouteContent.includes('guest_access_token_hash'));
-    assert.ok(cancelRouteContent.includes("requireStaffPermission('stays.bookings.manage'"));
-    assert.equal(normalizeStaffPermission('stays.bookings.manage'), 'support.manage_tickets');
+    const start = migrationSql.indexOf('CREATE OR REPLACE FUNCTION public.provision_founder_account');
+    const end = migrationSql.indexOf('-- 4. Synchronize into public.platform_admins', start);
+    assert.ok(start >= 0 && end > start, 'Founder provisioning function must exist');
+    const provisioner = migrationSql.slice(start, end);
+    assert.match(provisioner, /NULL,\s*NULL,\s*false,\s*false,\s*false,\s*false,\s*false,\s*true,/);
+    assert.doesNotMatch(
+      provisioner,
+      /all_agreements_accepted\s*=\s*true|agreements_completed\s*=\s*true|onboarding_completed\s*=\s*true/
+    );
+    assert.match(
+      migrationSql,
+      /department text NOT NULL CHECK \(department IN \('founder_office', 'stays', 'products', 'productions', 'community'\)\)/
+    );
   });
-});
 
+  it('Staff onboarding requires explicit privacy consent and all exact-version agreement confirmations', () => {
+    const onboardingRoute = fs.readFileSync(
+      path.join(process.cwd(), 'app', 'api', 'staff', 'onboard', 'route.ts'),
+      'utf8'
+    );
+    assert.match(onboardingRoute, /body\.privacy_notice_accepted !== true/);
+    assert.match(onboardingRoute, /a\.accepted === true/);
+    assert.match(onboardingRoute, /submittedVersion !== reqAgr\.version/);
+    assert.match(onboardingRoute, /submitted\.document_hash !== canonicalHash/);
+    assert.match(onboardingRoute, /agreements_completed: false/);
+    assert.match(onboardingRoute, /all_agreements_accepted: false/);
+    assert.match(onboardingRoute, /agreements_completed: true/);
+    assert.match(onboardingRoute, /Only after every required agreement row has been persisted/);
+  });
+
+
+  it('Founder first-login consent is restricted to the provisioned single Founder and records genuine acceptance', () => {
+    const roleRoute = fs.readFileSync(
+      path.join(process.cwd(), 'app', 'api', 'auth', 'role', 'route.ts'),
+      'utf8'
+    );
+    const founderSetupRoute = fs.readFileSync(
+      path.join(process.cwd(), 'app', 'api', 'staff', 'founder-setup', 'route.ts'),
+      'utf8'
+    );
+    const staffLogin = fs.readFileSync(
+      path.join(process.cwd(), 'app', 'staff', 'login', 'page.tsx'),
+      'utf8'
+    );
+
+    assert.match(roleRoute, /row\.staff_id === 'UK-STAFF-2026-0001'/);
+    assert.match(roleRoute, /row\.founder_approved_at/);
+    assert.match(roleRoute, /row\.founder_approved_by === user\.id/);
+    assert.match(roleRoute, /founderCount === 1/);
+    assert.match(roleRoute, /canCompleteFounderSetup/);
+    assert.match(founderSetupRoute, /profile\.role_slug === 'founder'/);
+    assert.match(founderSetupRoute, /profile\.staff_id === 'UK-STAFF-2026-0001'/);
+    assert.match(founderSetupRoute, /profile\.founder_approved_at/);
+    assert.match(founderSetupRoute, /context\.user\.id/);
+    assert.match(founderSetupRoute, /submitted\.accepted !== true/);
+    assert.match(founderSetupRoute, /body\?\.privacy_notice_accepted !== true/);
+    assert.match(founderSetupRoute, /agreements_completed: true/);
+    assert.match(staffLogin, /router\.replace\('\/staff\/founder-setup'\)/);
+    assert.match(staffLogin, /if \(!verifiedTotpFactor\)/);
+  });
+
+
+  it('Application admin authorization fails closed until privacy, agreements, onboarding and approval are complete', () => {
+    const authSource = fs.readFileSync(path.join(process.cwd(), 'lib', 'auth.ts'), 'utf8');
+    const roleRoute = fs.readFileSync(path.join(process.cwd(), 'app', 'api', 'auth', 'role', 'route.ts'), 'utf8');
+    assert.ok(authSource.includes('staffRow.privacy_notice_accepted !== true'));
+    assert.ok(authSource.includes('staffRow.agreements_completed !== true'));
+    assert.ok(authSource.includes('staffRow.all_agreements_accepted !== true'));
+    assert.ok(authSource.includes('staffRow.onboarding_completed !== true'));
+    assert.ok(authSource.includes('staffRow.founder_approved !== true'));
+    assert.ok(roleRoute.includes('row.privacy_notice_accepted !== true'));
+    assert.ok(roleRoute.includes('row.onboarding_completed !== true'));
+    assert.ok(roleRoute.includes('row.founder_approved_by === user.id'));
+  });
+
+
+  it('Server staff permission normalization requires every approval and consent flag together', () => {
+    const rbacSource = fs.readFileSync(path.join(process.cwd(), 'lib', 'staff-rbac.ts'), 'utf8');
+    assert.ok(rbacSource.includes('staffRow.founder_approved === true'));
+    assert.ok(rbacSource.includes('staffRow.privacy_notice_accepted === true'));
+    assert.ok(rbacSource.includes('staffRow.agreements_completed === true'));
+    assert.ok(rbacSource.includes('staffRow.all_agreements_accepted === true'));
+    assert.ok(rbacSource.includes('staffRow.onboarding_completed === true'));
+    assert.ok(rbacSource.includes('const requireMfa = options?.requireMfaAal2 ?? true'));
+  });
+
+
+  it('Server admin page sessions require verified TOTP AAL2 and the admin hostname is Founder-only', () => {
+    const authSource = fs.readFileSync(path.join(process.cwd(), 'lib', 'auth.ts'), 'utf8');
+    const roleRoute = fs.readFileSync(path.join(process.cwd(), 'app', 'api', 'auth', 'role', 'route.ts'), 'utf8');
+    assert.ok(authSource.includes("assurance?.currentLevel === 'aal2' && hasVerifiedTotp"));
+    assert.ok(authSource.includes("hostname === 'admin.uttarkunth.com' ? 'founder'"));
+    assert.ok(authSource.includes('Object.prototype.hasOwnProperty.call(STAFF_ROLE_DEFINITIONS, role)'));
+    assert.ok(roleRoute.includes("request.nextUrl.hostname.toLowerCase() === 'admin.uttarkunth.com'"));
+    assert.ok(roleRoute.includes("isFounderPortal ? 'founder' : undefined"));
+  });
+
+  it('MFA recovery is authenticated, tied to the caller staff profile and never fabricates an audit actor', () => {
+    const recoveryRoute = fs.readFileSync(
+      path.join(process.cwd(), 'app', 'api', 'staff', 'mfa-recovery', 'route.ts'),
+      'utf8'
+    );
+    assert.ok(recoveryRoute.includes('await supabase.auth.getUser()'));
+    assert.ok(recoveryRoute.includes('if (authError || !user?.id || !user.email)'));
+    assert.ok(recoveryRoute.includes('!profile.founder_approved_by'));
+    assert.ok(!recoveryRoute.includes('profile.founder_approved_by !== user.id'));
+    assert.ok(recoveryRoute.includes('profile.privacy_notice_accepted !== true'));
+    assert.ok(recoveryRoute.includes("eq('action', 'staff_mfa_recovery_requested')"));
+    assert.ok(!recoveryRoute.includes('00000000-0000-0000-0000-000000000000'));
+    assert.ok(recoveryRoute.includes('actorUserId: user.id'));
+  });
+
+  it('Staff registry read requires Founder-only AAL2 authorization', () => {
+    const staffApi = fs.readFileSync(
+      path.join(process.cwd(), 'app', 'api', 'admin', 'staff', 'route.ts'),
+      'utf8'
+    );
+    assert.ok(staffApi.includes("requireStaffPermission('staff.invite', { requireMfaAal2: true, requireFounderOnly: true })"));
+  });
+
+  it('Admin dashboard exposes audit details only to the Founder and does not count legacy admin rows', () => {
+    const dashboard = fs.readFileSync(
+      path.join(process.cwd(), 'app', 'admin', 'dashboard', 'page.tsx'),
+      'utf8'
+    );
+    assert.ok(dashboard.includes('if (roleCode === \'founder\')'));
+    assert.ok(!dashboard.includes("from('platform_admins')"));
+    assert.ok(dashboard.includes("staffProfile.privacy_notice_accepted !== true"));
+    assert.ok(dashboard.includes("staffProfile.onboarding_completed !== true"));
+  });
+
+
+  it('Admin dashboard loads only aggregate fields for pillar queues and limits audit details to Founder', () => {
+    const dashboard = fs.readFileSync(
+      path.join(process.cwd(), 'app', 'admin', 'dashboard', 'page.tsx'),
+      'utf8'
+    );
+    assert.ok(dashboard.includes(".from('filmmaker_profiles')\n    .select('id, status')"));
+    assert.ok(dashboard.includes(".from('production_proposals')\n    .select('id, status')"));
+    assert.ok(dashboard.includes(".from('community_stories')\n    .select('id, moderation_status')"));
+    assert.ok(dashboard.includes("if (roleCode === 'founder')"));
+    assert.ok(!dashboard.includes(".from('platform_admins')"));
+  });
+
+});

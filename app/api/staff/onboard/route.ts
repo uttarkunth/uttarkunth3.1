@@ -7,7 +7,6 @@ import {
   computeDocumentHash,
   validateStaffInvitation,
   verifyAllStaffAgreementsCompleted,
-  resolveOperationalDepartment,
   recordStaffAuditLog,
   type StaffAgreementType,
 } from '@/lib/staff-rbac';
@@ -116,6 +115,13 @@ export async function POST(req: NextRequest) {
     const fullLegalName = String(body.full_legal_name || '').trim();
     const password = String(body.password || '');
 
+    if (body.privacy_notice_accepted !== true) {
+      return NextResponse.json(
+        { ok: false, error: 'You must explicitly accept the staff privacy notice before submitting onboarding.' },
+        { status: 400 }
+      );
+    }
+
     if (!invitationToken || !officialEmail || !fullLegalName) {
       return NextResponse.json(
         {
@@ -178,7 +184,7 @@ export async function POST(req: NextRequest) {
         (a: any) =>
           ((a.agreement_type || a.agreement_code) === reqAgr.type ||
             (a.agreement_type || a.agreement_code) === reqAgr.code) &&
-          a.accepted !== false
+          a.accepted === true
       );
 
       if (!submitted) {
@@ -186,9 +192,16 @@ export async function POST(req: NextRequest) {
         continue;
       }
 
-      // Compute canonical SHA-256 hash strictly from server canonical content
+      // Require the currently published version and its exact server-canonical content hash.
+      const submittedVersion = submitted.agreement_version || submitted.version || '';
+      if (submittedVersion !== reqAgr.version) {
+        return NextResponse.json(
+          { ok: false, error: `Agreement version mismatch for '${reqAgr.type}'. Please reload the current agreement and accept it again.` },
+          { status: 400 }
+        );
+      }
       const canonicalHash = computeDocumentHash(reqAgr.canonicalContent.trim());
-      if (submitted.document_hash && submitted.document_hash !== canonicalHash) {
+      if (submitted.document_hash !== canonicalHash) {
         return NextResponse.json(
           {
             ok: false,
@@ -201,12 +214,13 @@ export async function POST(req: NextRequest) {
       normalizedAcceptances.push({
         agreement_type: reqAgr.type,
         agreement_code: reqAgr.code,
-        agreement_version: submitted.agreement_version || submitted.version || reqAgr.version,
-        version: submitted.version || submitted.agreement_version || reqAgr.version,
+        agreement_version: reqAgr.version,
+        version: reqAgr.version,
         document_hash: canonicalHash,
         accepted_at: nowIso,
-        signed_document_ref:
-          submitted.signed_document_ref || `SIGNED-${reqAgr.type.toUpperCase()}-2026`,
+        // Acceptance is evidenced by the explicit checkbox, server timestamp, IP, and user agent;
+        // do not invent a signed-document reference when no signed file was uploaded.
+        signed_document_ref: submitted.signed_document_ref || null,
         approval_status: 'accepted',
       });
     }
@@ -331,7 +345,7 @@ export async function POST(req: NextRequest) {
       emergency_contact_phone: body.emergency_contact_phone || null,
       designation:
         body.designation || invitationRow.designation || invitationRow.proposed_designation,
-      department: resolveOperationalDepartment(invitationRow.department, roleSlug),
+      department: invitationRow.department,
       role_slug: roleSlug,
       role_code: roleSlug,
       employment_category: invitationRow.employment_category,
@@ -345,9 +359,11 @@ export async function POST(req: NextRequest) {
         body.identity_document_ref || body.identity_document_reference || '',
       identity_document_reference:
         body.identity_document_reference || body.identity_document_ref || '',
-      privacy_notice_accepted_at: body.privacy_notice_accepted ? nowIso : null,
-      agreements_completed: true,
-      all_agreements_accepted: true,
+      privacy_notice_accepted: true,
+      privacy_notice_accepted_at: nowIso,
+      agreements_completed: false,
+      all_agreements_accepted: false,
+      onboarding_completed: false,
       mfa_enrolled: false,
       status: 'pending_founder_approval',
       founder_approved_at: null,
@@ -448,6 +464,33 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // Only after every required agreement row has been persisted may the profile be
+    // marked complete. Partial writes leave agreements_completed=false and cannot be approved.
+    const { data: completedProfile, error: completionErr } = await (
+      adminClient.from('staff_profiles' as any) as any
+    )
+      .update({
+        privacy_notice_accepted: true,
+        privacy_notice_accepted_at: nowIso,
+        all_agreements_accepted: true,
+        agreements_completed: true,
+        onboarding_completed: true,
+        updated_at: nowIso,
+      })
+      .eq('id', createdProfile.id)
+      .eq('user_id', candidateUserId)
+      .eq('status', 'pending_founder_approval')
+      .select()
+      .single();
+
+    if (completionErr || !completedProfile) {
+      console.error('Failed to finalize staff onboarding after agreement persistence:', completionErr);
+      return NextResponse.json(
+        { ok: false, error: 'Agreement records were saved, but onboarding could not be finalized. Please contact the Founder before retrying.' },
+        { status: 500 }
+      );
+    }
+
     await recordStaffAuditLog({
       actorUserId: candidateUserId,
       actorEmail: officialEmail,
@@ -469,7 +512,7 @@ export async function POST(req: NextRequest) {
       status: 'pending_founder_approval',
       message:
         'Onboarding dossier and all 8 Uttarkunth conduct agreements recorded. Your account remains inactive until reviewed and approved by the Founder.',
-      profile: createdProfile,
+      profile: completedProfile,
     });
   } catch (err: any) {
     return NextResponse.json({ ok: false, error: err.message || 'Server error' }, { status: 500 });

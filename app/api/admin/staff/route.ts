@@ -8,7 +8,6 @@ import {
   verifyAllStaffAgreementsCompleted,
   STAFF_ROLE_DEFINITIONS,
   REQUIRED_STAFF_AGREEMENTS,
-  resolveOperationalDepartment,
   type StaffRoleSlug,
   type StaffPermission,
   type HighRiskActionType,
@@ -22,7 +21,7 @@ export const dynamic = 'force-dynamic';
  * and dual-authorisation requests strictly from PostgreSQL.
  */
 export async function GET() {
-  const auth = await requireStaffPermission('staff.invite', { requireMfaAal2: true });
+  const auth = await requireStaffPermission('staff.invite', { requireMfaAal2: true, requireFounderOnly: true });
   if (!auth.authorized || !auth.user) {
     return NextResponse.json(
       { ok: false, code: auth.code, error: auth.error },
@@ -148,12 +147,23 @@ export async function POST(req: NextRequest) {
         );
       }
 
-      const roleSlug = (body.role_slug || body.role_code || 'marketplace_reviewer') as StaffRoleSlug;
-      const roleDef = STAFF_ROLE_DEFINITIONS[roleSlug] || STAFF_ROLE_DEFINITIONS.marketplace_reviewer;
-      const department = resolveOperationalDepartment(
-        body.department || roleDef.department,
-        roleSlug
-      );
+      const roleSlugCandidate = String(body.role_slug || body.role_code || 'marketplace_reviewer').trim();
+      if (!Object.prototype.hasOwnProperty.call(STAFF_ROLE_DEFINITIONS, roleSlugCandidate)) {
+        return NextResponse.json(
+          { ok: false, error: 'A valid Uttarkunth staff role is required.' },
+          { status: 400 }
+        );
+      }
+      const roleSlug = roleSlugCandidate as StaffRoleSlug;
+      const roleDef = STAFF_ROLE_DEFINITIONS[roleSlug];
+      const requestedDepartment = String(body.department || '').trim();
+      if (requestedDepartment && requestedDepartment !== roleDef.department) {
+        return NextResponse.json(
+          { ok: false, error: 'The selected department must match the department assigned to this staff role.' },
+          { status: 400 }
+        );
+      }
+      const department = roleDef.department;
       const designation = String(
         body.designation || body.proposed_designation || roleDef.title
       ).trim();

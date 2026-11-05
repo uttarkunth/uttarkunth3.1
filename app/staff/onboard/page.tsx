@@ -55,7 +55,7 @@ function StaffOnboardingContent() {
 
   // Professional fields
   const [designation, setDesignation] = useState('');
-  const [department, setDepartment] = useState('stays');
+  const [department, setDepartment] = useState('');
   const [employmentCategory, setEmploymentCategory] = useState<
     'full_time' | 'part_time' | 'contractor' | 'advisor' | 'fellow'
   >('full_time');
@@ -359,14 +359,14 @@ function StaffOnboardingContent() {
             Enter the unique, expiring invitation token issued to your official email by the Founder/Superadmin.
           </p>
           <div className="flex flex-col sm:flex-row gap-3">
-            <input suppressHydrationWarning
+            <input
               type="text"
               value={invitationToken}
               onChange={(e) => setInvitationToken(e.target.value)}
               placeholder="Paste single-use invitation token (e.g. UK-INV-2026-...)"
               className="flex-1 bg-[#161513] border border-white/20 px-4 py-3 text-xs font-mono text-[#FBF9F5] focus:outline-none focus:border-[#C55B23]"
             />
-            <button suppressHydrationWarning
+            <button
               type="button"
               onClick={handleValidateToken}
               className="bg-[#C55B23] hover:bg-[#A94918] text-white px-6 py-3 text-xs uppercase tracking-widest font-semibold shrink-0"
@@ -398,7 +398,7 @@ function StaffOnboardingContent() {
                 <label className="block text-[11px] uppercase tracking-widest text-white/70 mb-2">
                   Full Legal Name *
                 </label>
-                <input suppressHydrationWarning
+                <input
                   type="text"
                   required
                   value={fullLegalName}
@@ -411,7 +411,7 @@ function StaffOnboardingContent() {
                 <label className="block text-[11px] uppercase tracking-widest text-white/70 mb-2">
                   Preferred Name
                 </label>
-                <input suppressHydrationWarning
+                <input
                   type="text"
                   value={preferredName}
                   onChange={(e) => setPreferredName(e.target.value)}
@@ -423,7 +423,7 @@ function StaffOnboardingContent() {
                 <label className="block text-[11px] uppercase tracking-widest text-white/70 mb-2">
                   Official Staff Email *
                 </label>
-                <input suppressHydrationWarning
+                <input
                   type="email"
                   required
                   value={officialEmail}
@@ -436,7 +436,7 @@ function StaffOnboardingContent() {
                 <label className="block text-[11px] uppercase tracking-widest text-white/70 mb-2">
                   Personal Email (for HR Record) *
                 </label>
-                <input suppressHydrationWarning
+                <input
                   type="email"
                   required
                   value={personalEmail}
@@ -449,7 +449,7 @@ function StaffOnboardingContent() {
                 <label className="block text-[11px] uppercase tracking-widest text-white/70 mb-2">
                   Verified Mobile Number *
                 </label>
-                <input suppressHydrationWarning
+                <input
                   type="tel"
                   required
                   value={verifiedMobile}
@@ -462,7 +462,7 @@ function StaffOnboardingContent() {
                 <label className="block text-[11px] uppercase tracking-widest text-white/70 mb-2">
                   Create Strong Staff Account Password (Min 12 chars) *
                 </label>
-                <input suppressHydrationWarning
+                <input
                   type="password"
                   required
                   minLength={12}
@@ -476,7 +476,7 @@ function StaffOnboardingContent() {
                 <label className="block text-[11px] uppercase tracking-widest text-white/70 mb-2">
                   Current Residential Address (When Required for HR/Contract Records)
                 </label>
-                <input suppressHydrationWarning
+                <input
                   type="text"
                   value={currentAddress}
                   onChange={(e) => setCurrentAddress(e.target.value)}
@@ -488,7 +488,7 @@ function StaffOnboardingContent() {
                 <label className="block text-[11px] uppercase tracking-widest text-white/70 mb-2">
                   Emergency Contact Name (Optional)
                 </label>
-                <input suppressHydrationWarning
+                <input
                   type="text"
                   value={emergencyContactName}
                   onChange={(e) => setEmergencyContactName(e.target.value)}
@@ -500,7 +500,7 @@ function StaffOnboardingContent() {
                 <label className="block text-[11px] uppercase tracking-widest text-white/70 mb-2">
                   Emergency Contact Phone (Optional)
                 </label>
-                <input suppressHydrationWarning
+                <input
                   type="tel"
                   value={emergencyContactPhone}
                   onChange={(e) => setEmergencyContactPhone(e.target.value)}
@@ -525,7 +525,7 @@ function StaffOnboardingContent() {
                 <label className="block text-[11px] uppercase tracking-widest text-white/70 mb-2">
                   Designation *
                 </label>
-                <input suppressHydrationWarning
+                <input
                   type="text"
                   required
                   value={designation}
@@ -538,25 +538,25 @@ function StaffOnboardingContent() {
                 <label className="block text-[11px] uppercase tracking-widest text-white/70 mb-2">
                   Department *
                 </label>
-                <select suppressHydrationWarning
+                <select
                   value={department}
-                  onChange={(e) => setDepartment(e.target.value)}
-                  className="w-full bg-[#161513] border border-white/20 px-4 py-2.5 text-sm text-[#FBF9F5]"
+                  disabled
+                  aria-readonly="true"
+                  className="w-full bg-[#161513] border border-white/20 px-4 py-2.5 text-sm text-[#FBF9F5] disabled:opacity-80"
                 >
-                  <option value="stays">stays — UTTARKUNTH STAYS (Operational Department 01)</option>
-                  <option value="products">products — UTTARKUNTH PRODUCTS (Operational Department 02)</option>
-                  <option value="productions">productions — UTTARKUNTH PRODUCTIONS (Operational Department 03)</option>
-                  <option value="community">community — UTTARKUNTH COMMUNITY (Operational Department 04)</option>
-                  <option value="founder_office">
-                    founder_office — FOUNDER OFFICE (Central Admin &amp; Shared Functions)
-                  </option>
+                  <option value="">Assigned by invitation</option>
+                  <option value="founder_office">Founder Office — Central Shared Services</option>
+                  <option value="stays">Uttarkunth Stays</option>
+                  <option value="products">Uttarkunth Products</option>
+                  <option value="productions">Uttarkunth Productions</option>
+                  <option value="community">Uttarkunth Community</option>
                 </select>
               </div>
               <div>
                 <label className="block text-[11px] uppercase tracking-widest text-white/70 mb-2">
                   Employment Category *
                 </label>
-                <select suppressHydrationWarning
+                <select
                   value={employmentCategory}
                   onChange={(e) => setEmploymentCategory(e.target.value as any)}
                   className="w-full bg-[#161513] border border-white/20 px-4 py-2.5 text-sm text-[#FBF9F5]"
@@ -572,7 +572,7 @@ function StaffOnboardingContent() {
                 <label className="block text-[11px] uppercase tracking-widest text-white/70 mb-2">
                   Proposed Joining Date *
                 </label>
-                <input suppressHydrationWarning
+                <input
                   type="date"
                   required
                   value={joiningDate}
@@ -584,7 +584,7 @@ function StaffOnboardingContent() {
                 <label className="block text-[11px] uppercase tracking-widest text-white/70 mb-2">
                   Reporting Manager
                 </label>
-                <input suppressHydrationWarning
+                <input
                   type="text"
                   value={reportingManager}
                   onChange={(e) => setReportingManager(e.target.value)}
@@ -595,7 +595,7 @@ function StaffOnboardingContent() {
                 <label className="block text-[11px] uppercase tracking-widest text-white/70 mb-2">
                   Professional Qualifications
                 </label>
-                <input suppressHydrationWarning
+                <input
                   type="text"
                   value={professionalQualifications}
                   onChange={(e) => setProfessionalQualifications(e.target.value)}
@@ -607,7 +607,7 @@ function StaffOnboardingContent() {
                 <label className="block text-[11px] uppercase tracking-widest text-white/70 mb-2">
                   Assigned Responsibilities & Scope Summary *
                 </label>
-                <textarea suppressHydrationWarning
+                <textarea
                   rows={2}
                   required
                   value={assignedResponsibilities}
@@ -620,7 +620,7 @@ function StaffOnboardingContent() {
                 <label className="block text-[11px] uppercase tracking-widest text-white/70 mb-2">
                   Previous Relevant Experience
                 </label>
-                <textarea suppressHydrationWarning
+                <textarea
                   rows={2}
                   value={previousExperience}
                   onChange={(e) => setPreviousExperience(e.target.value)}
@@ -650,7 +650,7 @@ function StaffOnboardingContent() {
                 <label className="block text-[11px] uppercase tracking-widest text-white/70 mb-2">
                   Identity Document Type *
                 </label>
-                <select suppressHydrationWarning
+                <select
                   value={identityDocumentType}
                   onChange={(e) => setIdentityDocumentType(e.target.value as any)}
                   className="w-full bg-[#161513] border border-white/20 px-4 py-2.5 text-sm text-[#FBF9F5]"
@@ -666,7 +666,7 @@ function StaffOnboardingContent() {
                 <label className="block text-[11px] uppercase tracking-widest text-white/70 mb-2">
                   Document Reference / Last 4 Characters *
                 </label>
-                <input suppressHydrationWarning
+                <input
                   type="text"
                   required
                   value={identityDocumentReference}
@@ -679,7 +679,7 @@ function StaffOnboardingContent() {
                 <label className="block text-[11px] uppercase tracking-widest text-white/70 mb-2">
                   Identity Verification Document (Private HR Storage)
                 </label>
-                <input suppressHydrationWarning
+                <input
                   type="file"
                   accept=".pdf,.jpg,.jpeg,.png,.webp"
                   onChange={(e) => setIdentityFile(e.target.files?.[0] || null)}
@@ -690,7 +690,7 @@ function StaffOnboardingContent() {
                 <label className="block text-[11px] uppercase tracking-widest text-white/70 mb-2">
                   Signed Appointment / Contractor Record (Private HR Storage)
                 </label>
-                <input suppressHydrationWarning
+                <input
                   type="file"
                   accept=".pdf,.jpg,.jpeg,.png,.webp"
                   onChange={(e) => setContractFile(e.target.files?.[0] || null)}
@@ -708,7 +708,7 @@ function StaffOnboardingContent() {
                 Uttarkunth collects personal, professional, and identity verification records strictly for legitimate employment, contractor governance, access control, and statutory compliance purposes. Aadhaar is never required as a default document. All uploaded HR records are stored in the private <code className="text-[#E07A43]">staff-hr-docs</code> bucket accessible solely to the Founder and explicitly authorised HR/compliance personnel.
               </p>
               <label className="flex items-center gap-2.5 pt-2 cursor-pointer text-[#FBF9F5]">
-                <input suppressHydrationWarning
+                <input
                   type="checkbox"
                   checked={privacyNoticeAccepted}
                   onChange={(e) => setPrivacyNoticeAccepted(e.target.checked)}
@@ -760,7 +760,7 @@ function StaffOnboardingContent() {
                         </span>
                         <h3 className="text-sm font-semibold text-[#FBF9F5]">{ag.title}</h3>
                       </div>
-                      <button suppressHydrationWarning
+                      <button
                         type="button"
                         onClick={() =>
                           setActiveAgreementModal(activeAgreementModal === ag.code ? null : ag.code)
@@ -782,7 +782,7 @@ function StaffOnboardingContent() {
 
                     <div className="flex items-center justify-between pt-2 border-t border-white/10">
                       <label className="flex items-center gap-2 text-xs cursor-pointer">
-                        <input suppressHydrationWarning
+                        <input
                           type="checkbox"
                           checked={isAccepted}
                           onChange={() => toggleAgreementAcceptance(ag.code)}
@@ -817,7 +817,7 @@ function StaffOnboardingContent() {
                 Submitting this form does not self-activate staff access. The Founder must review your dossier and issue your immutable Staff ID (<code className="text-[#E07A43]">UK-STAFF-2026-XXXX</code>).
               </p>
             </div>
-            <button suppressHydrationWarning
+            <button
               type="submit"
               disabled={submitting || !allAgreementsAccepted || !privacyNoticeAccepted}
               className="bg-[#C55B23] hover:bg-[#A94918] text-white px-8 py-4 text-xs uppercase tracking-[0.2em] font-semibold transition-colors disabled:opacity-40 shrink-0"

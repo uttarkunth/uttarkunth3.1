@@ -173,7 +173,7 @@ export function ProductionsModerationClient({ initialProposals, initialProfiles 
     <div className="space-y-6">
       {/* Tab Switcher */}
       <div className="flex items-center gap-2 border-b border-forest/15 pb-2">
-        <button suppressHydrationWarning
+        <button
           onClick={() => setActiveTab('proposals')}
           className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all ${
             activeTab === 'proposals'
@@ -185,7 +185,7 @@ export function ProductionsModerationClient({ initialProposals, initialProfiles 
           <span>Film Proposals ({proposals.length})</span>
         </button>
 
-        <button suppressHydrationWarning
+        <button
           onClick={() => setActiveTab('profiles')}
           className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all ${
             activeTab === 'profiles'
@@ -201,7 +201,7 @@ export function ProductionsModerationClient({ initialProposals, initialProfiles 
       {feedback && (
         <div className="p-3 bg-forest/10 border border-forest/20 rounded-xl text-xs font-semibold text-forest flex items-center justify-between">
           <span>{feedback}</span>
-          <button suppressHydrationWarning onClick={() => setFeedback(null)} className="text-charcoal-muted hover:text-forest">×</button>
+          <button onClick={() => setFeedback(null)} className="text-charcoal-muted hover:text-forest">×</button>
         </div>
       )}
 
@@ -337,7 +337,7 @@ export function ProductionsModerationClient({ initialProposals, initialProfiles 
                     <label className="text-xs font-semibold text-charcoal block">
                       Editorial Review Notes (Visible to Filmmaker)
                     </label>
-                    <textarea suppressHydrationWarning
+                    <textarea
                       rows={3}
                       value={adminNotes}
                       onChange={(e) => setAdminNotes(e.target.value)}
@@ -347,7 +347,7 @@ export function ProductionsModerationClient({ initialProposals, initialProfiles 
                   </div>
 
                   <div className="flex flex-wrap items-center gap-3">
-                    <button suppressHydrationWarning
+                    <button
                       type="button"
                       disabled={actionLoading}
                       onClick={() => handleProposalAction(selectedProposal.id, 'approve')}
@@ -357,7 +357,7 @@ export function ProductionsModerationClient({ initialProposals, initialProfiles 
                       <span>Approve Proposal</span>
                     </button>
 
-                    <button suppressHydrationWarning
+                    <button
                       type="button"
                       disabled={actionLoading}
                       onClick={() => handleProposalAction(selectedProposal.id, 'request_revision')}
@@ -367,7 +367,7 @@ export function ProductionsModerationClient({ initialProposals, initialProfiles 
                       <span>Request Revisions</span>
                     </button>
 
-                    <button suppressHydrationWarning
+                    <button
                       type="button"
                       disabled={actionLoading}
                       onClick={() => handleProposalAction(selectedProposal.id, 'reject')}
@@ -377,7 +377,7 @@ export function ProductionsModerationClient({ initialProposals, initialProfiles 
                       <span>Decline</span>
                     </button>
 
-                    <button suppressHydrationWarning
+                    <button
                       type="button"
                       disabled={actionLoading}
                       onClick={() => handleProposalAction(selectedProposal.id, 'approve_takedown')}
@@ -437,14 +437,14 @@ export function ProductionsModerationClient({ initialProposals, initialProfiles 
                   </div>
 
                   <div className="flex items-center gap-2 flex-shrink-0">
-                    <button suppressHydrationWarning
+                    <button
                       disabled={actionLoading}
                       onClick={() => handleProfileStatus(prof.id, 'approve')}
                       className="px-3 py-1.5 bg-green-700 hover:bg-green-800 text-white text-[11px] font-semibold rounded-lg transition-colors"
                     >
                       Approve
                     </button>
-                    <button suppressHydrationWarning
+                    <button
                       disabled={actionLoading}
                       onClick={() => handleProfileStatus(prof.id, 'reject')}
                       className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-[11px] font-semibold rounded-lg transition-colors"

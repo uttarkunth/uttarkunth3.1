@@ -12,25 +12,20 @@ export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
-    const auth = await requireStaffPermission('seller.verify_documents', {
-      requireMfaAal2: true,
-      requiredDepartment: 'products',
-    });
-    const fallbackAuth = !auth.authorized
-      ? await requireStaffPermission('seller.approve', {
-          requireMfaAal2: true,
-          requiredDepartment: 'products',
-        })
-      : auth;
+    const verifierAuth = await requireStaffPermission('seller.verify_documents', { requireMfaAal2: true });
+    const approverAuth = verifierAuth.authorized
+      ? verifierAuth
+      : await requireStaffPermission('seller.approve', { requireMfaAal2: true });
+    const canViewVerificationDocuments = verifierAuth.authorized;
 
-    if (!fallbackAuth.authorized || !fallbackAuth.user) {
+    if (!approverAuth.authorized || !approverAuth.user) {
       return NextResponse.json(
         {
           ok: false,
-          code: fallbackAuth.code,
-          error: fallbackAuth.error || 'Forbidden: Marketplace Reviewer or Compliance Reviewer permission required.',
+          code: approverAuth.code,
+          error: approverAuth.error || 'Forbidden: Seller review permission and TOTP MFA (AAL2) are required.',
         },
-        { status: fallbackAuth.status }
+        { status: approverAuth.status }
       );
     }
 
@@ -52,25 +47,27 @@ export async function GET() {
       .order('created_at', { ascending: false })
       .limit(50);
 
-    // Fetch seller verification documents and GST checks if tables are present
+    // Private verification documents are returned only to explicitly authorized document reviewers.
     let verificationDocuments: any[] = [];
     let gstVerificationChecks: any[] = [];
-    try {
-      const { data: docs } = await (adminClient.from('seller_verification_documents' as any) as any)
-        .select('*')
-        .order('created_at', { ascending: false });
-      verificationDocuments = docs || [];
-    } catch {
-      verificationDocuments = [];
-    }
+    if (canViewVerificationDocuments) {
+      try {
+        const { data: docs } = await (adminClient.from('seller_verification_documents' as any) as any)
+          .select('*')
+          .order('created_at', { ascending: false });
+        verificationDocuments = docs || [];
+      } catch {
+        verificationDocuments = [];
+      }
 
-    try {
-      const { data: checks } = await (adminClient.from('seller_verification_checks' as any) as any)
-        .select('*')
-        .order('verification_date', { ascending: false });
-      gstVerificationChecks = checks || [];
-    } catch {
-      gstVerificationChecks = [];
+      try {
+        const { data: checks } = await (adminClient.from('seller_verification_checks' as any) as any)
+          .select('*')
+          .order('verification_date', { ascending: false });
+        gstVerificationChecks = checks || [];
+      } catch {
+        gstVerificationChecks = [];
+      }
     }
 
     return NextResponse.json({

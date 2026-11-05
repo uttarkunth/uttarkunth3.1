@@ -148,7 +148,7 @@ export default async function AestheticPreviewPage() {
                 href="/about"
                 className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-ukorange hover:bg-ukorange-hover text-white text-xs font-semibold uppercase tracking-wider transition-all"
               >
-                <span>Read the Founder's Story</span>
+                <span>Read the Founder&apos;s Story</span>
                 <ArrowRight className="w-4 h-4" />
               </Link>
             </div>
