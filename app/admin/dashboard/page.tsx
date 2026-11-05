@@ -73,7 +73,7 @@ export default async function AdminDashboardPage() {
   // 1. Properties & Staged Updates
   const { data: properties } = await adminClient
     .from('properties')
-    .select('id, name, moderation_status, published, pending_changes, host_id, created_at');
+    .select('id, moderation_status, pending_changes, host_id');
   const propList = properties || [];
   const pendingModeration = propList.filter((p) => p.moderation_status === 'pending');
   const stagedUpdates = propList.filter(
@@ -85,7 +85,7 @@ export default async function AdminDashboardPage() {
   // 2. Stay Bookings
   const { data: bookings } = await adminClient
     .from('stay_bookings')
-    .select('id, booking_reference, check_in, check_out, status, total_estimate, created_at')
+    .select('id, status')
     .order('created_at', { ascending: false });
   const bookingList = bookings || [];
   const pendingBookings = bookingList.filter((b) => b.status === 'pending');
@@ -94,39 +94,39 @@ export default async function AdminDashboardPage() {
   // 3. Sellers & Products
   const { data: sellers } = await adminClient
     .from('sellers')
-    .select('user_id, business_name, status, created_at');
+    .select('user_id, status');
   const sellerList: any[] = sellers || [];
   const pendingSellers = sellerList.filter((s) => s.status === 'pending');
 
   const { data: products } = await adminClient
     .from('products')
-    .select('id, title, moderation_status, created_at');
+    .select('id, moderation_status');
   const productList: any[] = products || [];
   const pendingProducts = productList.filter((p) => p.moderation_status === 'pending');
 
   // 4. Productions (Filmmakers & Proposals)
   const { data: filmmakers } = await adminClient
     .from('filmmaker_profiles')
-    .select('*');
+    .select('id, status');
   const filmmakerList: any[] = filmmakers || [];
   const pendingFilmmakers = filmmakerList.filter((f) => f.status === 'pending');
 
   const { data: proposals } = await adminClient
     .from('production_proposals')
-    .select('*');
+    .select('id, status');
   const proposalList: any[] = proposals || [];
   const pendingProposals = proposalList.filter((p) => p.status === 'pending');
 
   // 5. Community Submissions (Stories & Participations)
   const { data: stories } = await adminClient
     .from('community_stories')
-    .select('*');
+    .select('id, moderation_status');
   const storyList: any[] = stories || [];
   const pendingStories = storyList.filter((s) => s.moderation_status === 'pending');
 
   const { data: participations } = await adminClient
     .from('community_participations')
-    .select('*');
+    .select('id, status');
   const partList: any[] = participations || [];
   const pendingParticipations = partList.filter((p) => p.status === 'pending');
 
