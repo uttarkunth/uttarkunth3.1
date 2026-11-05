@@ -3,11 +3,13 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { formatINR } from '@/lib/utils';
-import { DIRECT_HOST_PAYMENT_NOTICE } from '@/lib/host';
 import {
   Inbox, CheckCircle2, XCircle, Clock, Calendar, Users,
   Phone, Mail, MapPin, Sparkles, AlertCircle, MessageSquare, Filter
 } from 'lucide-react';
+
+const DIRECT_HOST_PAYMENT_NOTICE =
+  'No online payment is currently collected by Uttarkunth. Guests pay their hosts directly at the property.';
 
 interface Booking {
   id: string;
