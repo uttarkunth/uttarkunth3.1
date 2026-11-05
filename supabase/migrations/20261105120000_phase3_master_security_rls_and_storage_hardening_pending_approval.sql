@@ -15,13 +15,18 @@ ALTER TABLE public.property_hosts
   ADD COLUMN IF NOT EXISTS status text NOT NULL DEFAULT 'active'
   CHECK (status IN ('active', 'revoked', 'inactive'));
 
-CREATE OR REPLACE FUNCTION public.is_property_host(p_property_id uuid)
+CREATE OR REPLACE FUNCTION public.is_property_host(
+  p_property_id uuid,
+  p_user_id uuid DEFAULT auth.uid()
+)
 RETURNS boolean
 LANGUAGE sql
 STABLE
 SECURITY DEFINER
 SET search_path = public
-AS $
+AS $func$
+  -- p_user_id remains for compatibility but is deliberately ignored.
+  -- A caller can only inspect their own host assignment through auth.uid().
   SELECT CASE
     WHEN p_property_id IS NULL OR auth.uid() IS NULL THEN false
     ELSE EXISTS (
@@ -37,26 +42,26 @@ AS $
         AND COALESCE(ph.status, 'active') = 'active'
     )
   END;
-$;
+$func$;
 
--- Identity is always derived from auth.uid(); callers cannot probe another user's host access.
-REVOKE ALL ON FUNCTION public.is_property_host(uuid) FROM PUBLIC, anon;
-GRANT EXECUTE ON FUNCTION public.is_property_host(uuid) TO authenticated, service_role;
+REVOKE ALL ON FUNCTION public.is_property_host(uuid, uuid) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.is_property_host(uuid, uuid) TO authenticated, service_role;
+COMMENT ON FUNCTION public.is_property_host(uuid, uuid) IS
+  'Checks the current JWT user only. The retained p_user_id parameter is ignored for backwards compatibility.';
 
--- ============================================================================
 -- 2. TOTP MFA ASSURANCE LEVEL (AAL2) HELPER FUNCTION
 -- ============================================================================
 CREATE OR REPLACE FUNCTION public.current_session_is_aal2()
 RETURNS boolean
 LANGUAGE sql
 STABLE
-SECURITY DEFINER
+SECURITY INVOKER
 SET search_path = public
-AS $$
+AS $func$
   SELECT COALESCE(auth.jwt()->>'aal', '') = 'aal2';
-$$;
+$func$;
 
-REVOKE ALL ON FUNCTION public.current_session_is_aal2() FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.current_session_is_aal2() FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.current_session_is_aal2() TO authenticated, service_role;
 
 -- ============================================================================
@@ -78,20 +83,24 @@ LANGUAGE sql
 STABLE
 SECURITY DEFINER
 SET search_path = public
-AS $
+AS $func$
   SELECT p_user_id IS NOT NULL AND EXISTS (
     SELECT 1
     FROM public.staff_profiles sp
     WHERE sp.user_id = p_user_id
       AND sp.status = 'active'
       AND sp.session_revoked_at IS NULL
+      AND sp.founder_approved = true
       AND sp.founder_approved_at IS NOT NULL
       AND sp.founder_approved_by IS NOT NULL
       AND sp.staff_id IS NOT NULL
+      AND sp.role_slug IS NOT NULL
+      AND sp.privacy_notice_accepted = true
       AND COALESCE(sp.agreements_completed, false) = true
       AND COALESCE(sp.all_agreements_accepted, false) = true
+      AND COALESCE(sp.onboarding_completed, false) = true
   );
-$;
+$func$;
 
 REVOKE ALL ON FUNCTION public.is_platform_admin_for_user(uuid) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.is_platform_admin_for_user(uuid) TO service_role;
@@ -109,7 +118,8 @@ BEGIN
   IF v_uid IS NULL THEN
     RETURN false;
   END IF;
-  RETURN public.is_platform_admin_for_user(v_uid);
+  RETURN public.is_platform_admin_for_user(v_uid)
+    AND public.current_session_is_aal2();
 END;
 $$;
 
@@ -123,9 +133,9 @@ CREATE OR REPLACE FUNCTION public.is_active_founder()
 RETURNS boolean
 LANGUAGE sql
 STABLE
-SECURITY DEFINER
+SECURITY INVOKER
 SET search_path = public
-AS $
+AS $func$
   SELECT auth.uid() IS NOT NULL AND EXISTS (
     SELECT 1
     FROM public.staff_profiles sp
@@ -133,13 +143,16 @@ AS $
       AND sp.role_slug = 'founder'
       AND sp.status = 'active'
       AND sp.session_revoked_at IS NULL
+      AND sp.founder_approved = true
       AND sp.founder_approved_at IS NOT NULL
       AND sp.founder_approved_by IS NOT NULL
       AND sp.staff_id = 'UK-STAFF-2026-0001'
+      AND sp.privacy_notice_accepted = true
       AND COALESCE(sp.agreements_completed, false) = true
       AND COALESCE(sp.all_agreements_accepted, false) = true
+      AND COALESCE(sp.onboarding_completed, false) = true
   );
-$;
+$func$;
 
 REVOKE ALL ON FUNCTION public.is_active_founder() FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.is_active_founder() TO authenticated, service_role;
@@ -189,12 +202,12 @@ CREATE POLICY "Hosts and co-hosts manage their properties"
   TO authenticated
   USING (
     host_id = auth.uid()
-    OR public.is_property_host(id)
+    OR public.is_property_host(id, auth.uid())
     OR public.is_platform_admin()
   )
   WITH CHECK (
     host_id = auth.uid()
-    OR public.is_property_host(id)
+    OR public.is_property_host(id, auth.uid())
     OR public.is_platform_admin()
   );
 
@@ -223,11 +236,11 @@ CREATE POLICY "Hosts and co-hosts manage room units for their properties"
   FOR ALL
   TO authenticated
   USING (
-    public.is_property_host(property_id)
+    public.is_property_host(property_id, auth.uid())
     OR public.is_platform_admin()
   )
   WITH CHECK (
-    public.is_property_host(property_id)
+    public.is_property_host(property_id, auth.uid())
     OR public.is_platform_admin()
   );
 
@@ -242,7 +255,7 @@ CREATE POLICY "Authorized hosts and admins can view availability blocks"
       SELECT 1
       FROM public.room_units r
       WHERE r.id = room_availability_blocks.room_unit_id
-        AND public.is_property_host(r.property_id)
+        AND public.is_property_host(r.property_id, auth.uid())
     )
   );
 
