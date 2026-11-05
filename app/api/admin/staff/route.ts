@@ -21,7 +21,7 @@ export const dynamic = 'force-dynamic';
  * and dual-authorisation requests strictly from PostgreSQL.
  */
 export async function GET() {
-  const auth = await requireStaffPermission('staff.invite', { requireMfaAal2: false });
+  const auth = await requireStaffPermission('staff.invite', { requireMfaAal2: true, requireFounderOnly: true });
   if (!auth.authorized || !auth.user) {
     return NextResponse.json(
       { ok: false, code: auth.code, error: auth.error },
