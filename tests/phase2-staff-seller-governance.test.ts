@@ -1218,4 +1218,15 @@ describe('TASK 9 — 12 Strict Verification Scenarios', () => {
     assert.ok(roleRoute.includes('row.founder_approved_by === user.id'));
   });
 
+
+  it('Server staff permission normalization requires every approval and consent flag together', () => {
+    const rbacSource = fs.readFileSync(path.join(process.cwd(), 'lib', 'staff-rbac.ts'), 'utf8');
+    assert.ok(rbacSource.includes('staffRow.founder_approved === true'));
+    assert.ok(rbacSource.includes('staffRow.privacy_notice_accepted === true'));
+    assert.ok(rbacSource.includes('staffRow.agreements_completed === true'));
+    assert.ok(rbacSource.includes('staffRow.all_agreements_accepted === true'));
+    assert.ok(rbacSource.includes('staffRow.onboarding_completed === true'));
+    assert.ok(rbacSource.includes('const requireMfa = options?.requireMfaAal2 ?? true'));
+  });
+
 });
