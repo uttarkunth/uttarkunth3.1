@@ -2,12 +2,13 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
-import { CheckCircle2, AlertCircle, Save, Loader2, User, Phone, MapPin } from 'lucide-react';
+import { CheckCircle2, AlertCircle, Save, Loader2, User, Phone, MapPin, Home } from 'lucide-react';
 
 interface ProfileFormProps {
   initialFullName: string;
+  initialPreferredName?: string;
   initialPhone: string;
+  initialAddress?: string;
   initialLocation: string;
   initialBio: string;
   initialInterests: string[];
@@ -24,14 +25,18 @@ const MOUNTAIN_INTEREST_OPTIONS = [
 
 export function ProfileForm({
   initialFullName,
+  initialPreferredName = '',
   initialPhone,
+  initialAddress = '',
   initialLocation,
   initialBio,
   initialInterests,
 }: ProfileFormProps) {
   const router = useRouter();
   const [fullName, setFullName] = useState(initialFullName);
+  const [preferredName, setPreferredName] = useState(initialPreferredName || initialFullName);
   const [phone, setPhone] = useState(initialPhone);
+  const [address, setAddress] = useState(initialAddress);
   const [location, setLocation] = useState(initialLocation);
   const [bio, setBio] = useState(initialBio);
   const [interests, setInterests] = useState<string[]>(initialInterests || []);
@@ -52,20 +57,25 @@ export function ProfileForm({
     setMessage(null);
 
     try {
-      const supabase = createClient();
-      const { data, error } = await supabase.auth.updateUser({
-        data: {
+      const res = await fetch('/api/account/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
           full_name: fullName.trim(),
+          preferred_name: preferredName.trim() || fullName.trim(),
           phone: phone.trim(),
+          address: address.trim(),
           location: location.trim(),
           bio: bio.trim(),
           mountain_interests: interests,
-        },
+        }),
       });
+      const data = await res.json();
+      if (!res.ok || !data.ok) {
+        throw new Error(data.error || 'Failed to update profile.');
+      }
 
-      if (error) throw error;
-
-      setMessage({ type: 'success', text: 'Profile details saved successfully.' });
+      setMessage({ type: 'success', text: 'Profile details saved to your Uttarkunth Member record.' });
       router.refresh();
     } catch (err: any) {
       setMessage({ type: 'error', text: err.message || 'Failed to update profile.' });
@@ -96,7 +106,7 @@ export function ProfileForm({
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label className="block text-xs font-semibold text-charcoal-muted mb-1.5">
-            Full Name
+            Full Legal / Display Name *
           </label>
           <div className="relative">
             <User className="w-4 h-4 text-charcoal-muted absolute left-3 top-3" />
@@ -113,7 +123,23 @@ export function ProfileForm({
 
         <div>
           <label className="block text-xs font-semibold text-charcoal-muted mb-1.5">
-            Phone / Contact Number
+            Preferred Name
+          </label>
+          <div className="relative">
+            <User className="w-4 h-4 text-charcoal-muted absolute left-3 top-3" />
+            <input
+              type="text"
+              value={preferredName}
+              onChange={(e) => setPreferredName(e.target.value)}
+              className="w-full pl-9 pr-3 py-2 text-xs bg-ivory-warm border border-forest/20 rounded-xl focus:ring-2 focus:ring-forest focus:outline-none"
+              placeholder="Optional preferred name"
+            />
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-xs font-semibold text-charcoal-muted mb-1.5">
+            Phone / Contact Number (Private)
           </label>
           <div className="relative">
             <Phone className="w-4 h-4 text-charcoal-muted absolute left-3 top-3" />
@@ -126,20 +152,36 @@ export function ProfileForm({
             />
           </div>
         </div>
+
+        <div>
+          <label className="block text-xs font-semibold text-charcoal-muted mb-1.5">
+            Home Base / Region
+          </label>
+          <div className="relative">
+            <MapPin className="w-4 h-4 text-charcoal-muted absolute left-3 top-3" />
+            <input
+              type="text"
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+              className="w-full pl-9 pr-3 py-2 text-xs bg-ivory-warm border border-forest/20 rounded-xl focus:ring-2 focus:ring-forest focus:outline-none"
+              placeholder="e.g. Kullu, Himachal Pradesh or New Delhi"
+            />
+          </div>
+        </div>
       </div>
 
       <div>
         <label className="block text-xs font-semibold text-charcoal-muted mb-1.5">
-          Home Base / Region
+          Residential / Delivery Address (Private — never exposed publicly)
         </label>
         <div className="relative">
-          <MapPin className="w-4 h-4 text-charcoal-muted absolute left-3 top-3" />
+          <Home className="w-4 h-4 text-charcoal-muted absolute left-3 top-3" />
           <input
             type="text"
-            value={location}
-            onChange={(e) => setLocation(e.target.value)}
+            value={address}
+            onChange={(e) => setAddress(e.target.value)}
             className="w-full pl-9 pr-3 py-2 text-xs bg-ivory-warm border border-forest/20 rounded-xl focus:ring-2 focus:ring-forest focus:outline-none"
-            placeholder="e.g. Kullu, Himachal Pradesh or New Delhi"
+            placeholder="Street, Village/Town, District, State, PIN"
           />
         </div>
       </div>
