@@ -39,7 +39,7 @@ export function AestheticBentoGrid({ properties }: BentoGridProps) {
 
         <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
           {moods.map((mood) => (
-            <button
+            <button suppressHydrationWarning
               key={mood.id}
               onClick={() => setSelectedMood(mood.id)}
               className={`px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1.5 ${
@@ -155,7 +155,7 @@ export function AestheticBentoGrid({ properties }: BentoGridProps) {
               <div className={`w-1.5 bg-ukorange rounded-full transition-all ${isPlayingSound ? 'h-3 animate-bounce' : 'h-2'}`} />
             </div>
 
-            <button
+            <button suppressHydrationWarning
               onClick={() => setIsPlayingSound(!isPlayingSound)}
               className="w-10 h-10 rounded-full bg-forest text-ivory flex items-center justify-center hover:bg-forest-hover transition-transform hover:scale-105 shadow-sm"
               aria-label="Toggle Soundscape"

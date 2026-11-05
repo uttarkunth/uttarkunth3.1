@@ -145,7 +145,7 @@ export function CommunityParticipationForm({ initialEmail = '', isLoggedIn, isDb
           >
             View in My Community Workspace
           </Link>
-          <button
+          <button suppressHydrationWarning
             onClick={() => {
               setSuccessMsg(null);
               setMotivation('');
@@ -186,7 +186,7 @@ export function CommunityParticipationForm({ initialEmail = '', isLoggedIn, isDb
         <label className="text-xs font-semibold text-charcoal block">
           Choose Your Primary Field Initiative *
         </label>
-        <select
+        <select suppressHydrationWarning
           value={initiativeSlug}
           onChange={(e) => setInitiativeSlug(e.target.value)}
           className="w-full px-3.5 py-3 rounded-xl border border-forest/20 text-xs text-charcoal bg-white focus:ring-2 focus:ring-ukorange/30 focus:border-forest outline-none transition-all font-medium"
@@ -210,7 +210,7 @@ export function CommunityParticipationForm({ initialEmail = '', isLoggedIn, isDb
             <User className="w-3.5 h-3.5 text-forest/70" />
             Full Name *
           </label>
-          <input
+          <input suppressHydrationWarning
             type="text"
             required
             value={fullName}
@@ -225,7 +225,7 @@ export function CommunityParticipationForm({ initialEmail = '', isLoggedIn, isDb
             <Mail className="w-3.5 h-3.5 text-forest/70" />
             Contact Email *
           </label>
-          <input
+          <input suppressHydrationWarning
             type="email"
             required
             value={email}
@@ -240,7 +240,7 @@ export function CommunityParticipationForm({ initialEmail = '', isLoggedIn, isDb
             <Phone className="w-3.5 h-3.5 text-forest/70" />
             Phone / WhatsApp
           </label>
-          <input
+          <input suppressHydrationWarning
             type="tel"
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
@@ -254,7 +254,7 @@ export function CommunityParticipationForm({ initialEmail = '', isLoggedIn, isDb
             <Clock className="w-3.5 h-3.5 text-forest/70" />
             Availability Duration *
           </label>
-          <select
+          <select suppressHydrationWarning
             value={duration}
             onChange={(e) => setDuration(e.target.value)}
             className="w-full px-3.5 py-2.5 rounded-xl border border-forest/20 text-xs text-charcoal bg-white focus:ring-2 focus:ring-ukorange/30 focus:border-forest outline-none transition-all"
@@ -272,7 +272,7 @@ export function CommunityParticipationForm({ initialEmail = '', isLoggedIn, isDb
         <label className="text-xs font-semibold text-charcoal block">
           Your Skills, Craft, or Academic Background (min 5 characters) *
         </label>
-        <textarea
+        <textarea suppressHydrationWarning
           required
           rows={3}
           value={skills}
@@ -287,7 +287,7 @@ export function CommunityParticipationForm({ initialEmail = '', isLoggedIn, isDb
         <label className="text-xs font-semibold text-charcoal block">
           Why do you want to contribute to this initiative? (min 20 characters) *
         </label>
-        <textarea
+        <textarea suppressHydrationWarning
           required
           rows={4}
           value={motivation}
@@ -303,7 +303,7 @@ export function CommunityParticipationForm({ initialEmail = '', isLoggedIn, isDb
           All initiatives provide modest homestay accommodation guidance and direct local mentorship.
         </p>
 
-        <button
+        <button suppressHydrationWarning
           type="submit"
           disabled={loading}
           className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-3 bg-forest hover:bg-forest-hover text-white text-xs font-semibold rounded-xl shadow-xs transition-colors disabled:opacity-50"

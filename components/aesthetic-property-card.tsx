@@ -96,7 +96,7 @@ export function AestheticPropertyCard({ property }: { property: AestheticPropert
         </div>
 
         {/* Wishlist Heart */}
-        <button
+        <button suppressHydrationWarning
           onClick={(e) => {
             e.preventDefault();
             setIsSaved(!isSaved);

@@ -1,105 +1,129 @@
-# Uttarkunth — Cloudflare Workers Builds & Git Deployment Guide
+# Uttarkunth 3.1 — Cloudflare Workers, Staff Subdomain & Supabase Deployment Guide
 
-Platform: **Uttarkunth**  
-Production Website: [https://uttarkunth.com](https://uttarkunth.com)  
-Official Email: `info@uttarkunth.com`  
-Supabase Project: `uttarkunth-stays` (`xyplgugxpmlnjsvlosdg`)  
-Architecture: **Next.js 14 App Router + OpenNext (`@opennextjs/cloudflare`) + Cloudflare Workers Builds**
+**Platform:** Uttarkunth (`uttarkunth.com` & `team.uttarkunth.com`)  
+**Repository:** `uttarkunth/uttarkunth3.1`  
+**Working Branch:** `uttarkunthmain2` (Release Candidate)  
+**Supabase Project:** `xyplgugxpmlnjsvlosdg`  
+**Deployment Target:** Cloudflare Workers via `@opennextjs/cloudflare`
 
----
-
-## 📋 Architecture Overview
-
-Uttarkunth is a multi-pillar Next.js 14 App Router platform packaged with `@opennextjs/cloudflare` to run on Cloudflare Workers.
-
-The platform unites four connected pillars under one unified authentication and navigation model:
-1. **Stays:** Mountain homestays in Jari and Parvati Valley with request-only bookings, room-level concurrency locking, 0% default commission, and direct host settlement.
-2. **Products:** Curated Himalayan goods marketplace, interest registration, seller onboarding, and admin moderation (public launch scheduled Q1 2027).
-3. **Productions:** Himalayan documentaries (*Aaj Ka Devta*, *Ruk Gayi Gupt Bali*) with on-site preview playback and filmmaker collaboration workflows (database tables pending Phase 2G migration).
-4. **Community:** Karmayog philosophy, Living University vision, and 9 proposed grassroots initiatives (participation and oral story database tables pending Phase 2H migration).
+> [!IMPORTANT]
+> **Production Safety Rule:** Do not apply pending database migrations to live production or deploy to Cloudflare until explicitly reviewed and approved by the Founder. Live homestays (`Yash Home Stay` and `Wonderway Retreat`), existing bookings, and live Auth accounts must remain untouched.
 
 ---
 
-## 🚀 Step 1: Git Repository Upload (Manual by Owner)
-
-The owner initializes, commits, and pushes the codebase to their GitHub repository.
+## 1. Clean Build & Local Verification Commands
 
 ```bash
-# Inside the workspace directory:
-git init
-git branch -M main
-git status --ignored
-git add .
-git status
-git commit -m "feat(uttarkunth): pre-release verified build and four-pillar platform"
-git remote add origin https://github.com/<YOUR-GITHUB-USERNAME>/<YOUR-REPO-NAME>.git
-git push -u origin main
+# Install dependencies
+npm install
+
+# Run full verification suite before building
+npx tsc --noEmit
+npm run lint
+npm test
+
+# Build Next.js production output (77 static/dynamic routes)
+npm run build
+
+# Build Cloudflare Worker bundle (.open-next/worker.js & .open-next/assets)
+npm run build:worker
+
+# Preview locally in Cloudflare Workers runtime (workerd)
+npm run preview
 ```
 
-> [!NOTE]
-> `.gitignore` automatically excludes `node_modules/`, `.next/`, `.open-next/`, `.wrangler/`, `.wrangler_config/`, `temp-chrome-profile/`, `*.tsbuildinfo`, `.env`, `.env*.local`, and `.dev.vars*`.
-
 ---
 
-## ⚙️ Step 2: Connect Cloudflare Workers Builds to GitHub
+## 2. Cloudflare Workers Builds Configuration (When Approved)
 
-Cloudflare Workers Builds uses **separate Build and Deploy commands**, while static asset routing is configured inside `wrangler.jsonc`.
-
-1. Log in to the [Cloudflare Dashboard](https://dash.cloudflare.com/).
-2. Navigate to **Compute (Workers) > Workers & Pages > Create Application > Workers > Connect to Git**.
-3. Select your GitHub repository and production branch (`main`).
-4. Configure the **Cloudflare Workers Builds** settings:
+1. In the **Cloudflare Dashboard**, go to **Workers & Pages > Create Application > Workers > Connect to Git**.
+2. Select repository `uttarkunth/uttarkunth3.1` and branch `uttarkunthmain2`.
+3. Configure build settings:
    - **Root directory:** `/`
-   - **Build command:** `npm run build:worker` *(build-only; runs `opennextjs-cloudflare build --dangerouslyUseUnsupportedNextVersion` and generates `.open-next/worker.js` and `.open-next/assets` without deploying)*
-   - **Deploy command:** `npx wrangler deploy` *(Cloudflare Workers Builds executes this after the build completes on pushes to the connected branch)*
-5. Verify `wrangler.jsonc` settings (already committed in repository root):
-   - **Worker Name (`name`):** `"uttarkunth3-1"`
-   - **Worker Entry Point (`main`):** `".open-next/worker.js"`
-   - **Static Asset Directory (`assets.directory`):** `".open-next/assets"` (bound to `"ASSETS"`)
-   - **Compatibility Date (`compatibility_date`):** `"2024-12-30"`
-   - **Compatibility Flags (`compatibility_flags`):** `["nodejs_compat"]`
+   - **Build command:** `npm run build:worker`
+   - **Deploy command:** `npx wrangler deploy`
+4. Verify `wrangler.jsonc` at the repository root:
+   - `name`: `"uttarkunth3-1"`
+   - `main`: `".open-next/worker.js"`
+   - `assets.directory`: `".open-next/assets"` (`binding: "ASSETS"`)
+   - `compatibility_date`: `"2024-12-30"`
+   - `compatibility_flags`: `["nodejs_compat"]`
 
 ---
 
-## 🔐 Step 3: Configure Build & Runtime Environment Variables
+## 3. Environment Variables & Secrets in Cloudflare
 
-### A. Cloudflare Workers Builds — Build Variables
-Configure in **Workers & Pages > `uttarkunth3-1` > Settings > Builds > Build Variables and Secrets** (used during `npm run build:worker` when Next.js compiles client bundles):
+### A. Build-Time Variables (Workers Builds > Settings > Builds > Build Variables)
+- `NEXT_PUBLIC_SUPABASE_URL` = `https://xyplgugxpmlnjsvlosdg.supabase.co`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY` = `<your-supabase-anon-key>`
 
-| Variable Name | Type | Purpose |
-| :--- | :--- | :--- |
-| `NEXT_PUBLIC_SUPABASE_URL` | Plain text | `https://xyplgugxpmlnjsvlosdg.supabase.co` (inlined into client & server bundles at build time) |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Plain text | Your public Supabase anon/publishable key (inlined into client & server bundles at build time) |
-
-### B. Deployed Cloudflare Worker — Runtime Variables & Secrets
-Configure in **Workers & Pages > `uttarkunth3-1` > Settings > Variables and Secrets** (available at edge runtime to server route handlers and server components):
-
-| Variable Name | Type | Purpose |
-| :--- | :--- | :--- |
-| `NEXT_PUBLIC_SUPABASE_URL` | Plain text | `https://xyplgugxpmlnjsvlosdg.supabase.co` |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Plain text | Your public Supabase anon/publishable key |
-| `SUPABASE_SERVICE_ROLE_KEY` | **Secret (Encrypted)** | **Strictly server-only.** Used by `lib/supabase/admin.ts` in server route handlers and SSR queries. Never expose in `NEXT_PUBLIC_*` or client code. |
-| `ALLOWED_ORIGINS` | Plain text | Optional comma-separated origin list (`https://uttarkunth.com,https://*.workers.dev`) |
+### B. Runtime Variables & Encrypted Secrets (Workers & Pages > `uttarkunth3-1` > Settings > Variables and Secrets)
+- `NEXT_PUBLIC_SUPABASE_URL` (Plain text)
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY` (Plain text)
+- `SUPABASE_SERVICE_ROLE_KEY` (**Encrypted Secret** — strictly server-only; never prefix with `NEXT_PUBLIC_`)
+- `ALLOWED_ORIGINS` = `https://uttarkunth.com,https://team.uttarkunth.com`
 
 ---
 
-## 🌐 Step 4: Supabase Authentication Redirects
+## 4. Dedicated Staff Portal Hostname (`team.uttarkunth.com`) & Cloudflare Access
 
-In the Supabase Dashboard for `xyplgugxpmlnjsvlosdg`:
-1. Go to **Authentication > URL Configuration**.
-2. **Site URL:** `https://uttarkunth.com`
-3. **Redirect URLs:**
-   - `https://uttarkunth.com/**`
-   - `https://*.workers.dev/**`
-   - `http://localhost:3000/**`
+### A. Custom Domain Routing
+1. In **Workers & Pages > `uttarkunth3-1` > Settings > Domains & Routes**, add custom domains:
+   - `uttarkunth.com`
+   - `team.uttarkunth.com`
+2. `middleware.ts` automatically enforces staff portal isolation:
+   - Any unauthenticated request to `/admin/*` redirects to `/staff/login?next=...`.
+   - Open staff registration paths (`/admin/register`, `/admin/signup`, `/staff/register`, `/staff/signup`) are permanently blocked and redirected to `/staff/login?error=open_registration_prohibited`.
+
+### B. Cloudflare Access (Zero Trust External Perimeter Gate — Recommended)
+1. In **Cloudflare Zero Trust > Access > Applications**, create a **Self-hosted Application** for:
+   - `team.uttarkunth.com/*`
+   - `uttarkunth.com/staff/*`
+   - `uttarkunth.com/admin/*`
+2. Create an **Allow** policy restricted to authorised Uttarkunth staff emails (`@uttarkunth.com` or Founder email list) requiring One-Time PIN or hardware MFA.
+3. **Defense-in-Depth:** Cloudflare Access is an outer perimeter gate only; application-level authentication (`middleware.ts`, `lib/auth.ts`, `requireStaffPermission()` in `lib/staff-rbac.ts`) and Supabase Auth TOTP MFA (`aal2`) remain mandatory on every request.
 
 ---
 
-## 🛡️ Step 5: Post-Deployment Smoke Test Checklist
+## 5. Supabase Database Migrations & Secure Founder Provisioning
 
-- [ ] **Homepage & Branding:** Verify `https://uttarkunth.com` renders with all 4 pillars (Stays, Products, Productions, Community) and `info@uttarkunth.com`.
-- [ ] **Stays Directory:** Verify `/stays`, `/stays/yash-home-stay`, and `/stays/wonderway-retreat` display live Supabase properties, room prices (`₹900` and `₹3,500`), and request-only booking with direct host settlement.
-- [ ] **Products Marketplace:** Verify `/products` and `/products/sell` (interest form and seller application backed by Phase 2F tables).
-- [ ] **Productions:** Verify `/production`, `/production/aaj-ka-devta`, `/production/ruk-gayi-gupt-bali`, and `/production/collaborate` (shows clear "not yet open" notice until Phase 2G migration is applied).
-- [ ] **Community:** Verify `/community`, `/community/initiatives`, `/community/participate`, and `/community/stories` (shows proposed initiatives truthfully and clear "not yet open" notice on forms until Phase 2H migration is applied).
-- [ ] **Authentication & Admin Gate:** Register or sign in as an ordinary user; confirm `/admin/*` denies access (`403` / Access Restricted) unless explicitly provisioned in `public.platform_admins`.
+### A. Ordered Pending Migrations (Review Before Applying)
+Run in the Supabase SQL Editor only after explicit Founder sign-off:
+1. `supabase/migrations/20260418010000_phase2a_foundation_pending_approval.sql`
+2. `supabase/migrations/20261101120000_products_marketplace_pending_approval.sql`
+3. `supabase/migrations/20261102120000_phase2f_bilateral_agreements_pending_approval.sql`
+4. `supabase/migrations/20261103120000_phase2g_2h_productions_community_pending_approval.sql`
+5. `supabase/migrations/20261104120000_phase2_staff_governance_and_seller_verification_pending_approval.sql`
+
+### B. Secure Provisioning of the Founder Account
+In `20261104120000_phase2_staff_governance_and_seller_verification_pending_approval.sql`, `public.provision_founder_account` is locked down:
+- Execution privileges are explicitly revoked from `PUBLIC`, `anon`, and `authenticated`.
+- Only the postgres superuser / trusted database owner and `service_role` possess `EXECUTE` privileges.
+- The function strictly validates that the supplied Auth UUID exists in `auth.users` and that the submitted official email exactly matches the registered email on that account.
+- It does **not** falsely mark MFA as enrolled, does **not** create fictitious staff agreements, and does **not** store fabricated identity or mobile records. Genuine TOTP enrollment must occur through Supabase Auth.
+
+To provision your Founder profile from the **Supabase SQL Editor** as the database owner:
+
+```sql
+SELECT public.provision_founder_account(
+  'YOUR_ACTUAL_SUPABASE_AUTH_UUID'::uuid,
+  'your-registered-founder-email@uttarkunth.com',
+  'Gaurav Negi',
+  '+919876543210' -- Your genuine registered contact number
+);
+```
+
+### C. Verifying Function Privileges
+Run this query in the Supabase SQL Editor to confirm that anonymous and public users cannot execute the Founder provisioning procedure:
+
+```sql
+SELECT
+  has_function_privilege('anon', 'public.provision_founder_account(uuid, text, text, text)', 'EXECUTE') AS anon_can_exec,
+  has_function_privilege('authenticated', 'public.provision_founder_account(uuid, text, text, text)', 'EXECUTE') AS auth_can_exec,
+  has_function_privilege('service_role', 'public.provision_founder_account(uuid, text, text, text)', 'EXECUTE') AS service_role_can_exec;
+```
+
+**Expected Result:**
+- `anon_can_exec`: `false`
+- `auth_can_exec`: `false`
+- `service_role_can_exec`: `true`

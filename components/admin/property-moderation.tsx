@@ -89,7 +89,7 @@ export function PropertyModerationEngine({ initialProperties }: PropertyModerati
         </div>
 
         <div className="flex items-center gap-1.5 bg-white p-1 rounded-2xl border border-forest/15 shadow-xs overflow-x-auto">
-          <button
+          <button suppressHydrationWarning
             type="button"
             onClick={() => setTab('staged')}
             className={`px-3 py-1.5 text-xs font-semibold rounded-xl whitespace-nowrap transition-colors flex items-center gap-1.5 ${
@@ -104,7 +104,7 @@ export function PropertyModerationEngine({ initialProperties }: PropertyModerati
             </span>
           </button>
 
-          <button
+          <button suppressHydrationWarning
             type="button"
             onClick={() => setTab('pending')}
             className={`px-3 py-1.5 text-xs font-semibold rounded-xl whitespace-nowrap transition-colors flex items-center gap-1.5 ${
@@ -119,7 +119,7 @@ export function PropertyModerationEngine({ initialProperties }: PropertyModerati
             </span>
           </button>
 
-          <button
+          <button suppressHydrationWarning
             type="button"
             onClick={() => setTab('all')}
             className={`px-3 py-1.5 text-xs font-semibold rounded-xl whitespace-nowrap transition-colors ${
@@ -258,7 +258,7 @@ export function PropertyModerationEngine({ initialProperties }: PropertyModerati
                   {/* Decision Actions */}
                   <div className="pt-4 border-t border-forest/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div className="flex-1 max-w-md">
-                      <input
+                      <input suppressHydrationWarning
                         type="text"
                         value={adminNotes[p.id] || ''}
                         onChange={(e) => setAdminNotes({ ...adminNotes, [p.id]: e.target.value })}
@@ -268,7 +268,7 @@ export function PropertyModerationEngine({ initialProperties }: PropertyModerati
                     </div>
 
                     <div className="flex items-center gap-3">
-                      <button
+                      <button suppressHydrationWarning
                         type="button"
                         disabled={isSubmitting}
                         onClick={() => handleModeration(p.id, 'reject_staged')}
@@ -277,7 +277,7 @@ export function PropertyModerationEngine({ initialProperties }: PropertyModerati
                         {isSubmitting ? 'Processing...' : 'Reject Staged Updates'}
                       </button>
 
-                      <button
+                      <button suppressHydrationWarning
                         type="button"
                         disabled={isSubmitting}
                         onClick={() => handleModeration(p.id, 'approve_staged')}
@@ -342,7 +342,7 @@ export function PropertyModerationEngine({ initialProperties }: PropertyModerati
 
                   <div className="pt-3 border-t border-forest/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div className="flex-1 max-w-md">
-                      <input
+                      <input suppressHydrationWarning
                         type="text"
                         value={adminNotes[p.id] || ''}
                         onChange={(e) => setAdminNotes({ ...adminNotes, [p.id]: e.target.value })}
@@ -352,7 +352,7 @@ export function PropertyModerationEngine({ initialProperties }: PropertyModerati
                     </div>
 
                     <div className="flex items-center gap-2">
-                      <button
+                      <button suppressHydrationWarning
                         type="button"
                         disabled={isSubmitting}
                         onClick={() => handleModeration(p.id, 'request_changes')}
@@ -361,7 +361,7 @@ export function PropertyModerationEngine({ initialProperties }: PropertyModerati
                         Request Changes
                       </button>
 
-                      <button
+                      <button suppressHydrationWarning
                         type="button"
                         disabled={isSubmitting}
                         onClick={() => handleModeration(p.id, 'reject')}
@@ -370,7 +370,7 @@ export function PropertyModerationEngine({ initialProperties }: PropertyModerati
                         Reject
                       </button>
 
-                      <button
+                      <button suppressHydrationWarning
                         type="button"
                         disabled={isSubmitting}
                         onClick={() => handleModeration(p.id, 'approve')}

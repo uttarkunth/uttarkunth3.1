@@ -1,22 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { checkIsPlatformAdmin } from '@/lib/auth';
+import { requireStaffPermission, recordStaffAuditLog } from '@/lib/staff-rbac';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET(req: NextRequest) {
+export async function GET() {
   try {
-    const supabase = createServerSupabaseClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const auth = await requireStaffPermission('community.moderate', {
+      requireMfaAal2: true,
+      requiredDepartment: 'community',
+    });
 
-    if (!user) {
-      return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const isAdmin = await checkIsPlatformAdmin(user.id);
-    if (!isAdmin) {
-      return NextResponse.json({ ok: false, error: 'Forbidden: Platform administrator access required.' }, { status: 403 });
+    if (!auth.authorized || !auth.user) {
+      return NextResponse.json(
+        {
+          ok: false,
+          code: auth.code,
+          error:
+            auth.error ||
+            'Forbidden: Community moderation permission (community.moderate) and TOTP MFA (AAL2) required.',
+        },
+        { status: auth.status }
+      );
     }
 
     const adminClient = createAdminClient();
@@ -43,17 +48,26 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const supabase = createServerSupabaseClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const auth = await requireStaffPermission('community.moderate', {
+      requireMfaAal2: true,
+      requiredDepartment: 'community',
+    });
 
-    if (!user) {
-      return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
+    if (!auth.authorized || !auth.user || !auth.staffProfile) {
+      return NextResponse.json(
+        {
+          ok: false,
+          code: auth.code,
+          error:
+            auth.error ||
+            'Forbidden: Community moderation permission (community.moderate) and TOTP MFA (AAL2) required.',
+        },
+        { status: auth.status }
+      );
     }
 
-    const isAdmin = await checkIsPlatformAdmin(user.id);
-    if (!isAdmin) {
-      return NextResponse.json({ ok: false, error: 'Forbidden: Platform administrator access required.' }, { status: 403 });
-    }
+    const user = auth.user;
+    const staffProfile = auth.staffProfile;
 
     const body = await req.json();
     const { target_type, target_id, action, notes } = body;
@@ -69,7 +83,10 @@ export async function POST(req: NextRequest) {
       if (action === 'approve') newStatus = 'approved';
       else if (action === 'decline') newStatus = 'declined';
       else {
-        return NextResponse.json({ ok: false, error: 'Invalid participation action.' }, { status: 400 });
+        return NextResponse.json(
+          { ok: false, error: 'Invalid participation action.' },
+          { status: 400 }
+        );
       }
 
       const { data: updated, error: updateErr } = await adminClient
@@ -88,13 +105,30 @@ export async function POST(req: NextRequest) {
           {
             ok: false,
             code: 'FEATURE_NOT_YET_OPEN',
-            error: updateErr?.message || 'Community participations table is not yet active in the production database.',
+            error:
+              updateErr?.message ||
+              'Community participations table is not yet active in the production database.',
           },
           { status: 503 }
         );
       }
 
-      return NextResponse.json({ ok: true, participation: updated || { id: target_id, status: newStatus } });
+      await recordStaffAuditLog({
+        actorUserId: user.id,
+        actorEmail: user.email,
+        staffId: staffProfile.staff_id,
+        roleSlug: staffProfile.role_slug,
+        action: `community_participation_${newStatus}`,
+        targetType: 'community_participation',
+        targetId: String(target_id),
+        reason: notes || null,
+        afterState: { status: newStatus },
+      });
+
+      return NextResponse.json({
+        ok: true,
+        participation: updated || { id: target_id, status: newStatus },
+      });
     }
 
     if (target_type === 'story') {
@@ -105,10 +139,13 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ ok: false, error: 'Invalid story action.' }, { status: 400 });
       }
 
-      const { data: updated, error: updateErr } = await adminClient
-        .from('community_stories')
+      const { data: updated, error: updateErr } = await (
+        adminClient.from('community_stories' as any) as any
+      )
         .update({
           status: newStatus,
+          moderation_status: newStatus === 'published' ? 'approved' : 'rejected',
+          published: newStatus === 'published',
           published_at: newStatus === 'published' ? new Date().toISOString() : null,
           updated_at: new Date().toISOString(),
         })
@@ -121,13 +158,30 @@ export async function POST(req: NextRequest) {
           {
             ok: false,
             code: 'FEATURE_NOT_YET_OPEN',
-            error: updateErr?.message || 'Community stories table is not yet active in the production database.',
+            error:
+              updateErr?.message ||
+              'Community stories table is not yet active in the production database.',
           },
           { status: 503 }
         );
       }
 
-      return NextResponse.json({ ok: true, story: updated || { id: target_id, status: newStatus } });
+      await recordStaffAuditLog({
+        actorUserId: user.id,
+        actorEmail: user.email,
+        staffId: staffProfile.staff_id,
+        roleSlug: staffProfile.role_slug,
+        action: `community_story_${newStatus}`,
+        targetType: 'community_story',
+        targetId: String(target_id),
+        reason: notes || null,
+        afterState: { status: newStatus },
+      });
+
+      return NextResponse.json({
+        ok: true,
+        story: updated || { id: target_id, status: newStatus },
+      });
     }
 
     return NextResponse.json({ ok: false, error: 'Unsupported target type' }, { status: 400 });

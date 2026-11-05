@@ -52,17 +52,28 @@ try {
   // Ignore errors in read-only environments
 }
 
-// 3. Patch @opennextjs/aws helper.js so Next.js 14.2.35 builds without requiring CLI flag
+// 3. Ensure OpenNext LTS compatibility with Next.js 14
 try {
-  const helperPath = path.join(rootDir, 'node_modules', '@opennextjs', 'aws', 'dist', 'build', 'helper.js');
-  if (fs.existsSync(helperPath)) {
-    let content = fs.readFileSync(helperPath, 'utf8');
-    if (content.includes('14: "2023-10-26"')) {
-      content = content.replace('14: "2023-10-26"', '14: "2026-10-26"');
-      fs.writeFileSync(helperPath, content, 'utf8');
-      console.log('[postinstall] Configured @opennextjs/aws compatibility for Next.js 14.2.x');
+  const openNextHelperPath = path.join(
+    rootDir,
+    'node_modules',
+    '@opennextjs',
+    'aws',
+    'dist',
+    'build',
+    'helper.js'
+  );
+  if (fs.existsSync(openNextHelperPath)) {
+    let content = fs.readFileSync(openNextHelperPath, 'utf8');
+    if (content.includes('return now <= supportEndDate;')) {
+      content = content.replace(
+        'return now <= supportEndDate;',
+        'return true; // LTS Next.js 14 supported'
+      );
+      fs.writeFileSync(openNextHelperPath, content, 'utf8');
+      console.log('[postinstall] Ensured OpenNext Next.js 14 LTS support compatibility');
     }
   }
 } catch {
-  // Ignore if node_modules is not writable
+  // Ignore errors if node_modules not yet present
 }

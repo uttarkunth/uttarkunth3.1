@@ -38,7 +38,12 @@ export function Header() {
 
   // Auth session tracking with server-authoritative admin verification
   useEffect(() => {
-    const supabase = createClient();
+    let supabase: ReturnType<typeof createClient>;
+    try {
+      supabase = createClient();
+    } catch {
+      return;
+    }
 
     const verifyAdmin = async (currentUser: any) => {
       if (!currentUser) {
@@ -200,6 +205,7 @@ export function Header() {
           {/* Canonical Account / Profile Icon with Dropdown */}
           <div className="relative" ref={dropdownRef}>
             <button
+              suppressHydrationWarning
               onClick={() => setAccountDropdownOpen(!accountDropdownOpen)}
               className="inline-flex items-center gap-2 p-1.5 rounded-full border border-beige bg-warm-card hover:border-forest/40 transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-terracotta"
               aria-label="User Account Menu"
@@ -260,20 +266,8 @@ export function Header() {
                       </Link>
                     </div>
 
-                    {isAdmin && (
-                      <div className="pt-1 mt-1 border-t border-beige/60">
-                        <Link
-                          href="/admin"
-                          className="flex items-center gap-2.5 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-terracotta hover:bg-terracotta/5 transition-colors"
-                        >
-                          <Shield className="w-4 h-4 text-terracotta" />
-                          <span>Platform Admin</span>
-                        </Link>
-                      </div>
-                    )}
-
                     <div className="pt-1 mt-1 border-t border-beige/60">
-                      <button
+                      <button suppressHydrationWarning
                         onClick={handleSignOut}
                         className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-left text-charcoal-muted hover:text-charcoal hover:bg-forest/5 transition-colors"
                       >
@@ -325,6 +319,7 @@ export function Header() {
           </Link>
 
           <button
+            suppressHydrationWarning
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             className="p-2 rounded-lg text-charcoal hover:text-forest hover:bg-forest/5 focus:outline-none focus:ring-2 focus:ring-terracotta"
             aria-label={mobileMenuOpen ? "Close Menu" : "Open Menu"}
@@ -400,11 +395,6 @@ export function Header() {
                 <div className="space-y-2">
                   <div className="flex items-center justify-between py-1">
                     <span className="text-xs text-charcoal-muted truncate">{user.email}</span>
-                    {isAdmin && (
-                      <Link href="/admin" className="text-xs font-semibold text-terracotta uppercase">
-                        Admin
-                      </Link>
-                    )}
                   </div>
                   <Link
                     href="/account"
@@ -418,7 +408,7 @@ export function Header() {
                   >
                     My Trips
                   </Link>
-                  <button
+                  <button suppressHydrationWarning
                     onClick={handleSignOut}
                     className="block py-2 text-sm text-charcoal-muted hover:text-charcoal"
                   >

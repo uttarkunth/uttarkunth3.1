@@ -1,22 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { checkIsPlatformAdmin } from '@/lib/auth';
+import { requireStaffPermission, recordStaffAuditLog } from '@/lib/staff-rbac';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
   try {
-    const supabase = createServerSupabaseClient();
-    const { data: { user }, error: authErr } = await supabase.auth.getUser();
+    const auth = await requireStaffPermission('finance.review_agreements', {
+      requireMfaAal2: true,
+    });
 
-    const isAdmin = user ? await checkIsPlatformAdmin(user.id) : false;
-    if (authErr || !user || !isAdmin) {
-      return NextResponse.json({
-        ok: false,
-        error: 'Forbidden: Platform administrator privileges required.'
-      }, { status: 403 });
+    if (!auth.authorized || !auth.user || !auth.staffProfile) {
+      return NextResponse.json(
+        {
+          ok: false,
+          code: auth.code,
+          error:
+            auth.error ||
+            'Forbidden: Commercial agreement management permission (finance.review_agreements) and TOTP MFA (AAL2) required.',
+        },
+        { status: auth.status }
+      );
     }
+
+    const user = auth.user;
+    const staffProfile = auth.staffProfile;
 
     const body = await req.json();
     const {
@@ -29,25 +37,23 @@ export async function POST(req: NextRequest) {
       intro_commission_percent = 0,
       intro_period_months = 12,
       standard_commission_percent = 10,
-      agreement_status = 'draft',
-      host_accepted = false,
-      accepted_at,
-      acceptance_reference,
-      notes
+      notes,
     } = body;
 
     if (!property_id || !host_name || !agreement_start) {
-      return NextResponse.json({
-        ok: false,
-        error: 'Missing required agreement terms: property_id, host_name, agreement_start.'
-      }, { status: 400 });
+      return NextResponse.json(
+        {
+          ok: false,
+          error: 'Missing required agreement terms: property_id, host_name, agreement_start.',
+        },
+        { status: 400 }
+      );
     }
 
     const adminClient = createAdminClient();
 
     // Strict bilateral verification:
     // Every new commercial agreement begins strictly in 'draft' status with accepted_at = null.
-    // Demonstrable host acceptance is executed exclusively via the authorized bilateral acceptance workflow.
     const agreementData: any = {
       property_id,
       host_user_id: host_user_id || null,
@@ -62,7 +68,7 @@ export async function POST(req: NextRequest) {
       agreement_status: 'draft',
       notes: notes ? notes.trim() : null,
       accepted_at: null,
-      terms_version: '2026.1'
+      terms_version: '2026.1',
     };
 
     const { data: agreement, error: insertErr } = await adminClient
@@ -75,32 +81,36 @@ export async function POST(req: NextRequest) {
       throw insertErr;
     }
 
-    // Insert into audit log
-    await adminClient.from('admin_audit_log').insert({
-      actor_user_id: user.id,
+    await recordStaffAuditLog({
+      actorUserId: user.id,
+      actorEmail: user.email,
+      staffId: staffProfile.staff_id,
+      roleSlug: staffProfile.role_slug,
       action: 'host_agreement_created',
-      target_type: 'agreement',
-      target_id: agreement.id,
-      details: {
+      targetType: 'agreement',
+      targetId: String(agreement.id),
+      afterState: {
         property_id,
         host_name,
         standard_commission_percent,
         intro_commission_percent,
         status: 'draft',
-        admin_email: user.email
-      }
+      },
     });
 
     return NextResponse.json({
       ok: true,
       agreement_id: agreement.id,
-      message: 'Commercial terms saved as Draft (Pending demonstrable host acceptance).'
+      message: 'Commercial terms saved as Draft (Pending demonstrable host acceptance).',
     });
   } catch (err: any) {
     console.error('Agreement creation error:', err);
-    return NextResponse.json({
-      ok: false,
-      error: err.message || 'Failed to authorize host agreement.'
-    }, { status: 500 });
+    return NextResponse.json(
+      {
+        ok: false,
+        error: err.message || 'Failed to authorize host agreement.',
+      },
+      { status: 500 }
+    );
   }
 }

@@ -1,22 +1,34 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { checkIsPlatformAdmin } from '@/lib/auth';
+import { requireStaffPermission, recordStaffAuditLog } from '@/lib/staff-rbac';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET(req: NextRequest) {
+export async function GET() {
   try {
-    const supabase = createServerSupabaseClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const auth = await requireStaffPermission('productions.review_proposal', {
+      requireMfaAal2: true,
+      requiredDepartment: 'productions',
+    });
 
-    if (!user) {
-      return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
-    }
+    const fallbackAuth = !auth.authorized
+      ? await requireStaffPermission('productions.approve_profile', {
+          requireMfaAal2: true,
+          requiredDepartment: 'productions',
+        })
+      : auth;
 
-    const isAdmin = await checkIsPlatformAdmin(user.id);
-    if (!isAdmin) {
-      return NextResponse.json({ ok: false, error: 'Forbidden: Platform administrator access required.' }, { status: 403 });
+    if (!fallbackAuth.authorized || !fallbackAuth.user) {
+      return NextResponse.json(
+        {
+          ok: false,
+          code: fallbackAuth.code,
+          error:
+            fallbackAuth.error ||
+            'Forbidden: Productions review permission and TOTP MFA (AAL2) required.',
+        },
+        { status: fallbackAuth.status }
+      );
     }
 
     const adminClient = createAdminClient();
@@ -43,25 +55,39 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const supabase = createServerSupabaseClient();
-    const { data: { user } } = await supabase.auth.getUser();
-
-    if (!user) {
-      return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const isAdmin = await checkIsPlatformAdmin(user.id);
-    if (!isAdmin) {
-      return NextResponse.json({ ok: false, error: 'Forbidden: Platform administrator access required.' }, { status: 403 });
-    }
-
     const body = await req.json();
     const { target_type, target_id, action, notes } = body;
 
     if (!target_type || !target_id || !action) {
-      return NextResponse.json({ ok: false, error: 'Missing target_type, target_id, or action.' }, { status: 400 });
+      return NextResponse.json(
+        { ok: false, error: 'Missing target_type, target_id, or action.' },
+        { status: 400 }
+      );
     }
 
+    const requiredPerm =
+      target_type === 'profile' ? 'productions.approve_profile' : 'productions.review_proposal';
+
+    const auth = await requireStaffPermission(requiredPerm, {
+      requireMfaAal2: true,
+      requiredDepartment: 'productions',
+    });
+
+    if (!auth.authorized || !auth.user || !auth.staffProfile) {
+      return NextResponse.json(
+        {
+          ok: false,
+          code: auth.code,
+          error:
+            auth.error ||
+            `Forbidden: Productions permission (${requiredPerm}) and TOTP MFA (AAL2) required.`,
+        },
+        { status: auth.status }
+      );
+    }
+
+    const user = auth.user;
+    const staffProfile = auth.staffProfile;
     const adminClient = createAdminClient();
 
     if (target_type === 'proposal') {
@@ -90,32 +116,30 @@ export async function POST(req: NextRequest) {
           {
             ok: false,
             code: 'FEATURE_NOT_YET_OPEN',
-            error: updateErr?.message || 'Production proposals table is not yet active in the production database.',
+            error:
+              updateErr?.message ||
+              'Production proposals table is not yet active in the production database.',
           },
           { status: 503 }
         );
       }
 
-      // Record in audit log if possible
-      try {
-        await adminClient.from('admin_audit_log').insert({
-          actor_user_id: user.id,
-          action: 'property_moderated', // using supported enum from schema
-          target_type: 'property', // supported enum in schema
-          target_id: target_id,
-          details: {
-            subsystem: 'productions',
-            proposal_id: target_id,
-            action,
-            new_status: newStatus,
-            notes,
-          },
-        });
-      } catch (auditErr) {
-        console.warn('Audit log write note:', auditErr);
-      }
+      await recordStaffAuditLog({
+        actorUserId: user.id,
+        actorEmail: user.email,
+        staffId: staffProfile.staff_id,
+        roleSlug: staffProfile.role_slug,
+        action: `production_proposal_${newStatus}`,
+        targetType: 'production_proposal',
+        targetId: String(target_id),
+        reason: notes || null,
+        afterState: { status: newStatus },
+      });
 
-      return NextResponse.json({ ok: true, proposal: updated || { id: target_id, status: newStatus } });
+      return NextResponse.json({
+        ok: true,
+        proposal: updated || { id: target_id, status: newStatus },
+      });
     }
 
     if (target_type === 'profile') {
@@ -143,13 +167,30 @@ export async function POST(req: NextRequest) {
           {
             ok: false,
             code: 'FEATURE_NOT_YET_OPEN',
-            error: updateErr?.message || 'Filmmaker profiles table is not yet active in the production database.',
+            error:
+              updateErr?.message ||
+              'Filmmaker profiles table is not yet active in the production database.',
           },
           { status: 503 }
         );
       }
 
-      return NextResponse.json({ ok: true, profile: updated || { id: target_id, status: newStatus } });
+      await recordStaffAuditLog({
+        actorUserId: user.id,
+        actorEmail: user.email,
+        staffId: staffProfile.staff_id,
+        roleSlug: staffProfile.role_slug,
+        action: `filmmaker_profile_${newStatus}`,
+        targetType: 'filmmaker_profile',
+        targetId: String(target_id),
+        reason: notes || null,
+        afterState: { status: newStatus },
+      });
+
+      return NextResponse.json({
+        ok: true,
+        profile: updated || { id: target_id, status: newStatus },
+      });
     }
 
     return NextResponse.json({ ok: false, error: 'Unsupported target type' }, { status: 400 });

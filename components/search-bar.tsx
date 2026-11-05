@@ -55,6 +55,7 @@ export function SearchBar({
               Destination
             </label>
             <select
+              suppressHydrationWarning
               value={destination}
               onChange={(e) => setDestination(e.target.value)}
               className="w-full bg-transparent font-medium text-charcoal text-sm focus:outline-none truncate"
@@ -93,6 +94,7 @@ export function SearchBar({
               Check-in
             </label>
             <input
+              suppressHydrationWarning
               type="date"
               min={todayStr}
               value={checkIn}
@@ -115,6 +117,7 @@ export function SearchBar({
               Check-out
             </label>
             <input
+              suppressHydrationWarning
               type="date"
               min={checkIn || todayStr}
               value={checkOut}
@@ -132,6 +135,7 @@ export function SearchBar({
               Guests
             </label>
             <select
+              suppressHydrationWarning
               value={guests}
               onChange={(e) => setGuests(parseInt(e.target.value, 10))}
               className="w-full bg-transparent font-medium text-charcoal text-sm focus:outline-none"
@@ -146,6 +150,7 @@ export function SearchBar({
 
           <button
             type="submit"
+            suppressHydrationWarning
             className="flex-shrink-0 bg-forest hover:bg-forest-hover text-white p-3 rounded-xl transition-all hover:scale-105 shadow-md flex items-center justify-center gap-1.5 font-semibold text-sm px-4"
           >
             <Search className="w-4 h-4" />

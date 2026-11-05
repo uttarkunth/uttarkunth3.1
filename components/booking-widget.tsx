@@ -167,7 +167,7 @@ export function BookingWidget({
             </p>
           </div>
 
-          <button
+          <button suppressHydrationWarning
             onClick={() => setSubmittedBooking(null)}
             className="w-full py-2.5 text-xs font-semibold text-forest hover:text-forest-hover border border-forest/20 hover:bg-forest/5 rounded-lg transition-colors"
           >
@@ -214,6 +214,7 @@ export function BookingWidget({
               Select Room Type
             </label>
             <select
+              suppressHydrationWarning
               value={selectedRoomId}
               onChange={(e) => setSelectedRoomId(e.target.value)}
               className="w-full p-2.5 text-sm bg-ivory-warm border border-forest/20 rounded-lg font-medium text-charcoal focus:ring-2 focus:ring-forest focus:outline-none"
@@ -235,6 +236,7 @@ export function BookingWidget({
               Check-in
             </label>
             <input
+              suppressHydrationWarning
               type="date"
               required
               min={todayStr}
@@ -250,6 +252,7 @@ export function BookingWidget({
               Check-out
             </label>
             <input
+              suppressHydrationWarning
               type="date"
               required
               min={checkIn || todayStr}
@@ -265,6 +268,7 @@ export function BookingWidget({
           <div>
             <label className="block text-xs font-semibold text-charcoal-muted mb-1">Adults</label>
             <select
+              suppressHydrationWarning
               value={adults}
               onChange={(e) => setAdults(Number(e.target.value))}
               className="w-full p-2 text-xs bg-ivory-warm border border-forest/20 rounded-lg font-medium"
@@ -277,6 +281,7 @@ export function BookingWidget({
           <div>
             <label className="block text-xs font-semibold text-charcoal-muted mb-1">Children</label>
             <select
+              suppressHydrationWarning
               value={children}
               onChange={(e) => setChildren(Number(e.target.value))}
               className="w-full p-2 text-xs bg-ivory-warm border border-forest/20 rounded-lg font-medium"
@@ -294,6 +299,7 @@ export function BookingWidget({
             Guest Details
           </span>
           <input
+            suppressHydrationWarning
             type="text"
             required
             placeholder="Full Name"
@@ -302,6 +308,7 @@ export function BookingWidget({
             className="w-full p-2 text-xs bg-ivory-warm border border-forest/20 rounded-lg font-medium focus:outline-none focus:ring-1 focus:ring-forest"
           />
           <input
+            suppressHydrationWarning
             type="email"
             required
             placeholder="Email Address"
@@ -310,6 +317,7 @@ export function BookingWidget({
             className="w-full p-2 text-xs bg-ivory-warm border border-forest/20 rounded-lg font-medium focus:outline-none focus:ring-1 focus:ring-forest"
           />
           <input
+            suppressHydrationWarning
             type="tel"
             required
             placeholder="Phone Number (+91 ...)"
@@ -318,6 +326,7 @@ export function BookingWidget({
             className="w-full p-2 text-xs bg-ivory-warm border border-forest/20 rounded-lg font-medium focus:outline-none focus:ring-1 focus:ring-forest"
           />
           <textarea
+            suppressHydrationWarning
             placeholder="Special requests or arrival time (optional)"
             rows={2}
             value={specialRequests}
@@ -342,6 +351,7 @@ export function BookingWidget({
 
         {/* Submit Button */}
         <button
+          suppressHydrationWarning
           type="submit"
           disabled={loading}
           className="w-full py-3 bg-forest hover:bg-forest-hover disabled:bg-forest/50 text-white font-semibold text-sm rounded-xl shadow-md transition-all hover:shadow-lg flex items-center justify-center gap-2"

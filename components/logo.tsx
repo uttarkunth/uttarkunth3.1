@@ -22,7 +22,7 @@ export function Logo({ className = '', variant = 'light', showTagline = false }:
           alt="Uttarkunth"
           width={40}
           height={40}
-          className="object-contain text-terracotta [filter:url(#uttarkunth-terracotta-logo)]"
+          className="w-10 h-10 object-contain text-terracotta [filter:url(#uttarkunth-terracotta-logo)]"
           referrerPolicy="no-referrer"
           priority
         />

@@ -8,11 +8,11 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "build:worker": "opennextjs-cloudflare build --dangerouslyUseUnsupportedNextVersion",
-    "preview": "opennextjs-cloudflare build --dangerouslyUseUnsupportedNextVersion && wrangler dev",
-    "deploy": "opennextjs-cloudflare build --dangerouslyUseUnsupportedNextVersion && wrangler deploy",
+    "build:worker": "node scripts/cloudflare-build.mjs",
+    "preview": "node scripts/cloudflare-build.mjs && wrangler dev",
+    "deploy": "node scripts/cloudflare-build.mjs && wrangler deploy",
     "postinstall": "node scripts/postinstall.mjs",
-    "test": "node --experimental-strip-types --test tests/booking-pricing.test.ts tests/date-validation.test.ts tests/commission.test.ts tests/authenticity.test.ts tests/account.test.ts tests/host-workspace.test.ts tests/admin.test.ts tests/security-audit.test.ts tests/products-marketplace.test.ts tests/phase2g-2h-ecosystem.test.ts"
+    "test": "node --experimental-strip-types --test tests/booking-pricing.test.ts tests/date-validation.test.ts tests/commission.test.ts tests/authenticity.test.ts tests/account.test.ts tests/host-workspace.test.ts tests/admin.test.ts tests/security-audit.test.ts tests/products-marketplace.test.ts tests/phase2g-2h-ecosystem.test.ts tests/phase2-staff-seller-governance.test.ts"
   },
   "overrides": {
     "@opennextjs/cloudflare": {

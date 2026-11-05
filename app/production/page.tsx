@@ -105,7 +105,7 @@ export default function ProductionPage() {
               <History className="w-4 h-4 text-ukorange" />
               <h3 className="font-serif text-lg font-bold">Continue Watching</h3>
             </div>
-            <button
+            <button suppressHydrationWarning
               onClick={() => {
                 setWatchHistory([]);
                 try {
@@ -161,7 +161,7 @@ export default function ProductionPage() {
         {/* Categories */}
         <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
           {CATEGORIES.map((cat) => (
-            <button
+            <button suppressHydrationWarning
               key={cat.id}
               onClick={() => setSelectedCategory(cat.id)}
               className={`px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${
@@ -193,7 +193,7 @@ export default function ProductionPage() {
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
 
                   {/* Play Button */}
-                  <button
+                  <button suppressHydrationWarning
                     onClick={() => handlePlay(prod)}
                     className="absolute inset-0 flex items-center justify-center focus:outline-none"
                     aria-label={`Play ${prod.title}`}
@@ -223,7 +223,7 @@ export default function ProductionPage() {
 
                   <div className="pt-3 border-t border-forest/10 flex items-center justify-between gap-2 flex-wrap">
                     <div className="flex items-center gap-2">
-                      <button
+                      <button suppressHydrationWarning
                         onClick={() => handlePlay(prod)}
                         className="inline-flex items-center gap-1.5 bg-forest text-ivory px-4 py-2 rounded-full text-xs font-semibold hover:bg-forest-dark transition-all"
                       >
@@ -295,7 +295,7 @@ export default function ProductionPage() {
                   {activeVideo.title}
                 </h3>
               </div>
-              <button
+              <button suppressHydrationWarning
                 onClick={() => setActiveVideo(null)}
                 className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-ivory transition-colors"
                 aria-label="Close Player"

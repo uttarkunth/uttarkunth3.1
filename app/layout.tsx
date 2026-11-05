@@ -26,8 +26,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="scroll-smooth">
-      <body className="min-h-screen flex flex-col bg-ivory text-charcoal">
+    <html lang="en" className="scroll-smooth" suppressHydrationWarning>
+      <body className="min-h-screen flex flex-col bg-ivory text-charcoal" suppressHydrationWarning>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `try{document.querySelectorAll('[fdprocessedid]').forEach(function(el){el.removeAttribute('fdprocessedid')})}catch(e){}`,
+          }}
+        />
         <Header />
         <main className="flex-1">
           {children}

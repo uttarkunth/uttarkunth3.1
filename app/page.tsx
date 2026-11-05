@@ -6,7 +6,7 @@ import { HeroVideo } from '@/components/hero-video';
 import { PartnershipChooser } from '@/components/partnership-chooser';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { EXISTING_PROPERTIES, BRAND } from '@/lib/constants';
-import { getActiveDestinations, filterPropertiesForDestination } from '@/lib/destinations';
+import { getActiveDestinations, filterPropertiesForDestination } from '@/lib/destinations.server';
 import { formatINR } from '@/lib/utils';
 import {
   Sparkles,

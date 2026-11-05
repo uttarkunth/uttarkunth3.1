@@ -233,7 +233,7 @@ export function FilmmakerCollaborateForm({ initialEmail = '', isLoggedIn, isDbRe
           >
             Go to My Productions Workspace
           </Link>
-          <button
+          <button suppressHydrationWarning
             onClick={() => setSuccessData(null)}
             className="w-full sm:w-auto px-6 py-2.5 bg-ivory-warm hover:bg-forest/10 text-forest text-xs font-semibold rounded-xl border border-forest/20 transition-colors"
           >
@@ -280,7 +280,7 @@ export function FilmmakerCollaborateForm({ initialEmail = '', isLoggedIn, isDbRe
               <User className="w-3.5 h-3.5 text-forest/70" />
               Full Name *
             </label>
-            <input
+            <input suppressHydrationWarning
               type="text"
               required
               value={fullName}
@@ -295,7 +295,7 @@ export function FilmmakerCollaborateForm({ initialEmail = '', isLoggedIn, isDbRe
               <Mail className="w-3.5 h-3.5 text-forest/70" />
               Contact Email *
             </label>
-            <input
+            <input suppressHydrationWarning
               type="email"
               required
               value={email}
@@ -310,7 +310,7 @@ export function FilmmakerCollaborateForm({ initialEmail = '', isLoggedIn, isDbRe
               <Phone className="w-3.5 h-3.5 text-forest/70" />
               Phone / WhatsApp
             </label>
-            <input
+            <input suppressHydrationWarning
               type="tel"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
@@ -324,7 +324,7 @@ export function FilmmakerCollaborateForm({ initialEmail = '', isLoggedIn, isDbRe
               <MapPin className="w-3.5 h-3.5 text-forest/70" />
               Current Base / Location *
             </label>
-            <input
+            <input suppressHydrationWarning
               type="text"
               required
               value={location}
@@ -340,7 +340,7 @@ export function FilmmakerCollaborateForm({ initialEmail = '', isLoggedIn, isDbRe
             <Film className="w-3.5 h-3.5 text-forest/70" />
             Primary Creative Role *
           </label>
-          <select
+          <select suppressHydrationWarning
             value={creativeRole}
             onChange={(e) => setCreativeRole(e.target.value)}
             className="w-full px-3.5 py-2.5 rounded-xl border border-forest/20 text-xs text-charcoal bg-white focus:ring-2 focus:ring-ukorange/30 focus:border-forest outline-none transition-all"
@@ -362,7 +362,7 @@ export function FilmmakerCollaborateForm({ initialEmail = '', isLoggedIn, isDbRe
             {SKILL_OPTIONS.map((skill) => {
               const active = selectedSkills.includes(skill);
               return (
-                <button
+                <button suppressHydrationWarning
                   type="button"
                   key={skill}
                   onClick={() => toggleSkill(skill)}
@@ -384,7 +384,7 @@ export function FilmmakerCollaborateForm({ initialEmail = '', isLoggedIn, isDbRe
             <LinkIcon className="w-3.5 h-3.5 text-forest/70" />
             Portfolio, Vimeo, or Showreel URL
           </label>
-          <input
+          <input suppressHydrationWarning
             type="url"
             value={portfolioUrl}
             onChange={(e) => setPortfolioUrl(e.target.value)}
@@ -397,7 +397,7 @@ export function FilmmakerCollaborateForm({ initialEmail = '', isLoggedIn, isDbRe
           <label className="text-xs font-semibold text-charcoal block">
             Creative Bio & Previous Work (min 20 characters) *
           </label>
-          <textarea
+          <textarea suppressHydrationWarning
             required
             rows={3}
             value={bio}
@@ -418,7 +418,7 @@ export function FilmmakerCollaborateForm({ initialEmail = '', isLoggedIn, isDbRe
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-charcoal block">Project Title *</label>
-            <input
+            <input suppressHydrationWarning
               type="text"
               required
               value={title}
@@ -430,7 +430,7 @@ export function FilmmakerCollaborateForm({ initialEmail = '', isLoggedIn, isDbRe
 
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-charcoal block">Format / Category *</label>
-            <select
+            <select suppressHydrationWarning
               value={category}
               onChange={(e) => setCategory(e.target.value as any)}
               className="w-full px-3.5 py-2.5 rounded-xl border border-forest/20 text-xs text-charcoal bg-white focus:ring-2 focus:ring-ukorange/30 focus:border-forest outline-none transition-all"
@@ -448,7 +448,7 @@ export function FilmmakerCollaborateForm({ initialEmail = '', isLoggedIn, isDbRe
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-charcoal block">Proposed Mountain Location / Valley *</label>
-            <input
+            <input suppressHydrationWarning
               type="text"
               required
               value={proposedLocation}
@@ -460,7 +460,7 @@ export function FilmmakerCollaborateForm({ initialEmail = '', isLoggedIn, isDbRe
 
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-charcoal block">Estimated Budget (Optional, ₹ INR)</label>
-            <input
+            <input suppressHydrationWarning
               type="number"
               value={estimatedBudget}
               onChange={(e) => setEstimatedBudget(e.target.value)}
@@ -474,7 +474,7 @@ export function FilmmakerCollaborateForm({ initialEmail = '', isLoggedIn, isDbRe
           <label className="text-xs font-semibold text-charcoal block">
             Logline / Short Synopsis (min 20 characters) *
           </label>
-          <textarea
+          <textarea suppressHydrationWarning
             required
             rows={2}
             value={synopsis}
@@ -488,7 +488,7 @@ export function FilmmakerCollaborateForm({ initialEmail = '', isLoggedIn, isDbRe
           <label className="text-xs font-semibold text-charcoal block">
             Detailed Concept & Creative Treatment (min 30 characters) *
           </label>
-          <textarea
+          <textarea suppressHydrationWarning
             required
             rows={4}
             value={concept}
@@ -502,7 +502,7 @@ export function FilmmakerCollaborateForm({ initialEmail = '', isLoggedIn, isDbRe
           <label className="text-xs font-semibold text-charcoal block">
             Cultural & Ecological Relevance (min 20 characters) *
           </label>
-          <textarea
+          <textarea suppressHydrationWarning
             required
             rows={3}
             value={culturalRelevance}
@@ -555,7 +555,7 @@ export function FilmmakerCollaborateForm({ initialEmail = '', isLoggedIn, isDbRe
           )}
         </p>
 
-        <button
+        <button suppressHydrationWarning
           type="submit"
           disabled={loading}
           className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-3 bg-forest hover:bg-forest-hover text-white text-xs font-semibold rounded-xl shadow-xs transition-colors disabled:opacity-50"

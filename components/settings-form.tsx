@@ -109,7 +109,7 @@ export function SettingsForm() {
         <form onSubmit={handlePasswordChange} className="space-y-4 max-w-md">
           <div>
             <label className="block text-xs font-semibold text-charcoal-muted mb-1">New Password</label>
-            <input
+            <input suppressHydrationWarning
               type="password"
               required
               minLength={6}
@@ -122,7 +122,7 @@ export function SettingsForm() {
 
           <div>
             <label className="block text-xs font-semibold text-charcoal-muted mb-1">Confirm New Password</label>
-            <input
+            <input suppressHydrationWarning
               type="password"
               required
               minLength={6}
@@ -133,7 +133,7 @@ export function SettingsForm() {
             />
           </div>
 
-          <button
+          <button suppressHydrationWarning
             type="submit"
             disabled={updatingPassword}
             className="inline-flex items-center gap-2 px-4 py-2 bg-forest hover:bg-forest-hover disabled:bg-forest/50 text-white text-xs font-semibold rounded-xl transition-colors"
@@ -165,7 +165,7 @@ export function SettingsForm() {
 
         <form onSubmit={handleSavePreferences} className="space-y-4">
           <label className="flex items-start gap-3 cursor-pointer">
-            <input
+            <input suppressHydrationWarning
               type="checkbox"
               checked={bookingUpdates}
               onChange={(e) => setBookingUpdates(e.target.checked)}
@@ -180,7 +180,7 @@ export function SettingsForm() {
           </label>
 
           <label className="flex items-start gap-3 cursor-pointer">
-            <input
+            <input suppressHydrationWarning
               type="checkbox"
               checked={culturalDispatches}
               onChange={(e) => setCulturalDispatches(e.target.checked)}
@@ -194,7 +194,7 @@ export function SettingsForm() {
             </div>
           </label>
 
-          <button
+          <button suppressHydrationWarning
             type="submit"
             disabled={savingPrefs}
             className="inline-flex items-center gap-2 px-4 py-2 bg-ivory-warm hover:bg-forest/10 text-forest border border-forest/20 text-xs font-semibold rounded-xl transition-colors"
@@ -212,7 +212,7 @@ export function SettingsForm() {
         </div>
 
         <div>
-          <button
+          <button suppressHydrationWarning
             type="button"
             onClick={handleSignOut}
             className="inline-flex items-center gap-2 px-4 py-2.5 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 text-xs font-semibold rounded-xl transition-colors"

@@ -96,7 +96,7 @@ export function CommunityStoryForm({ isDbReady = false }: { isDbReady?: boolean 
             We invite village elders, local hosts, and field volunteers to contribute oral history transcripts, folklore, and field reflections.
           </p>
         </div>
-        <button
+        <button suppressHydrationWarning
           onClick={() => setIsOpen(true)}
           className="inline-flex items-center gap-2 px-6 py-2.5 bg-forest hover:bg-forest-hover text-white text-xs font-semibold rounded-xl transition-colors shadow-xs"
         >
@@ -114,7 +114,7 @@ export function CommunityStoryForm({ isDbReady = false }: { isDbReady?: boolean 
           <span className="text-[11px] font-bold uppercase tracking-wider text-ukorange">Community Archive</span>
           <h3 className="font-serif text-2xl font-bold text-forest mt-0.5">Contribute a Mountain Story</h3>
         </div>
-        <button
+        <button suppressHydrationWarning
           type="button"
           onClick={() => setIsOpen(false)}
           className="text-xs text-charcoal-muted hover:text-forest"
@@ -140,7 +140,7 @@ export function CommunityStoryForm({ isDbReady = false }: { isDbReady?: boolean 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="space-y-1">
           <label className="text-xs font-semibold text-charcoal block">Author / Narrator Name *</label>
-          <input
+          <input suppressHydrationWarning
             type="text"
             required
             value={authorName}
@@ -152,7 +152,7 @@ export function CommunityStoryForm({ isDbReady = false }: { isDbReady?: boolean 
 
         <div className="space-y-1">
           <label className="text-xs font-semibold text-charcoal block">Role / Affiliation *</label>
-          <input
+          <input suppressHydrationWarning
             type="text"
             required
             value={authorRole}
@@ -164,7 +164,7 @@ export function CommunityStoryForm({ isDbReady = false }: { isDbReady?: boolean 
 
         <div className="space-y-1">
           <label className="text-xs font-semibold text-charcoal block">Village *</label>
-          <input
+          <input suppressHydrationWarning
             type="text"
             required
             value={village}
@@ -176,7 +176,7 @@ export function CommunityStoryForm({ isDbReady = false }: { isDbReady?: boolean 
 
         <div className="space-y-1">
           <label className="text-xs font-semibold text-charcoal block">Valley *</label>
-          <input
+          <input suppressHydrationWarning
             type="text"
             required
             value={valley}
@@ -189,7 +189,7 @@ export function CommunityStoryForm({ isDbReady = false }: { isDbReady?: boolean 
 
       <div className="space-y-1">
         <label className="text-xs font-semibold text-charcoal block">Story Title (min 5 characters) *</label>
-        <input
+        <input suppressHydrationWarning
           type="text"
           required
           value={title}
@@ -201,7 +201,7 @@ export function CommunityStoryForm({ isDbReady = false }: { isDbReady?: boolean 
 
       <div className="space-y-1">
         <label className="text-xs font-semibold text-charcoal block">Short Excerpt / Summary (min 20 characters) *</label>
-        <input
+        <input suppressHydrationWarning
           type="text"
           required
           value={excerpt}
@@ -213,7 +213,7 @@ export function CommunityStoryForm({ isDbReady = false }: { isDbReady?: boolean 
 
       <div className="space-y-1">
         <label className="text-xs font-semibold text-charcoal block">Story Content (min 50 characters) *</label>
-        <textarea
+        <textarea suppressHydrationWarning
           required
           rows={6}
           value={content}
@@ -226,7 +226,7 @@ export function CommunityStoryForm({ isDbReady = false }: { isDbReady?: boolean 
       {/* Ethical Consent Checkbox */}
       <div className="p-4 bg-ivory-warm rounded-2xl border border-forest/15 space-y-2">
         <label className="flex items-start gap-2.5 cursor-pointer text-xs text-charcoal leading-relaxed">
-          <input
+          <input suppressHydrationWarning
             type="checkbox"
             checked={consentGiven}
             onChange={(e) => setConsentGiven(e.target.checked)}
@@ -239,7 +239,7 @@ export function CommunityStoryForm({ isDbReady = false }: { isDbReady?: boolean 
       </div>
 
       <div className="flex items-center justify-end gap-3 pt-2">
-        <button
+        <button suppressHydrationWarning
           type="button"
           onClick={() => setIsOpen(false)}
           className="px-4 py-2 text-xs font-semibold text-charcoal-muted hover:text-forest"
@@ -247,7 +247,7 @@ export function CommunityStoryForm({ isDbReady = false }: { isDbReady?: boolean 
           Cancel
         </button>
 
-        <button
+        <button suppressHydrationWarning
           type="submit"
           disabled={loading || !consentGiven}
           className="inline-flex items-center gap-1.5 px-6 py-2.5 bg-forest hover:bg-forest-hover text-white text-xs font-semibold rounded-xl shadow-xs transition-colors disabled:opacity-50"

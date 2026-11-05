@@ -1,56 +1,74 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { checkIsPlatformAdmin } from '@/lib/auth';
+import { requireStaffPermission, recordStaffAuditLog } from '@/lib/staff-rbac';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
   try {
-    const supabase = createServerSupabaseClient();
-    const { data: { user }, error: authErr } = await supabase.auth.getUser();
+    const auth = await requireStaffPermission('property.assign_host', {
+      requireMfaAal2: true,
+      requiredDepartment: 'stays',
+    });
 
-    const isAdmin = user ? await checkIsPlatformAdmin(user.id) : false;
-    if (authErr || !user || !isAdmin) {
-      return NextResponse.json({
-        ok: false,
-        error: 'Forbidden: Platform administrator privileges required.'
-      }, { status: 403 });
+    if (!auth.authorized || !auth.user || !auth.staffProfile) {
+      return NextResponse.json(
+        {
+          ok: false,
+          code: auth.code,
+          error:
+            auth.error ||
+            'Forbidden: Host assignment permission (property.assign_host) and TOTP MFA (AAL2) required.',
+        },
+        { status: auth.status }
+      );
     }
+
+    const user = auth.user;
+    const staffProfile = auth.staffProfile;
 
     const body = await req.json();
     const { action, property_id, user_id, role } = body;
 
     if (!action || !property_id) {
-      return NextResponse.json({
-        ok: false,
-        error: 'Missing action or property_id.'
-      }, { status: 400 });
+      return NextResponse.json(
+        {
+          ok: false,
+          error: 'Missing action or property_id.',
+        },
+        { status: 400 }
+      );
     }
 
     const adminClient = createAdminClient();
 
     if (action === 'set_primary_host') {
       if (!user_id) {
-        return NextResponse.json({ ok: false, error: 'User ID is required to assign primary host.' }, { status: 400 });
+        return NextResponse.json(
+          { ok: false, error: 'User ID is required to assign primary host.' },
+          { status: 400 }
+        );
       }
 
       const { error: updateErr } = await adminClient
         .from('properties')
         .update({
           host_id: user_id,
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
         })
         .eq('id', property_id);
 
       if (updateErr) throw updateErr;
 
-      await adminClient.from('admin_audit_log').insert({
-        actor_user_id: user.id,
+      await recordStaffAuditLog({
+        actorUserId: user.id,
+        actorEmail: user.email,
+        staffId: staffProfile.staff_id,
+        roleSlug: staffProfile.role_slug,
         action: 'primary_host_assigned',
-        target_type: 'property',
-        target_id: property_id,
-        details: { assigned_host_id: user_id, admin_email: user.email }
+        targetType: 'property',
+        targetId: String(property_id),
+        afterState: { assigned_host_id: user_id },
       });
 
       return NextResponse.json({ ok: true, message: 'Primary host assigned successfully.' });
@@ -61,18 +79,21 @@ export async function POST(req: NextRequest) {
         .from('properties')
         .update({
           host_id: null,
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
         })
         .eq('id', property_id);
 
       if (updateErr) throw updateErr;
 
-      await adminClient.from('admin_audit_log').insert({
-        actor_user_id: user.id,
+      await recordStaffAuditLog({
+        actorUserId: user.id,
+        actorEmail: user.email,
+        staffId: staffProfile.staff_id,
+        roleSlug: staffProfile.role_slug,
         action: 'primary_host_removed',
-        target_type: 'property',
-        target_id: property_id,
-        details: { admin_email: user.email }
+        targetType: 'property',
+        targetId: String(property_id),
+        afterState: { assigned_host_id: null },
       });
 
       return NextResponse.json({ ok: true, message: 'Primary host removed.' });
@@ -80,10 +101,12 @@ export async function POST(req: NextRequest) {
 
     if (action === 'add_cohost') {
       if (!user_id || !role || !['manager', 'co_host'].includes(role)) {
-        return NextResponse.json({ ok: false, error: 'Valid user_id and role (manager | co_host) required.' }, { status: 400 });
+        return NextResponse.json(
+          { ok: false, error: 'Valid user_id and role (manager | co_host) required.' },
+          { status: 400 }
+        );
       }
 
-      // Check existing assignment
       const { data: existing } = await (adminClient.from('property_hosts') as any)
         .select('id')
         .eq('property_id', property_id)
@@ -95,29 +118,37 @@ export async function POST(req: NextRequest) {
           .update({ role })
           .eq('id', existing.id);
       } else {
-        const { error: insertErr } = await (adminClient.from('property_hosts') as any)
-          .insert({
-            property_id,
-            user_id,
-            role
-          });
+        const { error: insertErr } = await (adminClient.from('property_hosts') as any).insert({
+          property_id,
+          user_id,
+          role,
+        });
         if (insertErr) throw insertErr;
       }
 
-      await adminClient.from('admin_audit_log').insert({
-        actor_user_id: user.id,
+      await recordStaffAuditLog({
+        actorUserId: user.id,
+        actorEmail: user.email,
+        staffId: staffProfile.staff_id,
+        roleSlug: staffProfile.role_slug,
         action: 'cohost_assigned',
-        target_type: 'property',
-        target_id: property_id,
-        details: { assigned_user_id: user_id, role, admin_email: user.email }
+        targetType: 'property',
+        targetId: String(property_id),
+        afterState: { assigned_user_id: user_id, role },
       });
 
-      return NextResponse.json({ ok: true, message: `${role === 'manager' ? 'Manager' : 'Co-host'} assigned successfully.` });
+      return NextResponse.json({
+        ok: true,
+        message: `${role === 'manager' ? 'Manager' : 'Co-host'} assigned successfully.`,
+      });
     }
 
     if (action === 'remove_cohost') {
       if (!user_id) {
-        return NextResponse.json({ ok: false, error: 'User ID is required to remove co-host.' }, { status: 400 });
+        return NextResponse.json(
+          { ok: false, error: 'User ID is required to remove co-host.' },
+          { status: 400 }
+        );
       }
 
       const { error: deleteErr } = await (adminClient.from('property_hosts') as any)
@@ -127,12 +158,15 @@ export async function POST(req: NextRequest) {
 
       if (deleteErr) throw deleteErr;
 
-      await adminClient.from('admin_audit_log').insert({
-        actor_user_id: user.id,
+      await recordStaffAuditLog({
+        actorUserId: user.id,
+        actorEmail: user.email,
+        staffId: staffProfile.staff_id,
+        roleSlug: staffProfile.role_slug,
         action: 'cohost_removed',
-        target_type: 'property',
-        target_id: property_id,
-        details: { removed_user_id: user_id, admin_email: user.email }
+        targetType: 'property',
+        targetId: String(property_id),
+        afterState: { removed_user_id: user_id },
       });
 
       return NextResponse.json({ ok: true, message: 'Co-host assignment removed.' });
@@ -141,9 +175,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: 'Unknown action.' }, { status: 400 });
   } catch (err: any) {
     console.error('Host assignment action error:', err);
-    return NextResponse.json({
-      ok: false,
-      error: err.message || 'Failed to update host assignment.'
-    }, { status: 500 });
+    return NextResponse.json(
+      {
+        ok: false,
+        error: err.message || 'Failed to update host assignment.',
+      },
+      { status: 500 }
+    );
   }
 }

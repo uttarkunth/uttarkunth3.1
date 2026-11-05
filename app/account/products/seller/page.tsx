@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { SellerProductSubmitForm } from '@/components/seller-product-submit-form';
+import { SellerDeskGovernancePanel } from '@/components/seller-desk-governance-panel';
 import {
   Store,
   Clock,
@@ -11,7 +12,6 @@ import {
   XCircle,
   AlertCircle,
   Package,
-  Layers,
   MapPin,
   ArrowRight,
   ShieldCheck,
@@ -21,7 +21,9 @@ export const dynamic = 'force-dynamic';
 
 export default async function SellerWorkspacePage() {
   const supabase = createServerSupabaseClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   if (!user) {
     redirect('/login?next=/account/products/seller');
@@ -85,12 +87,14 @@ export default async function SellerWorkspacePage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <span className="text-xs font-bold uppercase tracking-widest text-ukorange">Artisan Collective</span>
+          <span className="text-xs font-bold uppercase tracking-widest text-ukorange">
+            Artisan Collective &amp; Brand Desk
+          </span>
           <h1 className="font-serif text-3xl sm:text-4xl font-bold text-forest mt-1">
             Seller Workspace
           </h1>
           <p className="text-xs text-charcoal-muted mt-1">
-            Manage your Himalayan workshop profile, submitted product batches, and curation status.
+            Manage your Himalayan workshop profile, private business &amp; GSTIN compliance vault, and curated product catalog.
           </p>
         </div>
 
@@ -131,45 +135,51 @@ export default async function SellerWorkspacePage() {
 
       {/* Case 2: Application under review */}
       {seller && seller.status === 'pending' && (
-        <div className="bg-white rounded-3xl p-8 border border-amber-300 ring-1 ring-amber-200/60 shadow-soft space-y-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-amber-100 text-amber-800 flex items-center justify-center flex-shrink-0">
-              <Clock className="w-5 h-5" />
+        <div className="space-y-6">
+          <div className="bg-white rounded-3xl p-8 border border-amber-300 ring-1 ring-amber-200/60 shadow-soft space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-amber-100 text-amber-800 flex items-center justify-center flex-shrink-0">
+                <Clock className="w-5 h-5" />
+              </div>
+              <div>
+                <h2 className="font-serif text-xl font-bold text-forest">
+                  Seller Application &amp; Compliance Dossier Under Review
+                </h2>
+                <span className="text-xs text-charcoal-muted">
+                  Submitted for <strong>{seller.business_name}</strong> ({seller.valley}, {seller.state})
+                </span>
+              </div>
             </div>
-            <div>
-              <h2 className="font-serif text-xl font-bold text-forest">
-                Seller Application Under Review
-              </h2>
-              <span className="text-xs text-charcoal-muted">
-                Submitted for <strong>{seller.business_name}</strong> ({seller.valley}, {seller.state})
-              </span>
-            </div>
+            <p className="text-xs text-charcoal-muted leading-relaxed max-w-2xl">
+              Our Marketplace &amp; Compliance team is verifying your craft provenance, tax status, and category licences. You can still upload replacement or supplemental compliance documents below while your dossier is under review.
+            </p>
           </div>
-          <p className="text-xs text-charcoal-muted leading-relaxed max-w-2xl">
-            Our mountain curation team is verifying your craft provenance and sourcing ethics. We review every application to safeguard zero middle-layer exploitation and pure regional origin. You will receive an update at <strong>{seller.contact_email}</strong> within 48 hours.
-          </p>
+
+          <SellerDeskGovernancePanel seller={seller} />
         </div>
       )}
 
-      {/* Case 3: Application rejected */}
+      {/* Case 3: Application rejected / revision requested */}
       {seller && seller.status === 'rejected' && (
-        <div className="bg-white rounded-3xl p-8 border border-red-300 ring-1 ring-red-200 shadow-soft space-y-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-red-100 text-red-800 flex items-center justify-center flex-shrink-0">
-              <AlertCircle className="w-5 h-5" />
+        <div className="space-y-6">
+          <div className="bg-white rounded-3xl p-8 border border-red-300 ring-1 ring-red-200 shadow-soft space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-red-100 text-red-800 flex items-center justify-center flex-shrink-0">
+                <AlertCircle className="w-5 h-5" />
+              </div>
+              <div>
+                <h2 className="font-serif text-xl font-bold text-forest">
+                  Application Needs Revision or Supplemental Licences
+                </h2>
+                <span className="text-xs text-charcoal-muted">{seller.business_name}</span>
+              </div>
             </div>
-            <div>
-              <h2 className="font-serif text-xl font-bold text-forest">
-                Application Needs Revision
-              </h2>
-              <span className="text-xs text-charcoal-muted">
-                {seller.business_name}
-              </span>
-            </div>
+            <p className="text-xs text-charcoal-muted leading-relaxed max-w-2xl">
+              Our compliance team requested additional provenance or statutory documentation before approving your seller account. Upload replacement documents in the Compliance Vault below.
+            </p>
           </div>
-          <p className="text-xs text-charcoal-muted leading-relaxed max-w-2xl">
-            Our curation team was unable to verify the natural mountain provenance or authentic workshop details for this application. Please reach out to <a href="mailto:info@uttarkunth.com" className="text-forest underline">info@uttarkunth.com</a> to provide additional craft certification.
-          </p>
+
+          <SellerDeskGovernancePanel seller={seller} />
         </div>
       )}
 
@@ -191,7 +201,9 @@ export default async function SellerWorkspacePage() {
               </h2>
               <p className="text-xs text-charcoal-muted flex items-center gap-1.5">
                 <MapPin className="w-3.5 h-3.5 text-ukorange" />
-                <span>{seller.valley}, {seller.state}</span>
+                <span>
+                  {seller.valley}, {seller.state}
+                </span>
                 <span>&bull;</span>
                 <span>Lead: {seller.maker_name}</span>
               </p>
@@ -199,9 +211,14 @@ export default async function SellerWorkspacePage() {
 
             <div className="p-4 bg-ivory-warm rounded-2xl border border-forest/10 text-xs text-charcoal-muted space-y-1 max-w-xs">
               <span className="font-semibold text-forest block">Ethical Curation Standard</span>
-              <span>All product submissions undergo inspection for pure natural materials prior to public listing.</span>
+              <span>
+                All product submissions undergo inspection for pure natural materials and category licences prior to public listing.
+              </span>
             </div>
           </div>
+
+          {/* Seller Brand & Private Compliance Vault */}
+          <SellerDeskGovernancePanel seller={seller} />
 
           {/* Product Submission Section */}
           <SellerProductSubmitForm />
@@ -223,7 +240,9 @@ export default async function SellerWorkspacePage() {
             {products.length === 0 ? (
               <div className="text-center py-12 space-y-2">
                 <Package className="w-8 h-8 text-forest/40 mx-auto" />
-                <h4 className="font-serif text-base font-bold text-forest">No products submitted yet</h4>
+                <h4 className="font-serif text-base font-bold text-forest">
+                  No products submitted yet
+                </h4>
                 <p className="text-xs text-charcoal-muted max-w-sm mx-auto">
                   Use the submission form above to add your first handcrafted batch or mountain harvest.
                 </p>
@@ -231,11 +250,19 @@ export default async function SellerWorkspacePage() {
             ) : (
               <div className="divide-y divide-forest/10">
                 {products.map((prod) => (
-                  <div key={prod.id} className="py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div
+                    key={prod.id}
+                    className="py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                  >
                     <div className="flex items-center gap-4">
                       <div className="w-14 h-14 rounded-2xl bg-forest/5 border border-forest/10 overflow-hidden flex-shrink-0">
                         {prod.photos?.[0] ? (
-                          <img src={prod.photos[0]} alt={prod.title} className="w-full h-full object-cover" />
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={prod.photos[0]}
+                            alt={prod.title}
+                            className="w-full h-full object-cover"
+                          />
                         ) : (
                           <Package className="w-6 h-6 text-forest/40 m-auto mt-4" />
                         )}
@@ -246,11 +273,16 @@ export default async function SellerWorkspacePage() {
                           {getModerationBadge(prod.moderation_status)}
                         </div>
                         <p className="text-xs text-charcoal-muted">
-                          Category: <span className="capitalize">{prod.category}</span> &bull; Materials: {prod.materials}
+                          Category: <span className="capitalize">{prod.category}</span> &bull;
+                          Materials: {prod.materials}
                         </p>
                         <p className="text-[11px] text-charcoal-muted">
-                          Status: <span className="capitalize font-semibold text-charcoal">{prod.inventory_status.replace('_', ' ')}</span>
-                          {prod.price_estimate && ` • Est: ₹${Number(prod.price_estimate).toLocaleString('en-IN')}`}
+                          Status:{' '}
+                          <span className="capitalize font-semibold text-charcoal">
+                            {prod.inventory_status.replace('_', ' ')}
+                          </span>
+                          {prod.price_estimate &&
+                            ` • Est: ₹${Number(prod.price_estimate).toLocaleString('en-IN')}`}
                         </p>
                       </div>
                     </div>

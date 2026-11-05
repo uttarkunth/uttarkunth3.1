@@ -52,7 +52,7 @@ export function ProductsBrowser({ products }: ProductsBrowserProps) {
 
           <div className="relative max-w-xs w-full">
             <Search className="w-4 h-4 text-charcoal-muted absolute left-3 top-1/2 -translate-y-1/2" />
-            <input
+            <input suppressHydrationWarning
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -64,7 +64,7 @@ export function ProductsBrowser({ products }: ProductsBrowserProps) {
 
         {/* Category Pills */}
         <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
-          <button
+          <button suppressHydrationWarning
             onClick={() => setSelectedCategory('all')}
             className={`px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${
               selectedCategory === 'all'
@@ -75,7 +75,7 @@ export function ProductsBrowser({ products }: ProductsBrowserProps) {
             All Categories ({PRODUCT_CATEGORIES.length})
           </button>
           {PRODUCT_CATEGORIES.map((cat) => (
-            <button
+            <button suppressHydrationWarning
               key={cat.id}
               onClick={() => setSelectedCategory(cat.id)}
               className={`px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${

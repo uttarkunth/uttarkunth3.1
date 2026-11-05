@@ -71,7 +71,7 @@ export function AuditLogViewer({ entries }: AuditLogViewerProps) {
       <div className="bg-white rounded-3xl p-4 sm:p-6 border border-forest/15 shadow-soft flex flex-col sm:flex-row items-center gap-4">
         <div className="relative flex-1 w-full">
           <Search className="w-4 h-4 text-charcoal-muted absolute left-3 top-1/2 -translate-y-1/2" />
-          <input
+          <input suppressHydrationWarning
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -82,7 +82,7 @@ export function AuditLogViewer({ entries }: AuditLogViewerProps) {
 
         <div className="flex items-center gap-2 w-full sm:w-auto overflow-x-auto">
           {['all', 'property', 'agreement', 'booking'].map((t) => (
-            <button
+            <button suppressHydrationWarning
               key={t}
               type="button"
               onClick={() => setFilterType(t)}
@@ -133,7 +133,7 @@ export function AuditLogViewer({ entries }: AuditLogViewerProps) {
                       {new Date(e.created_at).toLocaleString()}
                     </span>
 
-                    <button
+                    <button suppressHydrationWarning
                       type="button"
                       onClick={() => setExpandedId(isExpanded ? null : e.id)}
                       className="text-xs font-semibold text-forest hover:text-forest-light flex items-center gap-0.5"

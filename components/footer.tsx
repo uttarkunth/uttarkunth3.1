@@ -147,10 +147,10 @@ export function Footer() {
           </div>
         </div>
 
-        {/* Bottom Bar — Strict Brand Rule: No version suffixes */}
+        {/* Bottom Bar — Strict Brand Rule: No version suffixes, zero internal portal links */}
         <div className="pt-8 mt-8 border-t border-forest/40 flex flex-col sm:flex-row items-center justify-between text-xs text-warm-canvas/60 gap-4">
           <p>© {new Date().getFullYear()} Uttarkunth. All rights reserved.</p>
-          <div className="flex items-center gap-6">
+          <div className="flex flex-wrap items-center gap-6">
             <Link href="/privacy" className="hover:text-warm-canvas transition-colors">Privacy</Link>
             <Link href="/terms" className="hover:text-warm-canvas transition-colors">Terms</Link>
             <Link href="/booking-policy" className="hover:text-warm-canvas transition-colors">Booking Policy</Link>

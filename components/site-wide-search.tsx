@@ -167,6 +167,7 @@ export function SiteWideSearch({ initialQuery = '' }: { initialQuery?: string })
       <div className="relative">
         <Search className="w-5 h-5 text-forest/50 absolute left-4 top-1/2 -translate-y-1/2" />
         <input
+          suppressHydrationWarning
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
@@ -175,6 +176,7 @@ export function SiteWideSearch({ initialQuery = '' }: { initialQuery?: string })
         />
         {query && (
           <button
+            suppressHydrationWarning
             onClick={() => setQuery('')}
             className="absolute right-4 top-1/2 -translate-y-1/2 text-charcoal-muted hover:text-forest"
           >
@@ -186,6 +188,7 @@ export function SiteWideSearch({ initialQuery = '' }: { initialQuery?: string })
       {/* Pillar Filter Pills */}
       <div className="flex flex-wrap items-center gap-2">
         <button
+          suppressHydrationWarning
           onClick={() => setSelectedPillar('all')}
           className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all ${
             selectedPillar === 'all'
@@ -197,6 +200,7 @@ export function SiteWideSearch({ initialQuery = '' }: { initialQuery?: string })
         </button>
 
         <button
+          suppressHydrationWarning
           onClick={() => setSelectedPillar('stays')}
           className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all ${
             selectedPillar === 'stays'
@@ -208,6 +212,7 @@ export function SiteWideSearch({ initialQuery = '' }: { initialQuery?: string })
         </button>
 
         <button
+          suppressHydrationWarning
           onClick={() => setSelectedPillar('products')}
           className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all ${
             selectedPillar === 'products'
@@ -219,6 +224,7 @@ export function SiteWideSearch({ initialQuery = '' }: { initialQuery?: string })
         </button>
 
         <button
+          suppressHydrationWarning
           onClick={() => setSelectedPillar('productions')}
           className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all ${
             selectedPillar === 'productions'
@@ -230,6 +236,7 @@ export function SiteWideSearch({ initialQuery = '' }: { initialQuery?: string })
         </button>
 
         <button
+          suppressHydrationWarning
           onClick={() => setSelectedPillar('community')}
           className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all ${
             selectedPillar === 'community'

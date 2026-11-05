@@ -98,7 +98,7 @@ export default function ContactPage() {
               <p className="text-xs sm:text-sm text-charcoal-muted max-w-md mx-auto leading-relaxed">
                 Thank you, <strong>{name}</strong>. Gaurav Negi and our mountain hospitality team have received your enquiry and will respond within 24 hours.
               </p>
-              <button
+              <button suppressHydrationWarning
                 onClick={() => setSubmitted(false)}
                 className="mt-4 px-4 py-2 text-xs font-semibold text-forest border border-forest/20 rounded-lg hover:bg-forest/5"
               >
@@ -111,7 +111,7 @@ export default function ContactPage() {
 
               <div>
                 <label className="block text-xs font-semibold text-charcoal-muted mb-1">Your Name</label>
-                <input
+                <input suppressHydrationWarning
                   type="text"
                   required
                   placeholder="Gaurav Negi"
@@ -124,7 +124,7 @@ export default function ContactPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-semibold text-charcoal-muted mb-1">Email Address</label>
-                  <input
+                  <input suppressHydrationWarning
                     type="email"
                     required
                     placeholder="you@example.com"
@@ -135,7 +135,7 @@ export default function ContactPage() {
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-charcoal-muted mb-1">Phone Number</label>
-                  <input
+                  <input suppressHydrationWarning
                     type="tel"
                     placeholder="+91 ..."
                     value={phone}
@@ -147,7 +147,7 @@ export default function ContactPage() {
 
               <div>
                 <label className="block text-xs font-semibold text-charcoal-muted mb-1">Enquiry Type</label>
-                <select
+                <select suppressHydrationWarning
                   value={subject}
                   onChange={(e) => setSubject(e.target.value)}
                   className="w-full p-3 text-sm bg-ivory-warm border border-forest/20 rounded-xl font-medium focus:ring-2 focus:ring-forest focus:outline-none"
@@ -161,7 +161,7 @@ export default function ContactPage() {
 
               <div>
                 <label className="block text-xs font-semibold text-charcoal-muted mb-1">Message</label>
-                <textarea
+                <textarea suppressHydrationWarning
                   required
                   rows={4}
                   placeholder="How can we assist your Himalayan stay experience?"
@@ -171,7 +171,7 @@ export default function ContactPage() {
                 />
               </div>
 
-              <button
+              <button suppressHydrationWarning
                 type="submit"
                 className="w-full py-3 bg-forest hover:bg-forest-hover text-white text-sm font-semibold rounded-xl shadow-md transition-all flex items-center justify-center gap-2"
               >

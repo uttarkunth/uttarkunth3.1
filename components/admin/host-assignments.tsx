@@ -222,7 +222,7 @@ export function HostAssignmentsManager({ properties, knownUsers }: HostAssignmen
                         Primary Host (Ownership)
                       </span>
                       {p.host_id && (
-                        <button
+                        <button suppressHydrationWarning
                           type="button"
                           onClick={() => executeAction({ action: 'remove_primary_host', property_id: p.id })}
                           disabled={submitting === p.id}
@@ -252,7 +252,7 @@ export function HostAssignmentsManager({ properties, knownUsers }: HostAssignmen
                           No external host is assigned. Property is under direct platform administration.
                         </p>
                         <div className="flex items-center gap-2">
-                          <select
+                          <select suppressHydrationWarning
                             value={selectedPropertyId === p.id ? newPrimaryUserId : ''}
                             onChange={(e) => {
                               setSelectedPropertyId(p.id);
@@ -267,7 +267,7 @@ export function HostAssignmentsManager({ properties, knownUsers }: HostAssignmen
                               </option>
                             ))}
                           </select>
-                          <button
+                          <button suppressHydrationWarning
                             type="button"
                             onClick={() => {
                               if (!newPrimaryUserId) return;
@@ -321,7 +321,7 @@ export function HostAssignmentsManager({ properties, knownUsers }: HostAssignmen
                                 )}
                               </div>
 
-                              <button
+                              <button suppressHydrationWarning
                                 type="button"
                                 onClick={() => executeAction({
                                   action: 'remove_cohost',
@@ -350,7 +350,7 @@ export function HostAssignmentsManager({ properties, knownUsers }: HostAssignmen
                         Add Team Member
                       </span>
                       <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                        <select
+                        <select suppressHydrationWarning
                           value={selectedPropertyId === p.id ? cohostUserId : ''}
                           onChange={(e) => {
                             setSelectedPropertyId(p.id);
@@ -366,7 +366,7 @@ export function HostAssignmentsManager({ properties, knownUsers }: HostAssignmen
                           ))}
                         </select>
 
-                        <select
+                        <select suppressHydrationWarning
                           value={cohostRole}
                           onChange={(e) => setCohostRole(e.target.value as any)}
                           className="text-xs bg-white border border-forest/20 rounded-xl px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-forest w-32"
@@ -375,7 +375,7 @@ export function HostAssignmentsManager({ properties, knownUsers }: HostAssignmen
                           <option value="co_host">Co-host</option>
                         </select>
 
-                        <button
+                        <button suppressHydrationWarning
                           type="button"
                           onClick={() => {
                             if (!cohostUserId) return;

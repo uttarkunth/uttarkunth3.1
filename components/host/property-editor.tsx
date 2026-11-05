@@ -211,7 +211,7 @@ export function PropertyEditor({ initialProperty }: PropertyEditorProps) {
               <span>Public Listing</span>
             </Link>
 
-            <button
+            <button suppressHydrationWarning
               type="submit"
               disabled={saving}
               className="inline-flex items-center gap-2 px-5 py-2 bg-forest hover:bg-forest-hover text-white text-xs font-semibold rounded-xl shadow-xs transition-all disabled:opacity-50"
@@ -308,7 +308,7 @@ export function PropertyEditor({ initialProperty }: PropertyEditorProps) {
             </p>
           </div>
 
-          <button
+          <button suppressHydrationWarning
             type="button"
             onClick={() => setShowAddRoom(!showAddRoom)}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-forest bg-warm-canvas hover:bg-forest/10 border border-forest/20 rounded-xl"
@@ -328,7 +328,7 @@ export function PropertyEditor({ initialProperty }: PropertyEditorProps) {
                 <label className="block text-[11px] font-semibold text-charcoal-muted mb-1">
                   Room Name
                 </label>
-                <input
+                <input suppressHydrationWarning
                   type="text"
                   value={newRoomName}
                   onChange={(e) => setNewRoomName(e.target.value)}
@@ -340,7 +340,7 @@ export function PropertyEditor({ initialProperty }: PropertyEditorProps) {
                 <label className="block text-[11px] font-semibold text-charcoal-muted mb-1">
                   Base Price per Night (₹)
                 </label>
-                <input
+                <input suppressHydrationWarning
                   type="number"
                   value={newRoomPrice}
                   onChange={(e) => setNewRoomPrice(Number(e.target.value))}
@@ -352,7 +352,7 @@ export function PropertyEditor({ initialProperty }: PropertyEditorProps) {
                 <label className="block text-[11px] font-semibold text-charcoal-muted mb-1">
                   Max Guests
                 </label>
-                <input
+                <input suppressHydrationWarning
                   type="number"
                   value={newRoomGuests}
                   onChange={(e) => setNewRoomGuests(Number(e.target.value))}
@@ -363,14 +363,14 @@ export function PropertyEditor({ initialProperty }: PropertyEditorProps) {
               </div>
             </div>
             <div className="flex justify-end gap-2 pt-1">
-              <button
+              <button suppressHydrationWarning
                 type="button"
                 onClick={() => setShowAddRoom(false)}
                 className="px-3 py-1.5 text-xs font-semibold text-charcoal-muted hover:text-charcoal"
               >
                 Cancel
               </button>
-              <button
+              <button suppressHydrationWarning
                 type="button"
                 onClick={handleAddRoom}
                 className="px-4 py-1.5 bg-forest text-white text-xs font-semibold rounded-lg shadow-xs"
@@ -402,7 +402,7 @@ export function PropertyEditor({ initialProperty }: PropertyEditorProps) {
                   <span className="text-xs text-charcoal-muted font-medium">Nightly Rate:</span>
                   <div className="relative">
                     <span className="absolute left-2.5 top-2 text-xs text-charcoal-muted">₹</span>
-                    <input
+                    <input suppressHydrationWarning
                       type="number"
                       value={room.base_price}
                       onChange={(e) => updateRoomPrice(idx, Number(e.target.value))}
@@ -411,7 +411,7 @@ export function PropertyEditor({ initialProperty }: PropertyEditorProps) {
                   </div>
                 </div>
 
-                <button
+                <button suppressHydrationWarning
                   type="button"
                   onClick={() => updateRoomActive(idx, !room.active)}
                   className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${
@@ -444,7 +444,7 @@ export function PropertyEditor({ initialProperty }: PropertyEditorProps) {
           <label className="inline-flex items-center gap-1.5 px-4 py-2 bg-forest hover:bg-forest-hover text-white text-xs font-semibold rounded-xl shadow-xs cursor-pointer transition-all">
             <Upload className="w-3.5 h-3.5 text-ukorange" />
             <span>{uploading ? 'Uploading...' : 'Upload New Photo'}</span>
-            <input
+            <input suppressHydrationWarning
               type="file"
               accept="image/jpeg,image/png,image/webp"
               onChange={handlePhotoUpload}
@@ -462,7 +462,7 @@ export function PropertyEditor({ initialProperty }: PropertyEditorProps) {
                 className="group relative h-36 rounded-2xl overflow-hidden border border-forest/15 bg-forest/5"
               >
                 <img src={url} alt={`Photo ${idx + 1}`} className="w-full h-full object-cover" />
-                <button
+                <button suppressHydrationWarning
                   type="button"
                   onClick={() => removePhoto(url)}
                   className="absolute top-2 right-2 p-1.5 bg-black/60 hover:bg-red-700 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
@@ -504,7 +504,7 @@ export function PropertyEditor({ initialProperty }: PropertyEditorProps) {
             <label className="block text-xs font-semibold text-charcoal-muted mb-1.5">
               Property Description & Mountain Experience
             </label>
-            <textarea
+            <textarea suppressHydrationWarning
               rows={4}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
@@ -521,7 +521,7 @@ export function PropertyEditor({ initialProperty }: PropertyEditorProps) {
               {AMENITIES_LIST.map((item) => {
                 const checked = amenities.includes(item);
                 return (
-                  <button
+                  <button suppressHydrationWarning
                     key={item}
                     type="button"
                     onClick={() => toggleAmenity(item)}
@@ -564,7 +564,7 @@ export function PropertyEditor({ initialProperty }: PropertyEditorProps) {
             <label className="block text-xs font-semibold text-charcoal-muted mb-1">
               Property Name
             </label>
-            <input
+            <input suppressHydrationWarning
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -576,7 +576,7 @@ export function PropertyEditor({ initialProperty }: PropertyEditorProps) {
             <label className="block text-xs font-semibold text-charcoal-muted mb-1">
               Property Type
             </label>
-            <select
+            <select suppressHydrationWarning
               value={propertyType}
               onChange={(e) => setPropertyType(e.target.value)}
               className="w-full p-2.5 text-xs bg-ivory-warm border border-forest/20 rounded-xl focus:outline-none capitalize"
@@ -593,7 +593,7 @@ export function PropertyEditor({ initialProperty }: PropertyEditorProps) {
             <label className="block text-xs font-semibold text-charcoal-muted mb-1">
               Village / Settlement
             </label>
-            <input
+            <input suppressHydrationWarning
               type="text"
               value={village}
               onChange={(e) => setVillage(e.target.value)}
@@ -605,7 +605,7 @@ export function PropertyEditor({ initialProperty }: PropertyEditorProps) {
             <label className="block text-xs font-semibold text-charcoal-muted mb-1">
               District
             </label>
-            <input
+            <input suppressHydrationWarning
               type="text"
               value={district}
               onChange={(e) => setDistrict(e.target.value)}
@@ -617,7 +617,7 @@ export function PropertyEditor({ initialProperty }: PropertyEditorProps) {
             <label className="block text-xs font-semibold text-charcoal-muted mb-1">
               State
             </label>
-            <input
+            <input suppressHydrationWarning
               type="text"
               value={state}
               onChange={(e) => setState(e.target.value)}
@@ -629,7 +629,7 @@ export function PropertyEditor({ initialProperty }: PropertyEditorProps) {
             <label className="block text-xs font-semibold text-charcoal-muted mb-1">
               Full Physical Address
             </label>
-            <input
+            <input suppressHydrationWarning
               type="text"
               value={address}
               onChange={(e) => setAddress(e.target.value)}
@@ -639,7 +639,7 @@ export function PropertyEditor({ initialProperty }: PropertyEditorProps) {
         </div>
 
         <div className="pt-4 border-t border-forest/10 flex justify-end">
-          <button
+          <button suppressHydrationWarning
             type="submit"
             disabled={saving}
             className="px-6 py-2.5 bg-forest hover:bg-forest-hover text-white text-xs font-semibold rounded-xl shadow-xs transition-all flex items-center gap-2"

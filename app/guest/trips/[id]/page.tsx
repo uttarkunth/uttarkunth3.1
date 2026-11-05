@@ -174,8 +174,8 @@ export default async function TripDetailPage({ params }: TripDetailPageProps) {
               <span className="text-[11px] text-charcoal-muted">You can cancel this request without fee before check-in.</span>
             </div>
             <form action="/api/bookings/cancel" method="POST">
-              <input type="hidden" name="booking_reference" value={booking.booking_reference} />
-              <button
+              <input suppressHydrationWarning type="hidden" name="booking_reference" value={booking.booking_reference} />
+              <button suppressHydrationWarning
                 type="submit"
                 className="px-4 py-2 border border-red-300 text-red-700 hover:bg-red-50 text-xs font-semibold rounded-xl transition-colors"
               >

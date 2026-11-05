@@ -4,7 +4,7 @@ import Image from 'next/image';
 import { SearchBar } from '@/components/search-bar';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { EXISTING_PROPERTIES, BRAND } from '@/lib/constants';
-import { getActiveDestinations, filterPropertiesForDestination, Destination } from '@/lib/destinations';
+import { getActiveDestinations, filterPropertiesForDestination, Destination } from '@/lib/destinations.server';
 import { formatINR } from '@/lib/utils';
 import {
   MapPin,

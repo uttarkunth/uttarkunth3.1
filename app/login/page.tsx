@@ -5,12 +5,14 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { Logo } from '@/components/logo';
+import { sanitizeInternalRedirectPath } from '@/lib/staff-rbac-shared';
 import { Mail, Lock, AlertCircle, ArrowRight } from 'lucide-react';
 
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const next = searchParams.get('returnUrl') || searchParams.get('next') || '/';
+  const rawNext = searchParams.get('returnUrl') || searchParams.get('next') || '/';
+  const next = sanitizeInternalRedirectPath(rawNext, '/');
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -65,6 +67,7 @@ function LoginForm() {
           <div className="relative">
             <Mail className="w-4 h-4 text-forest/40 absolute left-3 top-3.5" />
             <input
+              suppressHydrationWarning
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -88,6 +91,7 @@ function LoginForm() {
           <div className="relative">
             <Lock className="w-4 h-4 text-forest/40 absolute left-3 top-3.5" />
             <input
+              suppressHydrationWarning
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -99,6 +103,7 @@ function LoginForm() {
         </div>
 
         <button
+          suppressHydrationWarning
           type="submit"
           disabled={loading}
           className="w-full py-3 bg-forest hover:bg-forest-hover text-ivory rounded-xl text-sm font-semibold tracking-wide flex items-center justify-center gap-2 transition-all shadow-md active:scale-[0.99] disabled:opacity-50"
@@ -108,7 +113,7 @@ function LoginForm() {
         </button>
       </form>
 
-      <div className="pt-4 border-t border-forest/10 text-center">
+      <div className="pt-4 border-t border-forest/10 text-center space-y-2">
         <p className="text-xs text-charcoal-muted">
           Don&apos;t have an account yet?{' '}
           <Link href={`/signup?next=${encodeURIComponent(next)}`} className="font-semibold text-forest hover:text-ukorange transition-colors">

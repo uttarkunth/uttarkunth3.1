@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { checkIsPlatformAdmin } from '@/lib/auth';
+import { requireStaffPermission, recordStaffAuditLog } from '@/lib/staff-rbac';
+import { validateFileMagicBytes } from '@/lib/seller-verification';
 
 export const dynamic = 'force-dynamic';
 
@@ -31,8 +32,24 @@ export async function POST(
     }
 
     const isOwner = property.host_id === user.id;
-    const isAdmin = await checkIsPlatformAdmin(user.id);
-    let isAuthorized = isOwner || isAdmin;
+    let isStaffAuthorized = false;
+    let staffActor: { staff_id: string | null; role_slug: string } | null = null;
+
+    if (!isOwner) {
+      const staffCheck = await requireStaffPermission('stays.properties.edit', {
+        requireMfaAal2: true,
+        requiredDepartment: 'stays',
+      });
+      if (staffCheck.authorized && staffCheck.staffProfile) {
+        isStaffAuthorized = true;
+        staffActor = {
+          staff_id: staffCheck.staffProfile.staff_id,
+          role_slug: staffCheck.staffProfile.role_slug,
+        };
+      }
+    }
+
+    let isAuthorized = isOwner || isStaffAuthorized;
 
     if (!isAuthorized) {
       const { data: coHost } = await (adminClient.from('property_hosts') as any)
@@ -46,7 +63,10 @@ export async function POST(
     }
 
     if (!isAuthorized) {
-      return NextResponse.json({ ok: false, error: 'Forbidden: Insufficient permissions to upload photographs.' }, { status: 403 });
+      return NextResponse.json(
+        { ok: false, error: 'Forbidden: Insufficient permissions to upload photographs.' },
+        { status: 403 }
+      );
     }
 
     const formData = await req.formData();
@@ -59,32 +79,68 @@ export async function POST(
     // Validate type and size
     const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/webp'];
     if (!allowedMimeTypes.includes(file.type)) {
-      return NextResponse.json({
-        ok: false,
-        error: 'Invalid file format. Only JPEG, PNG, and WebP images are permitted.'
-      }, { status: 400 });
+      return NextResponse.json(
+        {
+          ok: false,
+          error: 'Invalid file format. Only JPEG, PNG, and WebP images are permitted.',
+        },
+        { status: 400 }
+      );
     }
 
     const MAX_SIZE = 5 * 1024 * 1024; // 5 MB
-    if (file.size > MAX_SIZE) {
-      return NextResponse.json({
-        ok: false,
-        error: 'File size exceeds maximum allowed limit of 5MB.'
-      }, { status: 400 });
+    if (file.size <= 0 || file.size > MAX_SIZE) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: 'File size exceeds maximum allowed limit of 5MB.',
+        },
+        { status: 400 }
+      );
     }
 
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
-    const safeName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+    // Server-side binary magic-byte inspection (rejects HTML/SVG/EXE disguised with image Content-Type)
+    const magicCheck = validateFileMagicBytes(new Uint8Array(buffer), file.type);
+    if (!magicCheck.valid) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: magicCheck.error || 'File content does not match declared image format.',
+        },
+        { status: 400 }
+      );
+    }
+
+    const safeName = file.name
+      .replace(/\.\.+/g, '_')
+      .replace(/[^a-zA-Z0-9._-]/g, '_')
+      .slice(0, 80);
     const storagePath = `properties/${property.id}/${Date.now()}-${safeName}`;
 
     const { error: uploadErr } = await adminClient.storage
       .from('property-photos')
       .upload(storagePath, buffer, {
         contentType: file.type,
-        upsert: false
+        cacheControl: '3600',
+        upsert: false,
       });
+
+    if (staffActor) {
+      await recordStaffAuditLog({
+        actorUserId: user.id,
+        actorEmail: user.email,
+        staffId: staffActor.staff_id,
+        roleSlug: staffActor.role_slug,
+        action: 'property_photo_uploaded_by_staff',
+        targetType: 'property',
+        targetId: String(property.id),
+        afterState: { storage_path: storagePath },
+      });
+    }
+    const isAdmin = isStaffAuthorized;
 
     if (uploadErr) {
       throw uploadErr;

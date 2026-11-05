@@ -136,7 +136,7 @@ export function AgreementAcceptor({ agreements }: AgreementAcceptorProps) {
 
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
               <label className="flex items-center gap-2 cursor-pointer text-xs text-charcoal font-medium">
-                <input
+                <input suppressHydrationWarning
                   type="checkbox"
                   checked={isConfirmed}
                   onChange={(e) => setConfirmedIds({ ...confirmedIds, [a.id]: e.target.checked })}
@@ -147,7 +147,7 @@ export function AgreementAcceptor({ agreements }: AgreementAcceptorProps) {
                 </span>
               </label>
 
-              <button
+              <button suppressHydrationWarning
                 type="button"
                 onClick={() => handleAccept(a)}
                 disabled={!isConfirmed || submittingId === a.id}

@@ -310,62 +310,17 @@ export function getNearbyPropertiesForDestination(properties: any[], destination
 }
 
 /**
- * Fetch all active destinations from Supabase (with fallback to CURATED_DESTINATIONS)
+ * Browser-safe curated destinations list (zero server/DB imports).
+ * For live DB-enriched destinations on server pages, use getActiveDestinations from '@/lib/destinations.server'.
  */
 export async function getActiveDestinations(): Promise<Destination[]> {
-  try {
-    const { createAdminClient } = await import('@/lib/supabase/admin');
-    const supabase = createAdminClient();
-    const { data, error } = await supabase
-      .from('destinations')
-      .select('id, slug, name, region, tagline, description, match_terms, featured, active, sort_order')
-      .eq('active', true)
-      .order('sort_order', { ascending: true });
-
-    if (error || !data || data.length === 0) {
-      return CURATED_DESTINATIONS;
-    }
-
-    return data.map((d: any) => ({
-      id: d.id,
-      slug: d.slug,
-      name: d.name,
-      region: d.region as any,
-      tagline: d.tagline || '',
-      description: d.description || '',
-      matchTerms: d.match_terms || [],
-      featured: d.featured || false,
-    }));
-  } catch {
-    return CURATED_DESTINATIONS;
-  }
+  return CURATED_DESTINATIONS;
 }
 
 /**
- * Get destination by slug with alias resolution
+ * Browser-safe curated destination lookup by slug (zero server/DB imports).
+ * For live DB-enriched destinations on server pages, use getDestinationBySlug from '@/lib/destinations.server'.
  */
 export async function getDestinationBySlug(slug: string): Promise<Destination | null> {
-  const normalized = (slug || '').toLowerCase().trim();
-  const all = await getActiveDestinations();
-  const direct = all.find((d) => d.slug === normalized);
-  if (direct) return direct;
-
-  // Handle common aliases
-  if (normalized === 'kasol-and-parvati-valley' || normalized === 'parvati-valley') {
-    return all.find((d) => d.slug === 'kasol') || null;
-  }
-  if (normalized === 'kullu' || normalized === 'jari') {
-    return all.find((d) => d.slug === 'kullu-jari') || null;
-  }
-  if (normalized === 'jibhi-and-tirthan-valley' || normalized === 'tirthan') {
-    return all.find((d) => d.slug === 'jibhi') || null;
-  }
-  if (normalized === 'dharamshala-and-mcleod-ganj' || normalized === 'mcleodganj') {
-    return all.find((d) => d.slug === 'dharamshala') || null;
-  }
-  if (normalized === 'spiti') {
-    return all.find((d) => d.slug === 'spiti-valley') || null;
-  }
-
-  return null;
+  return CURATED_DESTINATIONS.find((d) => d.slug === slug) || null;
 }

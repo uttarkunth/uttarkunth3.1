@@ -89,6 +89,8 @@ export function PartnershipChooser() {
           const isActive = activeTab === pathway.id;
           return (
             <button
+              suppressHydrationWarning
+              type="button"
               key={pathway.id}
               onClick={() => setActiveTab(pathway.id)}
               className={`p-4 sm:p-5 text-left transition-all flex items-center gap-3 border-b-2 ${

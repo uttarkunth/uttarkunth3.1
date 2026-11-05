@@ -236,9 +236,9 @@ export default async function HostOverviewPage() {
 
                     <div className="pt-2 flex items-center justify-end gap-3">
                       <form action="/api/bookings/decision" method="POST">
-                        <input type="hidden" name="booking_id" value={b.id} />
-                        <input type="hidden" name="action" value="decline" />
-                        <button
+                        <input suppressHydrationWarning type="hidden" name="booking_id" value={b.id} />
+                        <input suppressHydrationWarning type="hidden" name="action" value="decline" />
+                        <button suppressHydrationWarning
                           type="submit"
                           className="px-4 py-2 border border-forest/20 text-charcoal-muted hover:text-red-700 hover:border-red-300 text-xs font-semibold rounded-xl transition-all"
                         >
@@ -247,9 +247,9 @@ export default async function HostOverviewPage() {
                       </form>
 
                       <form action="/api/bookings/decision" method="POST">
-                        <input type="hidden" name="booking_id" value={b.id} />
-                        <input type="hidden" name="action" value="confirm" />
-                        <button
+                        <input suppressHydrationWarning type="hidden" name="booking_id" value={b.id} />
+                        <input suppressHydrationWarning type="hidden" name="action" value="confirm" />
+                        <button suppressHydrationWarning
                           type="submit"
                           className="px-5 py-2 bg-forest hover:bg-forest-hover text-white text-xs font-semibold rounded-xl shadow-xs transition-all flex items-center gap-1.5"
                         >

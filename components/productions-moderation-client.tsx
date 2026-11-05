@@ -50,18 +50,24 @@ export function ProductionsModerationClient({ initialProposals, initialProfiles 
         throw new Error(data.error || 'Failed to update proposal');
       }
 
+      const resolvedStatus =
+        action === 'approve' || action === 'reject_takedown'
+          ? 'approved'
+          : action === 'reject'
+          ? 'rejected'
+          : action === 'approve_takedown' || action === 'archive'
+          ? 'archived'
+          : action === 'remove'
+          ? 'removed'
+          : 'revision_requested';
+
       setProposals((prev) =>
         prev.map((p) =>
           p.id === proposalId
             ? {
                 ...p,
-                status:
-                  action === 'approve'
-                    ? 'approved'
-                    : action === 'reject'
-                    ? 'rejected'
-                    : 'revision_requested',
-                admin_notes: adminNotes,
+                status: resolvedStatus,
+                admin_notes: adminNotes || p.admin_notes,
               }
             : p
         )
@@ -70,13 +76,8 @@ export function ProductionsModerationClient({ initialProposals, initialProfiles 
       if (selectedProposal?.id === proposalId) {
         setSelectedProposal((prev: any) => ({
           ...prev,
-          status:
-            action === 'approve'
-              ? 'approved'
-              : action === 'reject'
-              ? 'rejected'
-              : 'revision_requested',
-          admin_notes: adminNotes,
+          status: resolvedStatus,
+          admin_notes: adminNotes || prev?.admin_notes,
         }));
       }
 
@@ -138,6 +139,20 @@ export function ProductionsModerationClient({ initialProposals, initialProfiles 
             Revision
           </span>
         );
+      case 'takedown_requested':
+        return (
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-amber-100 text-amber-900 text-[11px] font-bold rounded-full">
+            <AlertTriangle className="w-3 h-3" />
+            Takedown Requested
+          </span>
+        );
+      case 'archived':
+      case 'removed':
+        return (
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-charcoal/10 text-charcoal text-[11px] font-bold rounded-full">
+            Archived
+          </span>
+        );
       case 'rejected':
         return (
           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-red-100 text-red-800 text-[11px] font-bold rounded-full">
@@ -158,7 +173,7 @@ export function ProductionsModerationClient({ initialProposals, initialProfiles 
     <div className="space-y-6">
       {/* Tab Switcher */}
       <div className="flex items-center gap-2 border-b border-forest/15 pb-2">
-        <button
+        <button suppressHydrationWarning
           onClick={() => setActiveTab('proposals')}
           className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all ${
             activeTab === 'proposals'
@@ -170,7 +185,7 @@ export function ProductionsModerationClient({ initialProposals, initialProfiles 
           <span>Film Proposals ({proposals.length})</span>
         </button>
 
-        <button
+        <button suppressHydrationWarning
           onClick={() => setActiveTab('profiles')}
           className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all ${
             activeTab === 'profiles'
@@ -186,7 +201,7 @@ export function ProductionsModerationClient({ initialProposals, initialProfiles 
       {feedback && (
         <div className="p-3 bg-forest/10 border border-forest/20 rounded-xl text-xs font-semibold text-forest flex items-center justify-between">
           <span>{feedback}</span>
-          <button onClick={() => setFeedback(null)} className="text-charcoal-muted hover:text-forest">×</button>
+          <button suppressHydrationWarning onClick={() => setFeedback(null)} className="text-charcoal-muted hover:text-forest">×</button>
         </div>
       )}
 
@@ -322,7 +337,7 @@ export function ProductionsModerationClient({ initialProposals, initialProfiles 
                     <label className="text-xs font-semibold text-charcoal block">
                       Editorial Review Notes (Visible to Filmmaker)
                     </label>
-                    <textarea
+                    <textarea suppressHydrationWarning
                       rows={3}
                       value={adminNotes}
                       onChange={(e) => setAdminNotes(e.target.value)}
@@ -332,7 +347,7 @@ export function ProductionsModerationClient({ initialProposals, initialProfiles 
                   </div>
 
                   <div className="flex flex-wrap items-center gap-3">
-                    <button
+                    <button suppressHydrationWarning
                       type="button"
                       disabled={actionLoading}
                       onClick={() => handleProposalAction(selectedProposal.id, 'approve')}
@@ -342,7 +357,7 @@ export function ProductionsModerationClient({ initialProposals, initialProfiles 
                       <span>Approve Proposal</span>
                     </button>
 
-                    <button
+                    <button suppressHydrationWarning
                       type="button"
                       disabled={actionLoading}
                       onClick={() => handleProposalAction(selectedProposal.id, 'request_revision')}
@@ -352,7 +367,7 @@ export function ProductionsModerationClient({ initialProposals, initialProfiles 
                       <span>Request Revisions</span>
                     </button>
 
-                    <button
+                    <button suppressHydrationWarning
                       type="button"
                       disabled={actionLoading}
                       onClick={() => handleProposalAction(selectedProposal.id, 'reject')}
@@ -361,7 +376,20 @@ export function ProductionsModerationClient({ initialProposals, initialProfiles 
                       <XCircle className="w-3.5 h-3.5" />
                       <span>Decline</span>
                     </button>
+
+                    <button suppressHydrationWarning
+                      type="button"
+                      disabled={actionLoading}
+                      onClick={() => handleProposalAction(selectedProposal.id, 'approve_takedown')}
+                      className="inline-flex items-center gap-1.5 px-4 py-2 bg-charcoal hover:bg-black text-white text-xs font-semibold rounded-xl shadow-xs transition-colors disabled:opacity-50"
+                    >
+                      <span>Approve Takedown / Archive</span>
+                    </button>
                   </div>
+
+                  <p className="text-[11px] text-charcoal-muted pt-1">
+                    Streaming Telemetry Status: <strong>Analytics not connected</strong> (no fabricated view counts or revenue metrics).
+                  </p>
                 </div>
               </div>
             ) : (
@@ -409,14 +437,14 @@ export function ProductionsModerationClient({ initialProposals, initialProfiles 
                   </div>
 
                   <div className="flex items-center gap-2 flex-shrink-0">
-                    <button
+                    <button suppressHydrationWarning
                       disabled={actionLoading}
                       onClick={() => handleProfileStatus(prof.id, 'approve')}
                       className="px-3 py-1.5 bg-green-700 hover:bg-green-800 text-white text-[11px] font-semibold rounded-lg transition-colors"
                     >
                       Approve
                     </button>
-                    <button
+                    <button suppressHydrationWarning
                       disabled={actionLoading}
                       onClick={() => handleProfileStatus(prof.id, 'reject')}
                       className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-[11px] font-semibold rounded-lg transition-colors"

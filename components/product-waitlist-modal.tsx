@@ -55,7 +55,7 @@ export function ProductWaitlistModal({
 
   return (
     <>
-      <button
+      <button suppressHydrationWarning
         onClick={() => setOpen(true)}
         className="w-full inline-flex items-center justify-center gap-2 bg-forest hover:bg-forest-hover text-white py-3.5 px-6 rounded-2xl font-semibold text-xs transition-all shadow-sm"
       >
@@ -66,7 +66,7 @@ export function ProductWaitlistModal({
       {open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
           <div className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 space-y-5 border border-forest/20 shadow-2xl relative">
-            <button
+            <button suppressHydrationWarning
               onClick={() => {
                 setOpen(false);
                 setSubmitted(false);
@@ -86,7 +86,7 @@ export function ProductWaitlistModal({
                 <p className="text-xs text-charcoal-muted max-w-xs mx-auto leading-relaxed">
                   Thank you! We have added <strong>{guestEmail}</strong> to the early patron list for <em>{productTitle}</em>. You will receive an invitation when the artisan releases the next verified batch.
                 </p>
-                <button
+                <button suppressHydrationWarning
                   onClick={() => {
                     setOpen(false);
                     setSubmitted(false);
@@ -121,7 +121,7 @@ export function ProductWaitlistModal({
                     <label className="block text-xs font-semibold text-charcoal mb-1">
                       Full Name *
                     </label>
-                    <input
+                    <input suppressHydrationWarning
                       type="text"
                       required
                       value={guestName}
@@ -135,7 +135,7 @@ export function ProductWaitlistModal({
                     <label className="block text-xs font-semibold text-charcoal mb-1">
                       Email Address *
                     </label>
-                    <input
+                    <input suppressHydrationWarning
                       type="email"
                       required
                       value={guestEmail}
@@ -149,7 +149,7 @@ export function ProductWaitlistModal({
                     <label className="block text-xs font-semibold text-charcoal mb-1">
                       Notes or Sizing / Batch Questions (Optional)
                     </label>
-                    <textarea
+                    <textarea suppressHydrationWarning
                       rows={2}
                       value={notes}
                       onChange={(e) => setNotes(e.target.value)}
@@ -160,7 +160,7 @@ export function ProductWaitlistModal({
                 </div>
 
                 <div className="pt-2">
-                  <button
+                  <button suppressHydrationWarning
                     type="submit"
                     disabled={loading}
                     className="w-full inline-flex items-center justify-center gap-2 bg-forest hover:bg-forest-hover text-white py-3 rounded-xl font-semibold text-xs transition-all shadow-xs disabled:opacity-60"

@@ -74,7 +74,7 @@ export default function ForgotPasswordPage() {
                 <label className="block text-xs font-semibold text-charcoal-muted mb-1">Email Address</label>
                 <div className="relative">
                   <Mail className="w-4 h-4 text-charcoal-muted absolute left-3 top-3.5" />
-                  <input
+                  <input suppressHydrationWarning
                     type="email"
                     required
                     placeholder="name@example.com"
@@ -85,7 +85,7 @@ export default function ForgotPasswordPage() {
                 </div>
               </div>
 
-              <button
+              <button suppressHydrationWarning
                 type="submit"
                 disabled={loading}
                 className="w-full py-3 bg-forest hover:bg-forest-hover disabled:bg-forest/50 text-white font-semibold text-sm rounded-xl shadow-md transition-all"

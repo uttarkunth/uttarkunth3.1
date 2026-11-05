@@ -94,7 +94,7 @@ export function BookingsSupervisor({ bookings }: BookingsSupervisorProps) {
       <div className="bg-white rounded-3xl p-4 sm:p-6 border border-forest/15 shadow-soft flex flex-col sm:flex-row items-center gap-4">
         <div className="relative flex-1 w-full">
           <Search className="w-4 h-4 text-charcoal-muted absolute left-3 top-1/2 -translate-y-1/2" />
-          <input
+          <input suppressHydrationWarning
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -105,7 +105,7 @@ export function BookingsSupervisor({ bookings }: BookingsSupervisorProps) {
 
         <div className="flex items-center gap-2 w-full sm:w-auto overflow-x-auto">
           {['all', 'pending', 'confirmed', 'declined', 'cancelled'].map((st) => (
-            <button
+            <button suppressHydrationWarning
               key={st}
               type="button"
               onClick={() => setFilterStatus(st)}

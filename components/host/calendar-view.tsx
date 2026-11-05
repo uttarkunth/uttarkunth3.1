@@ -179,7 +179,7 @@ export function CalendarView({
           {properties.length > 1 && (
             <div className="flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-xl border border-forest/15 shadow-xs text-xs">
               <Filter className="w-3.5 h-3.5 text-charcoal-muted" />
-              <select
+              <select suppressHydrationWarning
                 value={selectedPropertyId}
                 onChange={(e) => setSelectedPropertyId(e.target.value)}
                 className="bg-transparent font-medium text-forest focus:outline-none"
@@ -194,7 +194,7 @@ export function CalendarView({
             </div>
           )}
 
-          <button
+          <button suppressHydrationWarning
             type="button"
             onClick={() => setShowAddBlock(!showAddBlock)}
             className="inline-flex items-center gap-2 px-4 py-2.5 bg-forest hover:bg-forest-hover text-white text-xs font-semibold rounded-xl shadow-xs transition-all"
@@ -249,7 +249,7 @@ export function CalendarView({
               <Lock className="w-4 h-4 text-ukorange" />
               <span>Create Manual Availability Block</span>
             </h2>
-            <button
+            <button suppressHydrationWarning
               type="button"
               onClick={() => setShowAddBlock(false)}
               className="text-xs text-charcoal-muted hover:text-charcoal"
@@ -275,7 +275,7 @@ export function CalendarView({
           <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 text-xs">
             <div>
               <label className="block font-semibold text-charcoal-muted mb-1">Room Unit</label>
-              <select
+              <select suppressHydrationWarning
                 value={formRoomId}
                 onChange={(e) => setFormRoomId(e.target.value)}
                 className="w-full p-2.5 bg-ivory-warm border border-forest/20 rounded-xl focus:outline-none"
@@ -291,7 +291,7 @@ export function CalendarView({
 
             <div>
               <label className="block font-semibold text-charcoal-muted mb-1">Blocked From (Check-in)</label>
-              <input
+              <input suppressHydrationWarning
                 type="date"
                 value={blockedFrom}
                 onChange={(e) => setBlockedFrom(e.target.value)}
@@ -302,7 +302,7 @@ export function CalendarView({
 
             <div>
               <label className="block font-semibold text-charcoal-muted mb-1">Blocked Until (Check-out)</label>
-              <input
+              <input suppressHydrationWarning
                 type="date"
                 value={blockedUntil}
                 onChange={(e) => setBlockedUntil(e.target.value)}
@@ -313,7 +313,7 @@ export function CalendarView({
 
             <div>
               <label className="block font-semibold text-charcoal-muted mb-1">Reason / Notes</label>
-              <input
+              <input suppressHydrationWarning
                 type="text"
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
@@ -324,7 +324,7 @@ export function CalendarView({
           </div>
 
           <div className="flex justify-end gap-3 pt-2">
-            <button
+            <button suppressHydrationWarning
               type="submit"
               disabled={submitting}
               className="px-5 py-2.5 bg-forest hover:bg-forest-hover text-white text-xs font-semibold rounded-xl shadow-xs transition-all disabled:opacity-50"
@@ -403,7 +403,7 @@ export function CalendarView({
                     </span>
                   </div>
 
-                  <button
+                  <button suppressHydrationWarning
                     type="button"
                     onClick={() => handleDeleteBlock(bl.id)}
                     className="p-1.5 text-charcoal-muted hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
@@ -455,9 +455,9 @@ export function CalendarView({
                 <div className="flex items-center gap-2">
                   <span className="text-[11px] text-ukorange font-medium">Decision Required:</span>
                   <form action="/api/bookings/decision" method="POST">
-                    <input type="hidden" name="booking_id" value={b.id} />
-                    <input type="hidden" name="action" value="confirm" />
-                    <button
+                    <input suppressHydrationWarning type="hidden" name="booking_id" value={b.id} />
+                    <input suppressHydrationWarning type="hidden" name="action" value="confirm" />
+                    <button suppressHydrationWarning
                       type="submit"
                       className="px-3 py-1 bg-forest hover:bg-forest-hover text-white text-xs font-semibold rounded-lg shadow-xs"
                     >
@@ -465,9 +465,9 @@ export function CalendarView({
                     </button>
                   </form>
                   <form action="/api/bookings/decision" method="POST">
-                    <input type="hidden" name="booking_id" value={b.id} />
-                    <input type="hidden" name="action" value="decline" />
-                    <button
+                    <input suppressHydrationWarning type="hidden" name="booking_id" value={b.id} />
+                    <input suppressHydrationWarning type="hidden" name="action" value="decline" />
+                    <button suppressHydrationWarning
                       type="submit"
                       className="px-3 py-1 border border-forest/20 text-charcoal-muted hover:text-red-700 text-xs font-semibold rounded-lg"
                     >

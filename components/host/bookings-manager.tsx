@@ -3,11 +3,13 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { formatINR } from '@/lib/utils';
-import { DIRECT_HOST_PAYMENT_NOTICE } from '@/lib/host';
 import {
   Inbox, CheckCircle2, XCircle, Clock, Calendar, Users,
   Phone, Mail, MapPin, Sparkles, AlertCircle, MessageSquare, Filter
 } from 'lucide-react';
+
+const DIRECT_HOST_PAYMENT_NOTICE =
+  'No online payment is currently collected by Uttarkunth. Guests pay their hosts directly at the property.';
 
 interface Booking {
   id: string;
@@ -103,7 +105,7 @@ export function BookingsManager({ initialBookings }: BookingsManagerProps) {
             { id: 'confirmed', label: `Confirmed (${initialBookings.filter((b) => b.status === 'confirmed').length})` },
             { id: 'past', label: `History (${initialBookings.filter((b) => b.status === 'declined' || b.status === 'cancelled').length})` },
           ].map((tab) => (
-            <button
+            <button suppressHydrationWarning
               key={tab.id}
               onClick={() => setFilter(tab.id as any)}
               className={`px-3 py-1.5 text-xs font-semibold rounded-xl whitespace-nowrap transition-colors ${
@@ -244,7 +246,7 @@ export function BookingsManager({ initialBookings }: BookingsManagerProps) {
                         <span>
                           Pending requests do not block dates for other travelers until formally approved.
                         </span>
-                        <button
+                        <button suppressHydrationWarning
                           type="button"
                           onClick={() => setActiveNotesId(activeNotesId === b.id ? null : b.id)}
                           className="ml-2 text-forest font-semibold hover:underline inline-flex items-center gap-1"
@@ -255,7 +257,7 @@ export function BookingsManager({ initialBookings }: BookingsManagerProps) {
                       </div>
 
                       <div className="flex items-center gap-3">
-                        <button
+                        <button suppressHydrationWarning
                           type="button"
                           disabled={isLoading}
                           onClick={() => handleDecision(b.id, 'decline')}
@@ -264,7 +266,7 @@ export function BookingsManager({ initialBookings }: BookingsManagerProps) {
                           {isLoading ? 'Processing...' : 'Decline'}
                         </button>
 
-                        <button
+                        <button suppressHydrationWarning
                           type="button"
                           disabled={isLoading}
                           onClick={() => handleDecision(b.id, 'confirm')}
@@ -281,7 +283,7 @@ export function BookingsManager({ initialBookings }: BookingsManagerProps) {
                         <label className="block text-[11px] font-semibold text-charcoal-muted">
                           Host Message / Check-in Guidance (will be saved with this decision)
                         </label>
-                        <input
+                        <input suppressHydrationWarning
                           type="text"
                           value={notesText}
                           onChange={(e) => setNotesText(e.target.value)}

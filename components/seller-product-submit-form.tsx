@@ -76,7 +76,7 @@ export function SellerProductSubmitForm() {
   return (
     <div className="space-y-4">
       {!open ? (
-        <button
+        <button suppressHydrationWarning
           onClick={() => {
             setOpen(true);
             setSuccess(false);
@@ -97,7 +97,7 @@ export function SellerProductSubmitForm() {
                 Each product must demonstrate genuine Himalayan provenance and natural materials.
               </p>
             </div>
-            <button
+            <button suppressHydrationWarning
               onClick={() => setOpen(false)}
               className="text-xs text-charcoal-muted hover:text-charcoal px-3 py-1 bg-ivory-warm rounded-lg"
             >
@@ -114,7 +114,7 @@ export function SellerProductSubmitForm() {
               <p className="text-xs text-charcoal-muted max-w-sm mx-auto">
                 Your listing has been submitted for platform curation. It will be verified for authenticity and published upon admin approval.
               </p>
-              <button
+              <button suppressHydrationWarning
                 onClick={() => {
                   setOpen(false);
                   setSuccess(false);
@@ -137,7 +137,7 @@ export function SellerProductSubmitForm() {
                   <label className="block text-xs font-semibold text-charcoal mb-1">
                     Product Title *
                   </label>
-                  <input
+                  <input suppressHydrationWarning
                     type="text"
                     required
                     name="title"
@@ -152,7 +152,7 @@ export function SellerProductSubmitForm() {
                   <label className="block text-xs font-semibold text-charcoal mb-1">
                     Category *
                   </label>
-                  <select
+                  <select suppressHydrationWarning
                     name="category"
                     value={formData.category}
                     onChange={handleChange}
@@ -170,7 +170,7 @@ export function SellerProductSubmitForm() {
                   <label className="block text-xs font-semibold text-charcoal mb-1">
                     Maker / Weaver Name *
                   </label>
-                  <input
+                  <input suppressHydrationWarning
                     type="text"
                     required
                     name="maker_name"
@@ -185,7 +185,7 @@ export function SellerProductSubmitForm() {
                   <label className="block text-xs font-semibold text-charcoal mb-1">
                     Origin Valley *
                   </label>
-                  <input
+                  <input suppressHydrationWarning
                     type="text"
                     required
                     name="origin_valley"
@@ -200,7 +200,7 @@ export function SellerProductSubmitForm() {
                   <label className="block text-xs font-semibold text-charcoal mb-1">
                     State *
                   </label>
-                  <select
+                  <select suppressHydrationWarning
                     name="origin_state"
                     value={formData.origin_state}
                     onChange={handleChange}
@@ -216,7 +216,7 @@ export function SellerProductSubmitForm() {
                   <label className="block text-xs font-semibold text-charcoal mb-1">
                     Craft Technique *
                   </label>
-                  <input
+                  <input suppressHydrationWarning
                     type="text"
                     required
                     name="craft_type"
@@ -231,7 +231,7 @@ export function SellerProductSubmitForm() {
                   <label className="block text-xs font-semibold text-charcoal mb-1">
                     Natural Materials *
                   </label>
-                  <input
+                  <input suppressHydrationWarning
                     type="text"
                     required
                     name="materials"
@@ -246,7 +246,7 @@ export function SellerProductSubmitForm() {
                   <label className="block text-xs font-semibold text-charcoal mb-1">
                     Product Description (Min 20 characters) *
                   </label>
-                  <textarea
+                  <textarea suppressHydrationWarning
                     required
                     rows={4}
                     name="description"
@@ -261,7 +261,7 @@ export function SellerProductSubmitForm() {
                   <label className="block text-xs font-semibold text-charcoal mb-1">
                     High-Res Photo URL *
                   </label>
-                  <input
+                  <input suppressHydrationWarning
                     type="url"
                     required
                     name="photo_url"
@@ -276,7 +276,7 @@ export function SellerProductSubmitForm() {
                   <label className="block text-xs font-semibold text-charcoal mb-1">
                     Fair Price Estimate (₹ INR, Optional)
                   </label>
-                  <input
+                  <input suppressHydrationWarning
                     type="number"
                     min="0"
                     name="price_estimate"
@@ -291,7 +291,7 @@ export function SellerProductSubmitForm() {
                   <label className="block text-xs font-semibold text-charcoal mb-1">
                     Inventory Status *
                   </label>
-                  <select
+                  <select suppressHydrationWarning
                     name="inventory_status"
                     value={formData.inventory_status}
                     onChange={handleChange}
@@ -306,7 +306,7 @@ export function SellerProductSubmitForm() {
               </div>
 
               <div className="pt-2 flex justify-end">
-                <button
+                <button suppressHydrationWarning
                   type="submit"
                   disabled={loading}
                   className="inline-flex items-center gap-2 bg-forest hover:bg-forest-hover text-white px-6 py-2.5 rounded-xl font-semibold text-xs transition-all shadow-xs disabled:opacity-60"

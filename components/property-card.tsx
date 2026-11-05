@@ -98,7 +98,7 @@ export function PropertyCard({ property }: { property: PropertyCardData }) {
         </div>
 
         {/* Wishlist Heart */}
-        <button
+        <button suppressHydrationWarning
           onClick={(e) => {
             e.preventDefault();
             setIsSaved(!isSaved);

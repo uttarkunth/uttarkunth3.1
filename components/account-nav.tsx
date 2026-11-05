@@ -96,7 +96,7 @@ export function AccountNav({ isAdmin = false, isHost = false, tripsCount = 0 }: 
             })}
           </nav>
 
-          {/* Elevated Portals: Host & Admin Shortcuts */}
+          {/* Elevated Portals: Host Shortcut */}
           <div className="hidden md:flex items-center gap-2 flex-shrink-0">
             {(isHost || isAdmin) && (
               <Link
@@ -107,17 +107,6 @@ export function AccountNav({ isAdmin = false, isHost = false, tripsCount = 0 }: 
                 <Home className="w-3.5 h-3.5 text-ukorange" />
                 <span>Host Workspace</span>
                 <ArrowUpRight className="w-3 h-3 text-charcoal-muted" />
-              </Link>
-            )}
-
-            {isAdmin && (
-              <Link
-                href="/admin/dashboard"
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-terracotta bg-terracotta/10 hover:bg-terracotta/15 border border-terracotta/20 rounded-lg transition-colors"
-                title="Restricted Platform Administrator portal"
-              >
-                <Shield className="w-3.5 h-3.5" />
-                <span>Admin</span>
               </Link>
             )}
           </div>
