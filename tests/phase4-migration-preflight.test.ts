@@ -22,6 +22,35 @@ describe('Phase 4 corrective security migration', () => {
   });
 
 
+  it('limits staff permission lookup to the current AAL2 user with complete consent', () => {
+    const start = migrationSql.indexOf('CREATE OR REPLACE FUNCTION public.has_staff_permission_for_user');
+    const end = migrationSql.indexOf('REVOKE ALL ON FUNCTION public.has_staff_permission_for_user', start);
+    assert.ok(start >= 0 && end > start);
+    const helper = migrationSql.slice(start, end);
+    assert.ok(helper.includes('SECURITY DEFINER'));
+    assert.ok(helper.includes('auth.uid()'));
+    assert.ok(!helper.includes('sp.user_id = p_user_id'));
+    assert.ok(helper.includes('sp.privacy_notice_accepted = true'));
+    assert.ok(helper.includes('sp.agreements_completed'));
+    assert.ok(helper.includes('sp.all_agreements_accepted'));
+    assert.ok(helper.includes('sp.onboarding_completed'));
+    assert.ok(helper.includes('public.current_session_is_aal2()'));
+    assert.ok(migrationSql.includes('GRANT EXECUTE ON FUNCTION public.has_staff_permission_for_user(uuid, text) TO authenticated, service_role'));
+  });
+
+  it('restricts staff metadata RLS policies to authenticated, consented users', () => {
+    for (const policy of [
+      'seller_own_verification_docs_select',
+      'staff_agreements_self_or_reviewer_select',
+      'staff_profiles_self_or_founder_select',
+    ]) {
+      assert.ok(migrationSql.includes('CREATE POLICY "' + policy + '"'));
+    }
+    assert.ok(migrationSql.includes('TO authenticated'));
+    assert.ok(migrationSql.includes("auth.uid() = user_id"));
+    assert.ok(!migrationSql.includes('TO public'));
+  });
+
   it('replaces the profile trigger so timestamps or one aggregate flag cannot fabricate acceptance', () => {
     const start = migrationSql.indexOf('CREATE OR REPLACE FUNCTION public.sync_staff_profile_cols()');
     const end = migrationSql.indexOf('$func$;', start);
