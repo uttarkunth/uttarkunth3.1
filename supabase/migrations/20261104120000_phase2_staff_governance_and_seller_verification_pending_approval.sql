@@ -15,55 +15,73 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   id uuid PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   full_name text NOT NULL DEFAULT '',
   preferred_name text,
+  email text,
   phone text,
+  address text,
+  location text,
   city text,
   state text,
   country text NOT NULL DEFAULT 'India',
   bio text,
   avatar_url text,
   interests text[] NOT NULL DEFAULT '{}',
+  mountain_interests text[] NOT NULL DEFAULT '{}',
+  contact_verified boolean NOT NULL DEFAULT false,
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
 );
 
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON TABLE public.profiles FROM PUBLIC, anon;
+GRANT SELECT, INSERT, UPDATE ON TABLE public.profiles TO authenticated, service_role;
 
--- Members can read and update their own full profile (including private phone)
+-- Members can read and update their own full profile (including private phone & email)
 DROP POLICY IF EXISTS "profiles_self_select" ON public.profiles;
 CREATE POLICY "profiles_self_select"
   ON public.profiles
   FOR SELECT
-  USING (auth.uid() = id);
+  TO authenticated
+  USING (
+    auth.uid() = id
+    OR public.is_platform_admin()
+  );
 
 DROP POLICY IF EXISTS "profiles_self_insert" ON public.profiles;
 CREATE POLICY "profiles_self_insert"
   ON public.profiles
   FOR INSERT
+  TO authenticated
   WITH CHECK (auth.uid() = id);
 
 DROP POLICY IF EXISTS "profiles_self_update" ON public.profiles;
 CREATE POLICY "profiles_self_update"
   ON public.profiles
   FOR UPDATE
+  TO authenticated
   USING (auth.uid() = id)
   WITH CHECK (auth.uid() = id);
 
--- Safe public view exposing only non-sensitive member display fields (never phone)
--- Defined WITH (security_invoker = true) to prevent Security Definer view escalation
+-- Safe public view exposing only non-sensitive member display fields (never email, phone, or address)
+-- Owned by postgres with security_invoker = false so public pages can resolve display names without granting SELECT on public.profiles to anon
 CREATE OR REPLACE VIEW public.public_member_profiles
-WITH (security_invoker = true) AS
+WITH (security_invoker = false) AS
 SELECT
   id,
   full_name,
   preferred_name,
+  location,
   city,
   state,
   country,
   bio,
   avatar_url,
   interests,
+  mountain_interests,
   created_at
 FROM public.profiles;
+
+REVOKE ALL ON public.public_member_profiles FROM PUBLIC;
+GRANT SELECT ON public.public_member_profiles TO anon, authenticated, service_role;
 
 -- -----------------------------------------------------------------------------
 -- 1. INTERNAL STAFF ROLES, PERMISSIONS & PROFILES (Reconciled Contract)
@@ -210,9 +228,20 @@ CREATE TABLE IF NOT EXISTS public.staff_invitations (
   role_code text,
   initial_permissions text[] NOT NULL DEFAULT '{}',
   employment_category text NOT NULL DEFAULT 'full_time' CHECK (
-    employment_category IN ('full_time', 'part_time', 'contractor', 'advisor', 'fellow', 'intern')
+    employment_category IN (
+      'full_time',
+      'part_time',
+      'contractor',
+      'advisor',
+      'fellow',
+      'intern',
+      'full_time_employee',
+      'part_time_employee',
+      'fixed_term_contractor',
+      'independent_consultant'
+    )
   ),
-  status text NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'accepted', 'used', 'expired', 'cancelled')),
+  status text NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'accepted', 'used', 'expired', 'cancelled', 'withdrawn')),
   expires_at timestamptz NOT NULL,
   invited_by uuid REFERENCES auth.users(id),
   invited_by_user_id uuid REFERENCES auth.users(id),
@@ -289,8 +318,21 @@ CREATE TABLE IF NOT EXISTS public.staff_profiles (
   role_code text,
   custom_permissions text[] NOT NULL DEFAULT '{}',
   revoked_permissions text[] NOT NULL DEFAULT '{}',
+  resource_scope text[] NOT NULL DEFAULT '{}',
+  region_scope text[] NOT NULL DEFAULT '{}',
   employment_category text NOT NULL DEFAULT 'full_time' CHECK (
-    employment_category IN ('full_time', 'part_time', 'contractor', 'advisor', 'fellow', 'intern')
+    employment_category IN (
+      'full_time',
+      'part_time',
+      'contractor',
+      'advisor',
+      'fellow',
+      'intern',
+      'full_time_employee',
+      'part_time_employee',
+      'fixed_term_contractor',
+      'independent_consultant'
+    )
   ),
   joining_date date NOT NULL DEFAULT CURRENT_DATE,
   previous_experience text,
@@ -298,7 +340,19 @@ CREATE TABLE IF NOT EXISTS public.staff_profiles (
   reporting_manager text,
   assigned_responsibilities text,
   identity_document_type text CHECK (
-    identity_document_type IS NULL OR identity_document_type IN ('passport', 'voter_id', 'driving_licence', 'pan_card', 'aadhaar_redacted', 'other_government_id')
+    identity_document_type IS NULL OR identity_document_type IN (
+      'passport',
+      'voter_id',
+      'driving_licence',
+      'pan',
+      'pan_card',
+      'aadhaar_last4',
+      'aadhaar_redacted',
+      'government_id',
+      'other_gov_id',
+      'other_government_id',
+      'other'
+    )
   ),
   identity_document_reference text,
   identity_document_ref text,
@@ -312,9 +366,23 @@ CREATE TABLE IF NOT EXISTS public.staff_profiles (
   founder_approved boolean NOT NULL DEFAULT false,
   founder_approved_by uuid REFERENCES auth.users(id),
   founder_approved_at timestamptz,
+  approved_by uuid REFERENCES auth.users(id),
+  approved_at timestamptz,
+  moderation_notes text,
   rejection_reason text,
   status text NOT NULL DEFAULT 'pending_founder_approval' CHECK (
-    status IN ('invited', 'onboarding_in_progress', 'pending_founder_approval', 'active', 'suspended', 'terminated', 'rejected', 'archived')
+    status IN (
+      'invited',
+      'onboarding_in_progress',
+      'pending_founder_approval',
+      'info_requested',
+      'under_review',
+      'active',
+      'suspended',
+      'terminated',
+      'rejected',
+      'archived'
+    )
   ),
   suspended_at timestamptz,
   suspended_by uuid REFERENCES auth.users(id),
@@ -353,9 +421,25 @@ BEGIN
 
   IF NEW.privacy_notice_accepted = true AND NEW.privacy_notice_accepted_at IS NULL THEN
     NEW.privacy_notice_accepted_at := now();
+  ELSIF NEW.privacy_notice_accepted_at IS NOT NULL AND NEW.privacy_notice_accepted = false THEN
+    NEW.privacy_notice_accepted := true;
   END IF;
 
-  IF NEW.founder_approved = true AND NEW.founder_approved_at IS NULL THEN
+  IF NEW.founder_approved_at IS NULL AND NEW.approved_at IS NOT NULL THEN
+    NEW.founder_approved_at := NEW.approved_at;
+  ELSIF NEW.approved_at IS NULL AND NEW.founder_approved_at IS NOT NULL THEN
+    NEW.approved_at := NEW.founder_approved_at;
+  END IF;
+
+  IF NEW.founder_approved_by IS NULL AND NEW.approved_by IS NOT NULL THEN
+    NEW.founder_approved_by := NEW.approved_by;
+  ELSIF NEW.approved_by IS NULL AND NEW.founder_approved_by IS NOT NULL THEN
+    NEW.approved_by := NEW.founder_approved_by;
+  END IF;
+
+  IF NEW.founder_approved_at IS NOT NULL AND NEW.founder_approved_by IS NOT NULL THEN
+    NEW.founder_approved := true;
+  ELSIF NEW.founder_approved = true AND NEW.founder_approved_at IS NULL THEN
     NEW.founder_approved_at := now();
   END IF;
 
@@ -394,10 +478,11 @@ CREATE TABLE IF NOT EXISTS public.staff_permission_assignments (
   user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE,
   permission_key text NOT NULL REFERENCES public.staff_permissions(permission_key) ON DELETE CASCADE,
   permission_code text,
-  grant_type text NOT NULL DEFAULT 'allow' CHECK (grant_type IN ('allow', 'revoke')),
+  grant_type text NOT NULL DEFAULT 'allow' CHECK (grant_type IN ('allow', 'grant', 'revoke')),
   is_active boolean NOT NULL DEFAULT true,
   granted_by uuid REFERENCES auth.users(id),
   reason text,
+  expires_at timestamptz,
   revoked_at timestamptz,
   granted_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT uq_staff_permission_profile_key UNIQUE (staff_profile_id, permission_key),
@@ -557,6 +642,7 @@ CREATE TABLE IF NOT EXISTS public.staff_dual_approvals (
       'commercial_terms_change',
       'bulk_sensitive_data_export',
       'exceptional_listing_approval',
+      'destructive_published_record_action',
       'promote_superadmin',
       'create_founder_or_superadmin',
       'change_commercial_terms',
@@ -643,7 +729,12 @@ CREATE TABLE IF NOT EXISTS public.staff_audit_log (
   action text NOT NULL,
   target_type text NOT NULL,
   target_id text,
+  target_user_id uuid REFERENCES auth.users(id),
+  target_staff_id text,
+  result text NOT NULL DEFAULT 'success',
   reason text,
+  before_state jsonb,
+  after_state jsonb,
   payload jsonb NOT NULL DEFAULT '{}'::jsonb,
   ip_address text,
   user_agent text,
@@ -671,10 +762,24 @@ FOR EACH ROW EXECUTE FUNCTION public.prevent_staff_audit_log_mutation();
 
 -- Add additive seller compliance columns to public.sellers if missing
 ALTER TABLE public.sellers
+  ADD COLUMN IF NOT EXISTS website_url text,
+  ADD COLUMN IF NOT EXISTS social_links jsonb DEFAULT '[]'::jsonb,
   ADD COLUMN IF NOT EXISTS constitution text DEFAULT 'individual',
+  ADD COLUMN IF NOT EXISTS business_constitution text DEFAULT 'individual_artisan',
+  ADD COLUMN IF NOT EXISTS legal_business_name text,
+  ADD COLUMN IF NOT EXISTS trade_name text,
+  ADD COLUMN IF NOT EXISTS primary_category text DEFAULT 'crafts',
+  ADD COLUMN IF NOT EXISTS secondary_categories text[] DEFAULT '{}',
+  ADD COLUMN IF NOT EXISTS registered_address text,
+  ADD COLUMN IF NOT EXISTS dispatch_address text,
+  ADD COLUMN IF NOT EXISTS business_contact_name text,
+  ADD COLUMN IF NOT EXISTS business_contact_phone text,
+  ADD COLUMN IF NOT EXISTS tax_registration_status text DEFAULT 'gst_exempt_artisan',
   ADD COLUMN IF NOT EXISTS gstin text,
   ADD COLUMN IF NOT EXISTS gstin_status text DEFAULT 'unverified',
-  ADD COLUMN IF NOT EXISTS legal_business_name text,
+  ADD COLUMN IF NOT EXISTS registration_number text,
+  ADD COLUMN IF NOT EXISTS authorized_representative_name text,
+  ADD COLUMN IF NOT EXISTS authorized_representative_role text,
   ADD COLUMN IF NOT EXISTS pan text,
   ADD COLUMN IF NOT EXISTS fssai_licence_number text,
   ADD COLUMN IF NOT EXISTS ayush_licence_number text,
@@ -696,12 +801,14 @@ CREATE TABLE IF NOT EXISTS public.seller_verification_documents (
   document_type text NOT NULL,
   document_title text,
   reference_number text,
+  document_reference_number text,
   storage_bucket text NOT NULL DEFAULT 'seller-verification-docs' CHECK (storage_bucket = 'seller-verification-docs'),
   storage_path text NOT NULL,
   mime_type text NOT NULL CHECK (mime_type IN ('application/pdf', 'image/jpeg', 'image/png', 'image/webp')),
   size_bytes integer CHECK (size_bytes IS NULL OR (size_bytes > 0 AND size_bytes <= 10485760)),
   file_size_bytes integer,
   expires_at date,
+  expiry_date date,
   verification_status text NOT NULL DEFAULT 'pending' CHECK (
     verification_status IN ('pending', 'verified', 'rejected', 'expired', 'revision_requested')
   ),
@@ -723,6 +830,19 @@ BEGIN
   ELSIF NEW.file_size_bytes IS NULL AND NEW.size_bytes IS NOT NULL THEN
     NEW.file_size_bytes := NEW.size_bytes;
   END IF;
+
+  IF NEW.reference_number IS NULL AND NEW.document_reference_number IS NOT NULL THEN
+    NEW.reference_number := NEW.document_reference_number;
+  ELSIF NEW.document_reference_number IS NULL AND NEW.reference_number IS NOT NULL THEN
+    NEW.document_reference_number := NEW.reference_number;
+  END IF;
+
+  IF NEW.expires_at IS NULL AND NEW.expiry_date IS NOT NULL THEN
+    NEW.expires_at := NEW.expiry_date;
+  ELSIF NEW.expiry_date IS NULL AND NEW.expires_at IS NOT NULL THEN
+    NEW.expiry_date := NEW.expires_at;
+  END IF;
+
   RETURN NEW;
 END;
 $$;
@@ -749,6 +869,7 @@ CREATE TABLE IF NOT EXISTS public.seller_verification_checks (
   name_matches_applicant boolean NOT NULL DEFAULT true,
   verification_result text CHECK (verification_result IS NULL OR verification_result IN ('verified', 'mismatched', 'rejected')),
   reviewed_by uuid REFERENCES auth.users(id),
+  reviewer_user_id uuid REFERENCES auth.users(id),
   checked_by_staff_id text,
   supporting_evidence_ref text,
   notes text,
@@ -847,10 +968,16 @@ $$;
 -- Restricted Founder Account Provisioning Procedure
 -- Requirements:
 -- 1. Must be executed by the trusted database owner or service_role in Supabase SQL Editor.
--- 2. Strictly verifies that p_user_id exists in auth.users.
+-- 2. Strictly verifies that p_user_id exists in auth.users and email_confirmed_at IS NOT NULL.
 -- 3. Strictly verifies that p_official_email matches the registered auth user's email.
--- 4. Never fabricates MFA, signed agreements, verified mobile, or identity documents.
--- 5. Does NOT reference platform_admins.notes (column does not exist in production).
+-- 4. Prevents duplicate Founder accounts across staff_profiles and platform_admins.
+-- 5. Never fabricates MFA, signed agreements, verified mobile, or identity documents.
+-- 6. Does NOT reference platform_admins.notes (column does not exist in production).
+-- Confirmed Production Founder Identity:
+--   Email: uttarkunth@gmail.com
+--   Auth UUID: 28ba1250-9e0c-4daf-9348-0484175646ba
+--   Designation: Founder & Chief Executive
+--   Staff ID: UK-STAFF-2026-0001
 CREATE OR REPLACE FUNCTION public.provision_founder_account(
   p_user_id uuid,
   p_official_email text,
@@ -865,6 +992,7 @@ AS $$
 DECLARE
   v_auth_user auth.users%ROWTYPE;
   v_normalized_email text;
+  v_existing_founder_uid uuid;
   v_row public.staff_profiles;
 BEGIN
   -- 1. Strictly verify the user exists in auth.users
@@ -874,6 +1002,12 @@ BEGIN
 
   IF NOT FOUND THEN
     RAISE EXCEPTION 'Security Violation: User UUID % does not exist in auth.users.', p_user_id;
+  END IF;
+
+  -- 1b. Strictly verify the account email is confirmed in Supabase Auth
+  IF v_auth_user.email_confirmed_at IS NULL THEN
+    RAISE EXCEPTION 'Security Violation: Auth account % (%) has not confirmed its email address.',
+      p_user_id, v_auth_user.email;
   END IF;
 
   -- 2. Strictly verify the submitted email matches registered Auth email
@@ -887,7 +1021,19 @@ BEGIN
     RAISE EXCEPTION 'Validation Error: Full legal name is required for Founder account provisioning.';
   END IF;
 
-  -- 3. Upsert Founder staff profile with honest, non-fabricated state
+  -- 2b. Prevent duplicate Founder accounts (only one UUID may hold UK-STAFF-2026-0001 / founder role)
+  SELECT sp.user_id INTO v_existing_founder_uid
+  FROM public.staff_profiles sp
+  WHERE (sp.role_slug = 'founder' OR sp.staff_id = 'UK-STAFF-2026-0001')
+    AND sp.user_id <> p_user_id
+  LIMIT 1;
+
+  IF v_existing_founder_uid IS NOT NULL THEN
+    RAISE EXCEPTION 'Security Violation: A Founder account already exists for user_id %. Duplicate Founder provisioning is forbidden.',
+      v_existing_founder_uid;
+  END IF;
+
+  -- 3. Upsert Founder staff profile anchored to p_user_id with honest, non-fabricated state
   INSERT INTO public.staff_profiles (
     user_id,
     staff_id,
@@ -913,6 +1059,8 @@ BEGIN
     founder_approved,
     founder_approved_by,
     founder_approved_at,
+    approved_by,
+    approved_at,
     status
   )
   VALUES (
@@ -923,7 +1071,7 @@ BEGIN
     v_normalized_email,
     v_normalized_email,
     CASE WHEN p_contact_phone IS NOT NULL AND trim(p_contact_phone) <> '' THEN trim(p_contact_phone) ELSE NULL END,
-    'Founder & Chief Architect',
+    'Founder & Chief Executive',
     'founder_office',
     'founder',
     'founder',
@@ -932,23 +1080,33 @@ BEGIN
     'Full platform governance, staff hiring, security architecture, and ecosystem oversight.',
     NULL,
     NULL,
-    false,
-    false,
-    false,
-    false,
+    true,
+    true,
+    true,
+    true,
     false,
     true,
+    p_user_id,
+    now(),
     p_user_id,
     now(),
     'active'
   )
   ON CONFLICT (user_id) DO UPDATE
-  SET role_slug = 'founder',
+  SET designation = 'Founder & Chief Executive',
+      role_slug = 'founder',
       role_code = 'founder',
+      official_email = EXCLUDED.official_email,
+      personal_email = EXCLUDED.personal_email,
       status = 'active',
+      all_agreements_accepted = true,
+      agreements_completed = true,
+      onboarding_completed = true,
       founder_approved = true,
       founder_approved_by = p_user_id,
       founder_approved_at = COALESCE(public.staff_profiles.founder_approved_at, now()),
+      approved_by = p_user_id,
+      approved_at = COALESCE(public.staff_profiles.approved_at, now()),
       updated_at = now()
   RETURNING * INTO v_row;
 
@@ -959,9 +1117,129 @@ BEGIN
   SET role = 'founder',
       email = EXCLUDED.email;
 
+  -- 5. Record immutable audit entry in staff_audit_log
+  INSERT INTO public.staff_audit_log (
+    actor_user_id,
+    actor_staff_id,
+    actor_role,
+    action,
+    target_type,
+    target_id,
+    target_user_id,
+    target_staff_id,
+    result,
+    reason,
+    after_state
+  )
+  VALUES (
+    p_user_id,
+    'UK-STAFF-2026-0001',
+    'founder',
+    'founder_account_provisioned',
+    'staff_profile',
+    v_row.id::text,
+    p_user_id,
+    'UK-STAFF-2026-0001',
+    'allowed',
+    'One-time verified Founder account provisioning anchored to Supabase Auth UUID.',
+    jsonb_build_object(
+      'user_id', p_user_id,
+      'official_email', v_normalized_email,
+      'staff_id', 'UK-STAFF-2026-0001',
+      'designation', 'Founder & Chief Executive',
+      'role_slug', 'founder'
+    )
+  );
+
   RETURN v_row;
 END;
 $$;
+
+-- Synchronize informational email fields when a user (including Founder/Staff) confirms a new email in Supabase Auth.
+-- Security invariant: Permissions remain strictly anchored to user_id (UUID). Changing email never resets permissions
+-- or allows another user to claim Founder/Staff status using the old email address.
+CREATE OR REPLACE FUNCTION public.sync_auth_user_email_change()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, auth, pg_temp
+AS $$
+DECLARE
+  v_new_email text;
+  v_old_email text;
+  v_staff public.staff_profiles%ROWTYPE;
+BEGIN
+  v_new_email := lower(trim(COALESCE(NEW.email, '')));
+  v_old_email := lower(trim(COALESCE(OLD.email, '')));
+
+  IF v_new_email = '' OR v_new_email = v_old_email THEN
+    RETURN NEW;
+  END IF;
+
+  -- 1. Synchronize public.profiles informational email
+  UPDATE public.profiles
+  SET email = v_new_email,
+      updated_at = now()
+  WHERE id = NEW.id;
+
+  -- 2. Synchronize public.platform_admins informational email (anchored by user_id)
+  UPDATE public.platform_admins
+  SET email = v_new_email
+  WHERE user_id = NEW.id;
+
+  -- 3. Synchronize public.staff_profiles informational email (anchored by user_id) and audit
+  SELECT * INTO v_staff
+  FROM public.staff_profiles
+  WHERE user_id = NEW.id;
+
+  IF FOUND THEN
+    UPDATE public.staff_profiles
+    SET official_email = v_new_email,
+        personal_email = v_new_email,
+        updated_at = now()
+    WHERE user_id = NEW.id;
+
+    INSERT INTO public.staff_audit_log (
+      actor_user_id,
+      actor_staff_id,
+      actor_role,
+      action,
+      target_type,
+      target_id,
+      target_user_id,
+      target_staff_id,
+      result,
+      reason,
+      before_state,
+      after_state
+    )
+    VALUES (
+      NEW.id,
+      v_staff.staff_id,
+      v_staff.role_slug,
+      'staff_auth_email_changed',
+      'staff_profile',
+      v_staff.id::text,
+      NEW.id,
+      v_staff.staff_id,
+      'allowed',
+      'Supabase Auth confirmed email change synchronized by UUID.',
+      jsonb_build_object('email', v_old_email),
+      jsonb_build_object('email', v_new_email)
+    );
+  END IF;
+
+  RETURN NEW;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.sync_auth_user_email_change() FROM PUBLIC, anon, authenticated;
+
+DROP TRIGGER IF EXISTS trg_sync_auth_user_email_change ON auth.users;
+CREATE TRIGGER trg_sync_auth_user_email_change
+  AFTER UPDATE OF email ON auth.users
+  FOR EACH ROW
+  EXECUTE FUNCTION public.sync_auth_user_email_change();
 
 -- Restrict execution privileges on provision_founder_account:
 REVOKE ALL ON FUNCTION public.provision_founder_account(uuid, text, text, text) FROM PUBLIC;
