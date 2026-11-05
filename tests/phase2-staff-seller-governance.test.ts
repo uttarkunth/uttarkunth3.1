@@ -24,6 +24,7 @@ import {
   getRequiredDocumentsForCategories,
 } from '../lib/seller-verification.ts';
 import { evaluateMemberCapabilities } from '../lib/roles.ts';
+import { sanitizeInternalRedirectPath } from '../lib/staff-rbac-shared.ts';
 import {
   CURATED_DESTINATIONS,
   getCanonicalDestinationSlug,
@@ -31,6 +32,18 @@ import {
 } from '../lib/destinations.ts';
 
 describe('UTTARKUNTH PHASE 2 — 15 Mandatory Security & Governance Tests', () => {
+
+  it('Auth redirect sanitizer blocks external, protocol-relative, and scheme-like redirects', () => {
+    assert.equal(sanitizeInternalRedirectPath('/admin/dashboard?tab=staff'), '/admin/dashboard?tab=staff');
+    assert.equal(sanitizeInternalRedirectPath('/', '/fallback'), '/');
+    assert.equal(sanitizeInternalRedirectPath('https://evil.example', '/fallback'), '/fallback');
+    assert.equal(sanitizeInternalRedirectPath('//evil.example/path', '/fallback'), '/fallback');
+    assert.equal(sanitizeInternalRedirectPath('/\\\\evil.example', '/fallback'), '/fallback');
+    assert.equal(sanitizeInternalRedirectPath('/javascript:alert(1)', '/fallback'), '/fallback');
+    assert.equal(sanitizeInternalRedirectPath(null, '/fallback'), '/fallback');
+  });
+
+
   // 1. Public user cannot access staff onboarding without valid invitation token
   it('Scenario 1: Public user cannot access staff onboarding without a valid invitation token', () => {
     const missingInvite = validateStaffInvitation(null, 'public@example.com');
