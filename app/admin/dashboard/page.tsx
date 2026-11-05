@@ -39,40 +39,29 @@ export default async function AdminDashboardPage() {
 
   const adminClient = createAdminClient();
 
-  // Resolve current staff identity and role
-  let platformAdmin: any = null;
-  try {
-    const { data: pa } = await adminClient
-      .from('platform_admins')
-      .select('role, email')
-      .eq('user_id', user.id)
-      .maybeSingle();
-    platformAdmin = pa;
-  } catch {
-    platformAdmin = null;
+  // Authoritative staff identity resolution strictly from public.staff_profiles
+  const { data: staffProfile, error: spErr } = await (
+    adminClient.from('staff_profiles' as any) as any
+  )
+    .select('*')
+    .eq('user_id', user.id)
+    .maybeSingle();
+
+  if (
+    spErr ||
+    !staffProfile ||
+    staffProfile.status !== 'active' ||
+    !staffProfile.staff_id ||
+    !staffProfile.founder_approved_at
+  ) {
+    redirect('/staff/login?error=unauthorized');
   }
 
-  let staffProfile: any = null;
-  try {
-    const { data: sp } = await (adminClient.from('staff_profiles' as any) as any)
-      .select('*')
-      .eq('user_id', user.id)
-      .maybeSingle();
-    staffProfile = sp;
-  } catch {
-    // Fallback if migration pending
-  }
-
-  const rawRole = staffProfile?.role_code || staffProfile?.role_slug || platformAdmin?.role || 'founder';
-  const roleCode: StaffRoleCode = (
-    rawRole === 'superadmin' || rawRole === 'founder'
-      ? 'founder'
-      : rawRole in STAFF_ROLE_DEFINITIONS
-      ? rawRole
-      : 'operations_admin'
-  ) as StaffRoleCode;
+  const rawRole = (staffProfile.role_slug || staffProfile.role_code) as StaffRoleCode;
+  const roleCode: StaffRoleCode =
+    rawRole in STAFF_ROLE_DEFINITIONS ? rawRole : 'operations_admin';
   const roleDef = STAFF_ROLE_DEFINITIONS[roleCode];
-  const staffId = staffProfile?.staff_id || (roleCode === 'founder' ? 'UK-STAFF-2026-0001' : 'UK-STAFF-2026-0002');
+  const staffId = staffProfile.staff_id;
 
   // 1. Properties & Staged Updates
   const { data: properties } = await adminClient
@@ -443,7 +432,7 @@ export default async function AdminDashboardPage() {
             </div>
             <h3 className="font-serif text-base font-bold text-forest">Commercial Agreements</h3>
             <p className="text-xs text-charcoal-muted leading-relaxed">
-              Authorize formal bilateral host commission contracts.
+              Authorize formal bilateral commission contracts.
             </p>
           </Link>
 

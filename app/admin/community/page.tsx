@@ -1,28 +1,28 @@
 import React from 'react';
-import { redirect } from 'next/navigation';
 import { AdminNav } from '@/components/admin-nav';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { resolveFounderOrAdminSession } from '@/lib/auth';
+import { requireStaffPermission } from '@/lib/staff-rbac';
 import { CommunityModerationClient } from '@/components/community-moderation-client';
-import { Shield } from 'lucide-react';
+import { ShieldAlert } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 
 export default async function AdminCommunityPage() {
-  const { user, isAdmin } = await resolveFounderOrAdminSession();
+  const auth = await requireStaffPermission('community.moderate', { requireMfaAal2: false });
 
-  if (!user) {
-    redirect('/staff/login?next=/admin/community');
-  }
-
-  if (!isAdmin) {
+  if (!auth.authorized || !auth.user) {
     return (
-      <div className="max-w-xl mx-auto py-24 px-4 text-center space-y-4">
-        <Shield className="w-12 h-12 text-red-600 mx-auto" />
-        <h1 className="font-serif text-3xl font-bold text-red-700">Administrator Access Required</h1>
-        <p className="text-xs text-charcoal-muted leading-relaxed">
-          This portal is restricted to authorized platform administrators.
-        </p>
+      <div className="pb-16 bg-ivory min-h-screen">
+        <AdminNav />
+        <div className="max-w-xl mx-auto py-24 px-4 text-center space-y-4">
+          <div className="w-14 h-14 rounded-2xl bg-red-100 text-red-700 flex items-center justify-center mx-auto">
+            <ShieldAlert className="w-8 h-8" />
+          </div>
+          <h1 className="font-serif text-2xl font-bold text-forest">Access Restricted</h1>
+          <p className="text-xs text-charcoal-muted leading-relaxed">
+            Community moderation and local storytelling requires explicit &apos;community.moderate&apos; staff authority.
+          </p>
+        </div>
       </div>
     );
   }

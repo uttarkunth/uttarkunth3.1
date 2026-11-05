@@ -1,19 +1,31 @@
 import React from 'react';
-import { redirect } from 'next/navigation';
 import { AdminNav } from '@/components/admin-nav';
-import { createServerSupabaseClient } from '@/lib/supabase/server';
-import { checkIsPlatformAdmin } from '@/lib/auth';
-import { Star, ShieldCheck, CheckCircle2 } from 'lucide-react';
+import { requireStaffPermission } from '@/lib/staff-rbac';
+import { Star, ShieldCheck, CheckCircle2, ShieldAlert } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 
 export default async function AdminReviewsPage() {
-  const supabase = createServerSupabaseClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const auth = await requireStaffPermission('property.review', { requireMfaAal2: false });
+  const finalAuth = !auth.authorized
+    ? await requireStaffPermission('community.moderate', { requireMfaAal2: false })
+    : auth;
 
-  const isAdmin = user ? await checkIsPlatformAdmin(user.id) : false;
-  if (!user || !isAdmin) {
-    redirect('/admin/dashboard');
+  if (!finalAuth.authorized || !finalAuth.user) {
+    return (
+      <div className="pb-16 bg-ivory min-h-screen">
+        <AdminNav />
+        <div className="max-w-xl mx-auto py-24 px-4 text-center space-y-4">
+          <div className="w-14 h-14 rounded-2xl bg-red-100 text-red-700 flex items-center justify-center mx-auto">
+            <ShieldAlert className="w-8 h-8" />
+          </div>
+          <h1 className="font-serif text-2xl font-bold text-forest">Access Restricted</h1>
+          <p className="text-xs text-charcoal-muted leading-relaxed">
+            Review and feedback moderation requires explicit &apos;property.review&apos; or &apos;community.moderate&apos; staff authority.
+          </p>
+        </div>
+      </div>
+    );
   }
 
   return (
