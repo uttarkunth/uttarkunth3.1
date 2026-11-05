@@ -122,7 +122,7 @@ export function AestheticBentoGrid({ properties }: BentoGridProps) {
           <div>
             <span className="text-xs uppercase font-bold tracking-widest text-ukorange">Brand Philosophy</span>
             <p className="font-serif text-2xl font-normal italic mt-3 leading-snug">
-              "Learn by Doing • Grow by Serving."
+              &ldquo;Learn by Doing • Grow by Serving.&rdquo;
             </p>
             <p className="text-xs text-ivory/80 mt-2 font-sans leading-relaxed">
               We empower local Himalayan homestays with direct digital ownership and 0% first-year commissions.
