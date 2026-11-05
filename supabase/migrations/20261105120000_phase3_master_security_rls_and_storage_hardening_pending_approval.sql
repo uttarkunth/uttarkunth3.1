@@ -126,6 +126,67 @@ $$;
 REVOKE ALL ON FUNCTION public.is_platform_admin() FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.is_platform_admin() TO authenticated, service_role;
 
+-- Permission helper used by staff-profile, agreement and seller-document RLS policies.
+-- The compatibility p_user_id argument is deliberately ignored: callers can inspect
+-- only the current JWT user's own permissions. It requires completed onboarding and AAL2.
+CREATE OR REPLACE FUNCTION public.has_staff_permission_for_user(
+  p_user_id uuid,
+  p_perm text
+)
+RETURNS boolean
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public, auth, pg_temp
+AS $func$
+  SELECT auth.uid() IS NOT NULL
+    AND p_perm IS NOT NULL
+    AND length(trim(p_perm)) > 0
+    AND public.current_session_is_aal2()
+    AND EXISTS (
+      SELECT 1
+      FROM public.staff_profiles sp
+      WHERE sp.user_id = auth.uid()
+        AND sp.status = 'active'
+        AND sp.founder_approved = true
+        AND sp.founder_approved_at IS NOT NULL
+        AND sp.founder_approved_by IS NOT NULL
+        AND sp.staff_id IS NOT NULL
+        AND sp.role_slug IS NOT NULL
+        AND sp.session_revoked_at IS NULL
+        AND sp.privacy_notice_accepted = true
+        AND COALESCE(sp.agreements_completed, false) = true
+        AND COALESCE(sp.all_agreements_accepted, false) = true
+        AND COALESCE(sp.onboarding_completed, false) = true
+        AND (
+          sp.role_slug = 'founder'
+          OR p_perm = ANY(COALESCE(sp.custom_permissions, ARRAY[]::text[]))
+          OR EXISTS (
+            SELECT 1
+            FROM public.staff_role_permissions srp
+            WHERE srp.role_slug = sp.role_slug
+              AND srp.permission_key = p_perm
+          )
+          OR EXISTS (
+            SELECT 1
+            FROM public.staff_permission_assignments spa
+            WHERE (spa.staff_profile_id = sp.id OR spa.user_id = auth.uid())
+              AND spa.permission_key = p_perm
+              AND spa.grant_type IN ('allow', 'grant')
+              AND spa.is_active = true
+              AND spa.revoked_at IS NULL
+              AND (spa.expires_at IS NULL OR spa.expires_at > now())
+          )
+        )
+        AND NOT (p_perm = ANY(COALESCE(sp.revoked_permissions, ARRAY[]::text[])))
+    );
+$func$;
+
+REVOKE ALL ON FUNCTION public.has_staff_permission_for_user(uuid, text) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.has_staff_permission_for_user(uuid, text) TO authenticated, service_role;
+COMMENT ON FUNCTION public.has_staff_permission_for_user(uuid, text) IS
+  'Checks only auth.uid(); the legacy p_user_id argument is ignored. Requires approved, consented, fully onboarded staff and AAL2.';
+
 -- Sensitive private-document review is Founder-only in the initial release.
 -- Employee access is intentionally owner-only until pillar-specific document permissions
 -- are implemented and tested. This helper derives identity from auth.uid() to prevent probing.
@@ -157,7 +218,40 @@ $func$;
 REVOKE ALL ON FUNCTION public.is_active_founder() FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.is_active_founder() TO authenticated, service_role;
 
+-- These policies call the helper as authenticated users. Anonymous sessions have no access
+-- to HR, seller verification, or staff agreement records.
+DROP POLICY IF EXISTS "seller_own_verification_docs_select" ON public.seller_verification_documents;
+CREATE POLICY "seller_own_verification_docs_select"
+  ON public.seller_verification_documents
+  FOR SELECT
+  TO authenticated
+  USING (
+    auth.uid() = seller_user_id
+    OR public.has_staff_permission_for_user(auth.uid(), 'seller.verify_documents')
+    OR public.has_staff_permission_for_user(auth.uid(), 'finance.review_agreements')
+  );
 
+DROP POLICY IF EXISTS "staff_agreements_self_or_reviewer_select" ON public.staff_agreement_acceptances;
+CREATE POLICY "staff_agreements_self_or_reviewer_select"
+  ON public.staff_agreement_acceptances
+  FOR SELECT
+  TO authenticated
+  USING (
+    auth.uid() = user_id
+    OR public.has_staff_permission_for_user(auth.uid(), 'staff.hr_docs.view')
+    OR public.has_staff_permission_for_user(auth.uid(), 'staff.hire_approve')
+  );
+
+DROP POLICY IF EXISTS "staff_profiles_self_or_founder_select" ON public.staff_profiles;
+CREATE POLICY "staff_profiles_self_or_founder_select"
+  ON public.staff_profiles
+  FOR SELECT
+  TO authenticated
+  USING (
+    auth.uid() = user_id
+    OR public.has_staff_permission_for_user(auth.uid(), 'staff.permissions.manage')
+    OR public.has_staff_permission_for_user(auth.uid(), 'staff.hire_approve')
+  );
 
 -- ============================================================================
 -- 4. FIX PUBLIC SELECT & HOST POLICIES ON properties, room_units & room_availability_blocks
