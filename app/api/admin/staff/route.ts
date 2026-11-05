@@ -147,9 +147,23 @@ export async function POST(req: NextRequest) {
         );
       }
 
-      const roleSlug = (body.role_slug || body.role_code || 'marketplace_reviewer') as StaffRoleSlug;
-      const roleDef = STAFF_ROLE_DEFINITIONS[roleSlug] || STAFF_ROLE_DEFINITIONS.marketplace_reviewer;
-      const department = String(body.department || roleDef.department || 'founder_office').trim();
+      const roleSlugCandidate = String(body.role_slug || body.role_code || 'marketplace_reviewer').trim();
+      if (!Object.prototype.hasOwnProperty.call(STAFF_ROLE_DEFINITIONS, roleSlugCandidate)) {
+        return NextResponse.json(
+          { ok: false, error: 'A valid Uttarkunth staff role is required.' },
+          { status: 400 }
+        );
+      }
+      const roleSlug = roleSlugCandidate as StaffRoleSlug;
+      const roleDef = STAFF_ROLE_DEFINITIONS[roleSlug];
+      const requestedDepartment = String(body.department || '').trim();
+      if (requestedDepartment && requestedDepartment !== roleDef.department) {
+        return NextResponse.json(
+          { ok: false, error: 'The selected department must match the department assigned to this staff role.' },
+          { status: 400 }
+        );
+      }
+      const department = roleDef.department;
       const designation = String(
         body.designation || body.proposed_designation || roleDef.title
       ).trim();
