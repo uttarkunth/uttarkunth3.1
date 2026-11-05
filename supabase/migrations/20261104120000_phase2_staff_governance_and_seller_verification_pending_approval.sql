@@ -2,7 +2,7 @@
 -- UTTARKUNTH PHASE 2: PRIVATE STAFF PORTAL, GOVERNANCE, COMMON MEMBER PROFILES & SELLER VERIFICATION
 -- Migration Status: PENDING PRODUCTION APPROVAL (DO NOT RUN WITHOUT OWNER SIGN-OFF)
 -- Target Project: xyplgugxpmlnjsvlosdg
--- Design Principles: 100% Additive, Non-Destructive, Non-Recursive SECURITY DEFINER RLS & Immutability
+-- Design Principles: 100% Additive, Reconciled Contracts, Non-Recursive SECURITY DEFINER RLS & Restricted Execution
 -- =============================================================================
 
 BEGIN;
@@ -48,7 +48,7 @@ CREATE POLICY "profiles_self_update"
   USING (auth.uid() = id)
   WITH CHECK (auth.uid() = id);
 
--- Safe public view exposing only non-sensitive member display fields (never phone/email)
+-- Safe public view exposing only non-sensitive member display fields (never phone)
 CREATE OR REPLACE VIEW public.public_member_profiles AS
 SELECT
   id,
@@ -64,11 +64,11 @@ SELECT
 FROM public.profiles;
 
 -- -----------------------------------------------------------------------------
--- 1. INTERNAL STAFF ROLES, PERMISSIONS & PROFILES
+-- 1. INTERNAL STAFF ROLES, PERMISSIONS & PROFILES (Reconciled Contract)
 -- -----------------------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS public.staff_roles (
-  role_code text PRIMARY KEY,
+  role_slug text PRIMARY KEY,
   title text NOT NULL,
   department text NOT NULL,
   description text NOT NULL,
@@ -77,57 +77,103 @@ CREATE TABLE IF NOT EXISTS public.staff_roles (
 );
 
 CREATE TABLE IF NOT EXISTS public.staff_permissions (
-  permission_code text PRIMARY KEY,
+  permission_key text PRIMARY KEY,
   description text NOT NULL,
   created_at timestamptz NOT NULL DEFAULT now()
 );
 
 CREATE TABLE IF NOT EXISTS public.staff_role_permissions (
-  role_code text NOT NULL REFERENCES public.staff_roles(role_code) ON DELETE CASCADE,
-  permission_code text NOT NULL REFERENCES public.staff_permissions(permission_code) ON DELETE CASCADE,
-  PRIMARY KEY (role_code, permission_code)
+  role_slug text NOT NULL REFERENCES public.staff_roles(role_slug) ON DELETE CASCADE,
+  permission_key text NOT NULL REFERENCES public.staff_permissions(permission_key) ON DELETE CASCADE,
+  PRIMARY KEY (role_slug, permission_key)
 );
 
 -- Seed 8 Authoritative Staff Roles
-INSERT INTO public.staff_roles (role_code, title, department, description, allowed_modules)
+INSERT INTO public.staff_roles (role_slug, title, department, description, allowed_modules)
 VALUES
-  ('founder', 'Founder / Superadmin', 'Executive & Governance', 'Full authority across all Uttarkunth pillars, staff hiring, RBAC, and dual authorisation.', ARRAY['/admin/dashboard','/admin/staff','/admin/properties','/admin/products','/admin/productions','/admin/community','/admin/users','/admin/settings','/admin/bookings','/admin/audit']),
-  ('operations_admin', 'Operations Administrator', 'Operations', 'Day-to-day operational management across stays, marketplace, productions, and community.', ARRAY['/admin/dashboard','/admin/properties','/admin/products','/admin/productions','/admin/community','/admin/users','/admin/bookings','/admin/audit']),
-  ('property_reviewer', 'Property & Host Reviewer', 'Stays & Host Relations', 'Reviews homestay listings, staged property updates, and host assignments.', ARRAY['/admin/dashboard','/admin/properties','/admin/users','/admin/bookings']),
-  ('marketplace_reviewer', 'Marketplace & Seller Reviewer', 'Marketplace & Compliance', 'Verifies seller brand applications, GSTIN checksums, FSSAI/craft licences, and product submissions.', ARRAY['/admin/dashboard','/admin/products']),
-  ('productions_editor', 'Productions & Collaborations Editor', 'Uttarkunth Productions', 'Moderates filmmaker profiles and co-production film proposals.', ARRAY['/admin/dashboard','/admin/productions']),
-  ('community_manager', 'Community & Fellowships Manager', 'Community & Impact', 'Moderates community stories, fellowships, and mountain conservation initiatives.', ARRAY['/admin/dashboard','/admin/community']),
-  ('support_executive', 'Support Executive', 'Member Support', 'Assists guests and hosts with booking inquiries. No access to private HR or seller verification documents.', ARRAY['/admin/dashboard','/admin/bookings']),
-  ('finance_compliance_reviewer', 'Finance, Legal & Compliance Reviewer', 'Finance, Legal & Compliance', 'Reviews bilateral commercial agreements, GSTIN/tax compliance records, and audit trails.', ARRAY['/admin/dashboard','/admin/settings','/admin/products','/admin/audit'])
-ON CONFLICT (role_code) DO NOTHING;
+  ('founder', 'Founder / Superadmin', 'founder_office', 'Full platform governance, staff hiring & termination, permission assignment, dual approvals, and full ecosystem oversight.', ARRAY['/admin/dashboard','/admin/staff','/admin/properties','/admin/products','/admin/productions','/admin/community','/admin/users','/admin/settings','/admin/bookings','/admin/audit']),
+  ('operations_admin', 'Operations Administrator', 'operations', 'Coordinates cross-pillar operations, property host assignments, and booking supervision without unilateral staff hiring authority.', ARRAY['/admin/dashboard','/admin/properties','/admin/users','/admin/bookings']),
+  ('property_reviewer', 'Property & Host Reviewer', 'stays_curation', 'Reviews and moderates homestay listings, staged property changes, and host assignments.', ARRAY['/admin/dashboard','/admin/properties','/admin/users']),
+  ('marketplace_reviewer', 'Marketplace & Seller Reviewer', 'marketplace_compliance', 'Reviews artisan and seller applications, verifies Indian GSTIN checksums, reviews category licences, and moderates product submissions.', ARRAY['/admin/dashboard','/admin/products']),
+  ('productions_editor', 'Productions & Collaborations Editor', 'productions', 'Moderates independent filmmaker profiles and documentary proposals for Uttarkunth Productions.', ARRAY['/admin/dashboard','/admin/productions']),
+  ('community_manager', 'Community & Fellowships Manager', 'community', 'Moderates oral history community stories, Living University fellowship applications, and mountain initiatives.', ARRAY['/admin/dashboard','/admin/community']),
+  ('support_executive', 'Support Executive', 'customer_support', 'Handles member assistance and booking inquiries. Strictly prohibited from accessing private HR or seller verification documents.', ARRAY['/admin/dashboard','/admin/bookings']),
+  ('finance_compliance_reviewer', 'Finance, Legal & Compliance Reviewer', 'finance_legal', 'Reviews bilateral commercial agreements, audits seller compliance documents, and inspects immutable audit trails.', ARRAY['/admin/dashboard','/admin/settings','/admin/products','/admin/audit'])
+ON CONFLICT (role_slug) DO UPDATE
+SET title = EXCLUDED.title,
+    department = EXCLUDED.department,
+    description = EXCLUDED.description,
+    allowed_modules = EXCLUDED.allowed_modules;
 
--- Seed Granular Staff Permissions (supporting both canonical and alias codes)
-INSERT INTO public.staff_permissions (permission_code, description)
+-- Seed 18 Granular Staff Permissions
+INSERT INTO public.staff_permissions (permission_key, description)
 VALUES
   ('staff.invite', 'Create and cancel single-use staff onboarding invitations'),
-  ('staff.approve_onboarding', 'Approve or reject staff onboarding applications and issue UK-STAFF IDs'),
-  ('staff.assign_roles', 'Assign and modify staff roles and granular permissions'),
-  ('staff.suspend', 'Suspend or terminate staff members and revoke active sessions'),
-  ('staff.suspend_terminate', 'Suspend or terminate staff members and revoke active sessions'),
-  ('staff.hr_docs.view', 'View private staff HR and identity documents in staff-hr-docs'),
-  ('staff.view_hr_documents', 'View private staff HR and identity documents in staff-hr-docs'),
-  ('property.review', 'Review and moderate property listings'),
-  ('property.approve_staged', 'Approve or reject staged property edits'),
-  ('property.approve_staged_changes', 'Approve or reject staged property edits'),
-  ('property.assign_host', 'Assign primary hosts and co-hosts to properties'),
-  ('booking.supervise', 'View and supervise stay booking requests'),
-  ('seller.review', 'Review seller applications'),
-  ('seller.approve', 'Approve, reject, or suspend seller accounts'),
-  ('seller.verify_documents', 'Access private seller verification documents and record GSTIN checks'),
-  ('product.review', 'Review product submissions'),
-  ('product.approve', 'Approve or reject marketplace product listings'),
-  ('productions.approve_profile', 'Approve or reject filmmaker profiles'),
-  ('productions.review_proposal', 'Review and moderate film proposals'),
-  ('community.moderate', 'Moderate community stories and fellowship applications'),
-  ('finance.review_agreements', 'Manage and review commercial host agreements'),
-  ('audit.view', 'View immutable platform and staff audit logs'),
-  ('security.manage', 'Manage security policies and dual authorisation')
-ON CONFLICT (permission_code) DO NOTHING;
+  ('staff.hire_approve', 'Approve staff onboarding applications and issue UK-STAFF IDs'),
+  ('staff.terminate', 'Suspend or terminate staff members and revoke active sessions'),
+  ('staff.permissions.manage', 'Assign and modify granular staff permissions and overrides'),
+  ('staff.hr_docs.view', 'View private staff HR and identity documents in staff-hr-docs bucket'),
+  ('property.review', 'Review and moderate homestay listings and staged property edits'),
+  ('property.assign_host', 'Assign primary hosts and co-hosts to verified properties'),
+  ('seller.approve', 'Approve, reject, or suspend artisan and seller accounts'),
+  ('product.approve', 'Approve or reject marketplace product submissions'),
+  ('seller.verify_documents', 'Access private seller verification documents in seller-verification-docs and record GSTIN checks'),
+  ('productions.approve_profile', 'Approve or reject filmmaker collaboration profiles'),
+  ('productions.review_proposal', 'Review, moderate, and archive film proposals'),
+  ('community.moderate', 'Moderate community stories and Himalayan fellowship applications'),
+  ('support.manage_tickets', 'Supervise bookings and respond to member support inquiries'),
+  ('finance.review_agreements', 'Review bilateral commercial host agreements and commission records'),
+  ('audit.view_full', 'View immutable platform governance and staff audit logs'),
+  ('governance.dual_approve', 'Participate as a designated second approver for high-risk governance actions'),
+  ('compliance.configure_licences', 'Manage category-to-licence requirements matrix')
+ON CONFLICT (permission_key) DO UPDATE
+SET description = EXCLUDED.description;
+
+-- Seed Complete Role-to-Permission Mappings
+INSERT INTO public.staff_role_permissions (role_slug, permission_key)
+VALUES
+  -- Founder (All 18 permissions)
+  ('founder', 'staff.invite'),
+  ('founder', 'staff.hire_approve'),
+  ('founder', 'staff.terminate'),
+  ('founder', 'staff.permissions.manage'),
+  ('founder', 'staff.hr_docs.view'),
+  ('founder', 'property.review'),
+  ('founder', 'property.assign_host'),
+  ('founder', 'seller.approve'),
+  ('founder', 'product.approve'),
+  ('founder', 'seller.verify_documents'),
+  ('founder', 'productions.approve_profile'),
+  ('founder', 'productions.review_proposal'),
+  ('founder', 'community.moderate'),
+  ('founder', 'support.manage_tickets'),
+  ('founder', 'finance.review_agreements'),
+  ('founder', 'audit.view_full'),
+  ('founder', 'governance.dual_approve'),
+  ('founder', 'compliance.configure_licences'),
+  -- Operations Administrator
+  ('operations_admin', 'property.review'),
+  ('operations_admin', 'property.assign_host'),
+  ('operations_admin', 'support.manage_tickets'),
+  -- Property Reviewer
+  ('property_reviewer', 'property.review'),
+  ('property_reviewer', 'property.assign_host'),
+  -- Marketplace Reviewer
+  ('marketplace_reviewer', 'seller.approve'),
+  ('marketplace_reviewer', 'product.approve'),
+  ('marketplace_reviewer', 'seller.verify_documents'),
+  -- Productions Editor
+  ('productions_editor', 'productions.approve_profile'),
+  ('productions_editor', 'productions.review_proposal'),
+  -- Community Manager
+  ('community_manager', 'community.moderate'),
+  -- Support Executive
+  ('support_executive', 'support.manage_tickets'),
+  -- Finance & Compliance Reviewer
+  ('finance_compliance_reviewer', 'finance.review_agreements'),
+  ('finance_compliance_reviewer', 'seller.verify_documents'),
+  ('finance_compliance_reviewer', 'compliance.configure_licences')
+ON CONFLICT (role_slug, permission_key) DO NOTHING;
 
 -- Sequence for immutable Staff IDs (UK-STAFF-YYYY-XXXX)
 CREATE SEQUENCE IF NOT EXISTS public.uk_staff_id_seq START WITH 2 INCREMENT BY 1;
@@ -149,26 +195,22 @@ $$;
 -- Staff Invitations (Single-use, expiring, Founder-controlled; stores SHA-256 token_hash)
 CREATE TABLE IF NOT EXISTS public.staff_invitations (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  token_hash text UNIQUE,
-  invitation_token text UNIQUE,
+  token_hash text NOT NULL UNIQUE,
   official_email text NOT NULL,
   department text NOT NULL,
   proposed_designation text NOT NULL,
-  role_slug text NOT NULL DEFAULT 'support_executive' REFERENCES public.staff_roles(role_code),
-  role_code text REFERENCES public.staff_roles(role_code),
+  role_slug text NOT NULL REFERENCES public.staff_roles(role_slug),
   initial_permissions text[] NOT NULL DEFAULT '{}',
   employment_category text NOT NULL DEFAULT 'full_time' CHECK (
     employment_category IN ('full_time', 'part_time', 'contractor', 'advisor', 'fellow', 'intern')
   ),
   status text NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'used', 'expired', 'cancelled')),
   expires_at timestamptz NOT NULL,
-  invited_by_user_id uuid REFERENCES auth.users(id),
   invited_by uuid REFERENCES auth.users(id),
   invited_by_email text,
-  accepted_by_user_id uuid REFERENCES auth.users(id),
+  accepted_by uuid REFERENCES auth.users(id),
   accepted_at timestamptz,
-  used_at timestamptz,
-  cancelled_by_user_id uuid REFERENCES auth.users(id),
+  cancelled_by uuid REFERENCES auth.users(id),
   cancelled_at timestamptz,
   cancel_reason text,
   created_at timestamptz NOT NULL DEFAULT now()
@@ -184,14 +226,13 @@ CREATE TABLE IF NOT EXISTS public.staff_profiles (
   preferred_name text,
   personal_email text,
   official_email text NOT NULL UNIQUE,
-  verified_mobile text NOT NULL,
+  verified_mobile text,
   current_address text,
   emergency_contact_name text,
   emergency_contact_phone text,
   designation text NOT NULL,
   department text NOT NULL,
-  role_slug text NOT NULL DEFAULT 'support_executive' REFERENCES public.staff_roles(role_code),
-  role_code text REFERENCES public.staff_roles(role_code),
+  role_slug text NOT NULL REFERENCES public.staff_roles(role_slug),
   custom_permissions text[] NOT NULL DEFAULT '{}',
   revoked_permissions text[] NOT NULL DEFAULT '{}',
   employment_category text NOT NULL DEFAULT 'full_time' CHECK (
@@ -203,7 +244,7 @@ CREATE TABLE IF NOT EXISTS public.staff_profiles (
   reporting_manager text,
   assigned_responsibilities text,
   identity_document_type text CHECK (
-    identity_document_type IN ('passport', 'voter_id', 'driving_licence', 'pan_card', 'aadhaar_redacted', 'other_government_id')
+    identity_document_type IS NULL OR identity_document_type IN ('passport', 'voter_id', 'driving_licence', 'pan_card', 'aadhaar_redacted', 'other_government_id')
   ),
   identity_document_reference text,
   identity_document_number_masked text,
@@ -212,8 +253,8 @@ CREATE TABLE IF NOT EXISTS public.staff_profiles (
   onboarding_completed boolean NOT NULL DEFAULT false,
   mfa_enrolled boolean NOT NULL DEFAULT false,
   founder_approved boolean NOT NULL DEFAULT false,
-  approved_by uuid REFERENCES auth.users(id),
-  approved_at timestamptz,
+  founder_approved_by uuid REFERENCES auth.users(id),
+  founder_approved_at timestamptz,
   rejection_reason text,
   status text NOT NULL DEFAULT 'pending_founder_approval' CHECK (
     status IN ('invited', 'onboarding_in_progress', 'pending_founder_approval', 'active', 'suspended', 'terminated', 'rejected', 'archived')
@@ -228,31 +269,6 @@ CREATE TABLE IF NOT EXISTS public.staff_profiles (
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
 );
-
--- Keep role_slug and role_code synchronized automatically
-CREATE OR REPLACE FUNCTION public.sync_staff_role_columns()
-RETURNS trigger
-LANGUAGE plpgsql
-AS $$
-BEGIN
-  IF NEW.role_slug IS NOT NULL AND NEW.role_code IS NULL THEN
-    NEW.role_code := NEW.role_slug;
-  ELSIF NEW.role_code IS NOT NULL AND NEW.role_slug IS NULL THEN
-    NEW.role_slug := NEW.role_code;
-  END IF;
-  RETURN NEW;
-END;
-$$;
-
-DROP TRIGGER IF EXISTS trg_sync_staff_profile_role ON public.staff_profiles;
-CREATE TRIGGER trg_sync_staff_profile_role
-BEFORE INSERT OR UPDATE ON public.staff_profiles
-FOR EACH ROW EXECUTE FUNCTION public.sync_staff_role_columns();
-
-DROP TRIGGER IF EXISTS trg_sync_staff_invitation_role ON public.staff_invitations;
-CREATE TRIGGER trg_sync_staff_invitation_role
-BEFORE INSERT OR UPDATE ON public.staff_invitations
-FOR EACH ROW EXECUTE FUNCTION public.sync_staff_role_columns();
 
 -- Prevent mutation of immutable staff_id once issued
 CREATE OR REPLACE FUNCTION public.prevent_staff_id_mutation()
@@ -277,12 +293,10 @@ CREATE TABLE IF NOT EXISTS public.staff_permission_assignments (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   staff_profile_id uuid REFERENCES public.staff_profiles(id) ON DELETE CASCADE,
   user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE,
-  permission_key text NOT NULL,
-  permission_code text REFERENCES public.staff_permissions(permission_code) ON DELETE CASCADE,
+  permission_key text NOT NULL REFERENCES public.staff_permissions(permission_key) ON DELETE CASCADE,
   grant_type text NOT NULL DEFAULT 'allow' CHECK (grant_type IN ('allow', 'revoke')),
   is_active boolean NOT NULL DEFAULT true,
   granted_by uuid REFERENCES auth.users(id),
-  granted_by_user_id uuid REFERENCES auth.users(id),
   reason text,
   granted_at timestamptz NOT NULL DEFAULT now()
 );
@@ -298,7 +312,6 @@ CREATE TABLE IF NOT EXISTS public.staff_documents (
   storage_path text NOT NULL,
   mime_type text NOT NULL,
   size_bytes integer,
-  file_size_bytes integer,
   uploaded_at timestamptz NOT NULL DEFAULT now(),
   created_at timestamptz NOT NULL DEFAULT now()
 );
@@ -319,9 +332,7 @@ CREATE TABLE IF NOT EXISTS public.staff_agreement_acceptances (
   agreement_code text NOT NULL,
   agreement_title text,
   version text NOT NULL DEFAULT '2026.1',
-  agreement_version text NOT NULL DEFAULT '2026.1',
-  document_hash text,
-  content_sha256 text,
+  document_hash text NOT NULL,
   accepted boolean NOT NULL DEFAULT true,
   accepted_ip text,
   user_agent text,
@@ -347,34 +358,30 @@ CREATE TABLE IF NOT EXISTS public.staff_dual_approvals (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   action_type text NOT NULL CHECK (
     action_type IN (
-      'promote_superadmin',
-      'create_founder_or_superadmin',
-      'change_commercial_terms',
-      'export_sensitive_data',
-      'override_listing_moderation',
-      'destructive_published_record_action',
       'superadmin_creation',
       'admin_promotion',
       'commercial_terms_change',
       'bulk_sensitive_data_export',
-      'exceptional_listing_approval'
+      'exceptional_listing_approval',
+      'promote_superadmin',
+      'create_founder_or_superadmin',
+      'change_commercial_terms',
+      'export_sensitive_data',
+      'override_listing_moderation'
     )
   ),
   target_type text NOT NULL,
   target_id text NOT NULL,
-  requested_by_user_id uuid NOT NULL REFERENCES auth.users(id),
+  requested_by uuid NOT NULL REFERENCES auth.users(id),
   requested_by_staff_id text,
   requested_by_email text,
   reason text NOT NULL,
   payload jsonb NOT NULL DEFAULT '{}'::jsonb,
   status text NOT NULL DEFAULT 'pending' CHECK (
-    status IN ('pending', 'pending_second_approver', 'approved', 'rejected', 'executed', 'expired')
+    status IN ('pending', 'approved', 'rejected', 'executed', 'expired')
   ),
-  second_approver_user_id uuid REFERENCES auth.users(id),
+  second_approver_id uuid REFERENCES auth.users(id),
   second_approver_staff_id text,
-  approved_by_user_id uuid REFERENCES auth.users(id),
-  approved_by_staff_id text,
-  second_approval_notes text,
   decision_notes text,
   decided_at timestamptz,
   created_at timestamptz NOT NULL DEFAULT now()
@@ -454,22 +461,17 @@ CREATE TABLE IF NOT EXISTS public.seller_verification_documents (
   document_type text NOT NULL,
   document_title text,
   reference_number text,
-  document_reference_number text,
   storage_bucket text NOT NULL DEFAULT 'seller-verification-docs' CHECK (storage_bucket = 'seller-verification-docs'),
   storage_path text NOT NULL,
   mime_type text NOT NULL CHECK (mime_type IN ('application/pdf', 'image/jpeg', 'image/png', 'image/webp')),
   size_bytes integer CHECK (size_bytes IS NULL OR (size_bytes > 0 AND size_bytes <= 10485760)),
-  file_size_bytes integer CHECK (file_size_bytes IS NULL OR (file_size_bytes > 0 AND file_size_bytes <= 10485760)),
   expires_at date,
-  expiry_date date,
   verification_status text NOT NULL DEFAULT 'pending' CHECK (
     verification_status IN ('pending', 'verified', 'rejected', 'expired', 'revision_requested')
   ),
   reviewed_by uuid REFERENCES auth.users(id),
   reviewed_at timestamptz,
-  verified_by_user_id uuid REFERENCES auth.users(id),
   verified_by_staff_id text,
-  verified_at timestamptz,
   reviewer_notes text,
   uploaded_at timestamptz NOT NULL DEFAULT now(),
   created_at timestamptz NOT NULL DEFAULT now()
@@ -491,14 +493,12 @@ CREATE TABLE IF NOT EXISTS public.seller_verification_checks (
   portal_status text,
   name_matches_applicant boolean NOT NULL DEFAULT true,
   verification_result text CHECK (verification_result IS NULL OR verification_result IN ('verified', 'mismatched', 'rejected')),
-  verification_outcome text CHECK (verification_outcome IS NULL OR verification_outcome IN ('verified', 'rejected', 'revision_requested')),
-  reviewer_user_id uuid REFERENCES auth.users(id),
-  checked_by_user_id uuid REFERENCES auth.users(id),
+  reviewed_by uuid REFERENCES auth.users(id),
   checked_by_staff_id text,
   supporting_evidence_ref text,
   notes text,
   verification_date timestamptz NOT NULL DEFAULT now(),
-  checked_at timestamptz NOT NULL DEFAULT now()
+  created_at timestamptz NOT NULL DEFAULT now()
 );
 
 -- Configurable Marketplace Category Licence Requirements Table
@@ -523,14 +523,14 @@ VALUES
 ON CONFLICT (category_code) DO NOTHING;
 
 -- -----------------------------------------------------------------------------
--- 3. NON-RECURSIVE SECURITY DEFINER HELPERS & FOUNDER PROVISIONING
+-- 3. NON-RECURSIVE SECURITY DEFINER HELPERS & RESTRICTED FOUNDER PROVISIONING
 -- -----------------------------------------------------------------------------
 
 CREATE OR REPLACE FUNCTION public.is_active_staff_for_user(p_user_id uuid)
 RETURNS boolean
 LANGUAGE sql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = public, auth, pg_temp
 STABLE
 AS $$
   SELECT EXISTS (
@@ -538,6 +538,10 @@ AS $$
     FROM public.staff_profiles sp
     WHERE sp.user_id = p_user_id
       AND sp.status = 'active'
+      AND sp.founder_approved = true
+      AND sp.founder_approved_at IS NOT NULL
+      AND sp.staff_id IS NOT NULL
+      AND sp.session_revoked_at IS NULL
   );
 $$;
 
@@ -545,7 +549,7 @@ CREATE OR REPLACE FUNCTION public.has_staff_permission_for_user(p_user_id uuid, 
 RETURNS boolean
 LANGUAGE sql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = public, auth, pg_temp
 STABLE
 AS $$
   SELECT EXISTS (
@@ -553,15 +557,24 @@ AS $$
     FROM public.staff_profiles sp
     WHERE sp.user_id = p_user_id
       AND sp.status = 'active'
+      AND sp.founder_approved = true
+      AND sp.founder_approved_at IS NOT NULL
+      AND sp.staff_id IS NOT NULL
+      AND sp.session_revoked_at IS NULL
       AND (
         sp.role_slug = 'founder'
-        OR sp.role_code = 'founder'
         OR p_perm = ANY(sp.custom_permissions)
         OR EXISTS (
           SELECT 1
+          FROM public.staff_role_permissions srp
+          WHERE srp.role_slug = sp.role_slug
+            AND srp.permission_key = p_perm
+        )
+        OR EXISTS (
+          SELECT 1
           FROM public.staff_permission_assignments spa
-          WHERE (spa.user_id = p_user_id OR spa.staff_profile_id = sp.id)
-            AND (spa.permission_key = p_perm OR spa.permission_code = p_perm)
+          WHERE spa.user_id = p_user_id
+            AND spa.permission_key = p_perm
             AND spa.grant_type = 'allow'
             AND spa.is_active = true
         )
@@ -570,21 +583,49 @@ AS $$
   );
 $$;
 
--- Safe non-recursive Founder provisioning helper (callable from SQL Editor)
+-- Restricted Founder Account Provisioning Procedure
+-- Requirements:
+-- 1. Must be executed by the trusted database owner or service_role in Supabase SQL Editor.
+-- 2. Strictly verifies that p_user_id exists in auth.users.
+-- 3. Strictly verifies that p_official_email matches the registered auth user's email.
+-- 4. Never fabricates MFA, signed agreements, verified mobile, or identity documents.
 CREATE OR REPLACE FUNCTION public.provision_founder_account(
   p_user_id uuid,
   p_official_email text,
   p_full_legal_name text,
-  p_verified_mobile text DEFAULT '+91-0000000000'
+  p_contact_phone text DEFAULT NULL
 )
 RETURNS public.staff_profiles
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = public, auth, pg_temp
 AS $$
 DECLARE
+  v_auth_user auth.users%ROWTYPE;
+  v_normalized_email text;
   v_row public.staff_profiles;
 BEGIN
+  -- 1. Strictly verify the user exists in auth.users
+  SELECT * INTO v_auth_user
+  FROM auth.users
+  WHERE id = p_user_id;
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Security Violation: User UUID % does not exist in auth.users.', p_user_id;
+  END IF;
+
+  -- 2. Strictly verify the submitted email matches registered Auth email
+  v_normalized_email := lower(trim(p_official_email));
+  IF lower(trim(COALESCE(v_auth_user.email, ''))) <> v_normalized_email THEN
+    RAISE EXCEPTION 'Security Violation: Submitted email % does not match registered Auth email % for user %.',
+      v_normalized_email, v_auth_user.email, p_user_id;
+  END IF;
+
+  IF trim(COALESCE(p_full_legal_name, '')) = '' THEN
+    RAISE EXCEPTION 'Validation Error: Full legal name is required for Founder account provisioning.';
+  END IF;
+
+  -- 3. Upsert Founder staff profile with honest, non-fabricated state
   INSERT INTO public.staff_profiles (
     user_id,
     staff_id,
@@ -596,7 +637,6 @@ BEGIN
     designation,
     department,
     role_slug,
-    role_code,
     employment_category,
     joining_date,
     assigned_responsibilities,
@@ -607,31 +647,30 @@ BEGIN
     onboarding_completed,
     mfa_enrolled,
     founder_approved,
-    approved_by,
-    approved_at,
+    founder_approved_by,
+    founder_approved_at,
     status
   )
   VALUES (
     p_user_id,
     'UK-STAFF-2026-0001',
-    p_full_legal_name,
-    p_full_legal_name,
-    p_official_email,
-    lower(trim(p_official_email)),
-    p_verified_mobile,
+    trim(p_full_legal_name),
+    trim(p_full_legal_name),
+    v_normalized_email,
+    v_normalized_email,
+    CASE WHEN p_contact_phone IS NOT NULL AND trim(p_contact_phone) <> '' THEN trim(p_contact_phone) ELSE NULL END,
     'Founder & Chief Architect',
-    'Executive & Governance',
-    'founder',
+    'founder_office',
     'founder',
     'full_time',
     CURRENT_DATE,
-    'Full executive governance, staff hiring, security & compliance oversight.',
-    'passport',
-    'FOUNDER-VERIFIED',
-    true,
-    true,
-    true,
-    true,
+    'Full platform governance, staff hiring, security architecture, and ecosystem oversight.',
+    NULL,
+    NULL,
+    false,
+    false,
+    false,
+    false,
     true,
     p_user_id,
     now(),
@@ -639,15 +678,16 @@ BEGIN
   )
   ON CONFLICT (user_id) DO UPDATE
   SET role_slug = 'founder',
-      role_code = 'founder',
       status = 'active',
       founder_approved = true,
-      onboarding_completed = true,
+      founder_approved_by = p_user_id,
+      founder_approved_at = COALESCE(public.staff_profiles.founder_approved_at, now()),
       updated_at = now()
   RETURNING * INTO v_row;
 
+  -- 4. Synchronize into public.platform_admins for backward compatibility
   INSERT INTO public.platform_admins (user_id, email, role, notes)
-  VALUES (p_user_id, lower(trim(p_official_email)), 'founder', 'Provisioned via provision_founder_account')
+  VALUES (p_user_id, v_normalized_email, 'founder', 'Provisioned via owner-restricted provision_founder_account')
   ON CONFLICT (user_id) DO UPDATE
   SET role = 'founder',
       email = EXCLUDED.email;
@@ -655,6 +695,15 @@ BEGIN
   RETURN v_row;
 END;
 $$;
+
+-- Restrict execution privileges:
+-- Remove execution rights from PUBLIC, anon, and ordinary authenticated users
+REVOKE ALL ON FUNCTION public.provision_founder_account(uuid, text, text, text) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.provision_founder_account(uuid, text, text, text) FROM anon;
+REVOKE ALL ON FUNCTION public.provision_founder_account(uuid, text, text, text) FROM authenticated;
+
+-- Grant execution ONLY to service_role (and postgres / database owner)
+GRANT EXECUTE ON FUNCTION public.provision_founder_account(uuid, text, text, text) TO service_role;
 
 -- -----------------------------------------------------------------------------
 -- 4. ROW LEVEL SECURITY (RLS) & PRIVATE STORAGE BUCKET POLICIES
@@ -676,15 +725,15 @@ ALTER TABLE public.seller_verification_documents ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.seller_verification_checks ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.marketplace_category_requirements ENABLE ROW LEVEL SECURITY;
 
--- Staff members can read their own staff_profile; Founder/staff with staff.assign_roles can read all
+-- Staff members can read their own staff_profile; Founder/staff with staff.permissions.manage can read all
 DROP POLICY IF EXISTS "staff_profiles_self_or_founder_select" ON public.staff_profiles;
 CREATE POLICY "staff_profiles_self_or_founder_select"
   ON public.staff_profiles
   FOR SELECT
   USING (
     auth.uid() = user_id
-    OR public.has_staff_permission_for_user(auth.uid(), 'staff.assign_roles')
-    OR public.has_staff_permission_for_user(auth.uid(), 'staff.approve_onboarding')
+    OR public.has_staff_permission_for_user(auth.uid(), 'staff.permissions.manage')
+    OR public.has_staff_permission_for_user(auth.uid(), 'staff.hire_approve')
   );
 
 -- Sellers can only view and insert their own verification documents; authorised reviewers with seller.verify_documents can read
