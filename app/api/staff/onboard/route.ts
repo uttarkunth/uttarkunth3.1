@@ -7,6 +7,7 @@ import {
   computeDocumentHash,
   validateStaffInvitation,
   verifyAllStaffAgreementsCompleted,
+  resolveOperationalDepartment,
   recordStaffAuditLog,
   type StaffAgreementType,
 } from '@/lib/staff-rbac';
@@ -330,7 +331,7 @@ export async function POST(req: NextRequest) {
       emergency_contact_phone: body.emergency_contact_phone || null,
       designation:
         body.designation || invitationRow.designation || invitationRow.proposed_designation,
-      department: invitationRow.department,
+      department: resolveOperationalDepartment(invitationRow.department, roleSlug),
       role_slug: roleSlug,
       role_code: roleSlug,
       employment_category: invitationRow.employment_category,

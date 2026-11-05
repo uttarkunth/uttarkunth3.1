@@ -17,13 +17,39 @@ export type StaffRoleCode = StaffRoleSlug;
 
 export type StaffDepartment =
   | 'founder_office'
+  | 'stays'
+  | 'products'
+  | 'productions'
+  | 'community'
   | 'operations'
   | 'stays_curation'
   | 'marketplace_compliance'
-  | 'productions'
-  | 'community'
   | 'customer_support'
   | 'finance_legal';
+
+export const CANONICAL_STAFF_DEPARTMENTS = [
+  {
+    slug: 'stays' as const,
+    label: 'UTTARKUNTH STAYS (Operational Department 01)',
+  },
+  {
+    slug: 'products' as const,
+    label: 'UTTARKUNTH PRODUCTS (Operational Department 02)',
+  },
+  {
+    slug: 'productions' as const,
+    label: 'UTTARKUNTH PRODUCTIONS (Operational Department 03)',
+  },
+  {
+    slug: 'community' as const,
+    label: 'UTTARKUNTH COMMUNITY (Operational Department 04)',
+  },
+  {
+    slug: 'founder_office' as const,
+    label:
+      'FOUNDER OFFICE (Central Admin & Shared Functions: HR, Finance, Legal, Tech, Support, Governance)',
+  },
+] as const;
 
 export type StaffEmploymentCategory =
   | 'full_time_employee'
@@ -233,7 +259,7 @@ export const STAFF_ROLE_DEFINITIONS: Record<StaffRoleSlug, StaffRoleDefinition> 
   founder: {
     slug: 'founder',
     code: 'founder',
-    title: 'Founder / Superadmin',
+    title: 'Founder & Chief Executive',
     department: 'founder_office',
     description:
       'Ultimate platform governance, staff hiring & termination, permission assignment, dual approvals, and full ecosystem oversight.',
@@ -268,9 +294,9 @@ export const STAFF_ROLE_DEFINITIONS: Record<StaffRoleSlug, StaffRoleDefinition> 
     slug: 'operations_admin',
     code: 'operations_admin',
     title: 'Operations Administrator',
-    department: 'operations',
+    department: 'founder_office',
     description:
-      'Coordinates cross-pillar operations, property host assignments, and booking supervision without unilateral staff hiring authority.',
+      'Shared Founder-managed platform operations function: coordinates cross-pillar operations, property host assignments, and booking supervision via delegated permissions without unilateral staff hiring authority.',
     permissions: ['property.review', 'property.assign_host', 'support.manage_tickets'],
     defaultPermissions: ['property.review', 'property.assign_host', 'support.manage_tickets'],
     allowedNavModules: ['dashboard', 'properties', 'users', 'bookings'],
@@ -280,9 +306,9 @@ export const STAFF_ROLE_DEFINITIONS: Record<StaffRoleSlug, StaffRoleDefinition> 
     slug: 'property_reviewer',
     code: 'property_reviewer',
     title: 'Property Reviewer',
-    department: 'stays_curation',
+    department: 'stays',
     description:
-      'Reviews homestay listings and staged property changes. Cannot assign primary hosts, approve sellers, or appoint administrators.',
+      'Reviews homestay listings and staged property changes in the Stays department. Cannot assign primary hosts, approve sellers, or appoint administrators.',
     permissions: ['property.review'],
     defaultPermissions: ['property.review'],
     allowedNavModules: ['dashboard', 'properties'],
@@ -292,9 +318,9 @@ export const STAFF_ROLE_DEFINITIONS: Record<StaffRoleSlug, StaffRoleDefinition> 
     slug: 'marketplace_reviewer',
     code: 'marketplace_reviewer',
     title: 'Marketplace & Seller Reviewer',
-    department: 'marketplace_compliance',
+    department: 'products',
     description:
-      'Reviews artisan/seller brand applications, verifies business documents, and moderates product submissions.',
+      'Reviews artisan/seller brand applications, verifies business documents, and moderates product submissions in the Products department.',
     permissions: ['seller.approve', 'product.approve', 'seller.verify_documents'],
     defaultPermissions: ['seller.approve', 'product.approve', 'seller.verify_documents'],
     allowedNavModules: ['dashboard', 'products'],
@@ -305,7 +331,8 @@ export const STAFF_ROLE_DEFINITIONS: Record<StaffRoleSlug, StaffRoleDefinition> 
     code: 'productions_editor',
     title: 'Productions Editor',
     department: 'productions',
-    description: 'Reviews filmmaker & co-producer profiles and documentary/film proposals.',
+    description:
+      'Reviews filmmaker & co-producer profiles and documentary/film proposals in the Productions department.',
     permissions: ['productions.approve_profile', 'productions.review_proposal'],
     defaultPermissions: ['productions.approve_profile', 'productions.review_proposal'],
     allowedNavModules: ['dashboard', 'productions'],
@@ -317,7 +344,7 @@ export const STAFF_ROLE_DEFINITIONS: Record<StaffRoleSlug, StaffRoleDefinition> 
     title: 'Community Manager',
     department: 'community',
     description:
-      'Moderates community residency participations, village initiatives, and oral history stories.',
+      'Moderates community residency participations, village initiatives, and oral history stories in the Community department.',
     permissions: ['community.moderate'],
     defaultPermissions: ['community.moderate'],
     allowedNavModules: ['dashboard', 'community'],
@@ -327,9 +354,9 @@ export const STAFF_ROLE_DEFINITIONS: Record<StaffRoleSlug, StaffRoleDefinition> 
     slug: 'support_executive',
     code: 'support_executive',
     title: 'Customer Support Executive',
-    department: 'customer_support',
+    department: 'founder_office',
     description:
-      'Assists guests and hosts with booking inquiries. Strictly prohibited from accessing private seller licences or HR documents.',
+      'Shared Founder-managed Customer Support function delegated via support.manage_tickets. Strictly prohibited from accessing private seller licences or HR documents.',
     permissions: ['support.manage_tickets'],
     defaultPermissions: ['support.manage_tickets'],
     allowedNavModules: ['dashboard', 'bookings'],
@@ -339,9 +366,9 @@ export const STAFF_ROLE_DEFINITIONS: Record<StaffRoleSlug, StaffRoleDefinition> 
     slug: 'finance_compliance_reviewer',
     code: 'finance_compliance_reviewer',
     title: 'Finance & Compliance Reviewer',
-    department: 'finance_legal',
+    department: 'founder_office',
     description:
-      'Reviews bilateral commercial agreements, verifies GSTIN/tax compliance records, and audits regulatory licences.',
+      'Shared Founder-managed Finance, Legal & Compliance function delegated via explicit permissions to review bilateral agreements, verify GSTIN/tax compliance records, and audit regulatory licences.',
     permissions: [
       'seller.verify_documents',
       'finance.review_agreements',
@@ -533,4 +560,3 @@ export function sanitizeInternalRedirectPath(
   if (/^\/[a-zA-Z0-9+.-]+:/.test(trimmed)) return fallback;
   return trimmed;
 }
-

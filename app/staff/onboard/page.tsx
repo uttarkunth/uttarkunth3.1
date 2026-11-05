@@ -55,7 +55,7 @@ function StaffOnboardingContent() {
 
   // Professional fields
   const [designation, setDesignation] = useState('');
-  const [department, setDepartment] = useState('Operations');
+  const [department, setDepartment] = useState('stays');
   const [employmentCategory, setEmploymentCategory] = useState<
     'full_time' | 'part_time' | 'contractor' | 'advisor' | 'fellow'
   >('full_time');
@@ -543,14 +543,13 @@ function StaffOnboardingContent() {
                   onChange={(e) => setDepartment(e.target.value)}
                   className="w-full bg-[#161513] border border-white/20 px-4 py-2.5 text-sm text-[#FBF9F5]"
                 >
-                  <option value="Executive & Governance">Executive & Governance</option>
-                  <option value="Operations">Operations</option>
-                  <option value="Stays & Host Relations">Stays & Host Relations</option>
-                  <option value="Marketplace & Compliance">Marketplace & Compliance</option>
-                  <option value="Uttarkunth Productions">Uttarkunth Productions</option>
-                  <option value="Community & Impact">Community & Impact</option>
-                  <option value="Member Support">Member Support</option>
-                  <option value="Finance, Legal & Compliance">Finance, Legal & Compliance</option>
+                  <option value="stays">stays — UTTARKUNTH STAYS (Operational Department 01)</option>
+                  <option value="products">products — UTTARKUNTH PRODUCTS (Operational Department 02)</option>
+                  <option value="productions">productions — UTTARKUNTH PRODUCTIONS (Operational Department 03)</option>
+                  <option value="community">community — UTTARKUNTH COMMUNITY (Operational Department 04)</option>
+                  <option value="founder_office">
+                    founder_office — FOUNDER OFFICE (Central Admin &amp; Shared Functions)
+                  </option>
                 </select>
               </div>
               <div>
