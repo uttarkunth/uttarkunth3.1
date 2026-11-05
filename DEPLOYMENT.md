@@ -1,15 +1,17 @@
 # Uttarkunth 3.1 — Cloudflare Workers, Staff Subdomain & Supabase Deployment Guide
 
 **Platform:** Uttarkunth (`uttarkunth.com` & `team.uttarkunth.com`)  
+**Repository:** `uttarkunth/uttarkunth3.1`  
+**Working Branch:** `uttarkunthmain2` (Release Candidate)  
 **Supabase Project:** `xyplgugxpmlnjsvlosdg`  
 **Deployment Target:** Cloudflare Workers via `@opennextjs/cloudflare`
 
 > [!IMPORTANT]
-> **Production Safety Rule:** Do not apply pending database migrations or deploy to Cloudflare until reviewed and approved by the Founder. Live properties (`Yash Home Stay` and `Wonderway Retreat`), existing bookings, and live Auth accounts must remain untouched.
+> **Production Safety Rule:** Do not apply pending database migrations to live production or deploy to Cloudflare until explicitly reviewed and approved by the Founder. Live homestays (`Yash Home Stay` and `Wonderway Retreat`), existing bookings, and live Auth accounts must remain untouched.
 
 ---
 
-## 1. Clean Build & Local Preview Commands
+## 1. Clean Build & Local Verification Commands
 
 ```bash
 # Install dependencies
@@ -20,7 +22,7 @@ npx tsc --noEmit
 npm run lint
 npm test
 
-# Build Next.js production output
+# Build Next.js production output (77 static/dynamic routes)
 npm run build
 
 # Build Cloudflare Worker bundle (.open-next/worker.js & .open-next/assets)
@@ -32,10 +34,10 @@ npm run preview
 
 ---
 
-## 2. Cloudflare Workers Builds Configuration
+## 2. Cloudflare Workers Builds Configuration (When Approved)
 
 1. In the **Cloudflare Dashboard**, go to **Workers & Pages > Create Application > Workers > Connect to Git**.
-2. Select repository `uttarkunth/uttarkunth3.1` and branch `main`.
+2. Select repository `uttarkunth/uttarkunth3.1` and branch `uttarkunthmain2`.
 3. Configure build settings:
    - **Root directory:** `/`
    - **Build command:** `npm run build:worker`
@@ -83,26 +85,45 @@ npm run preview
 
 ---
 
-## 5. Supabase Database Migrations & Founder Provisioning
+## 5. Supabase Database Migrations & Secure Founder Provisioning
 
 ### A. Ordered Pending Migrations (Review Before Applying)
-Run in the Supabase SQL Editor only after Founder sign-off:
+Run in the Supabase SQL Editor only after explicit Founder sign-off:
 1. `supabase/migrations/20260418010000_phase2a_foundation_pending_approval.sql`
 2. `supabase/migrations/20261101120000_products_marketplace_pending_approval.sql`
 3. `supabase/migrations/20261102120000_phase2f_bilateral_agreements_pending_approval.sql`
 4. `supabase/migrations/20261103120000_phase2g_2h_productions_community_pending_approval.sql`
 5. `supabase/migrations/20261104120000_phase2_staff_governance_and_seller_verification_pending_approval.sql`
 
-### B. Provisioning the Founder Account in `public.staff_profiles`
-After applying `20261104120000_phase2_staff_governance_and_seller_verification_pending_approval.sql`, run the following SQL in the Supabase SQL Editor using the Founder's existing `auth.users.id`:
+### B. Secure Provisioning of the Founder Account
+In `20261104120000_phase2_staff_governance_and_seller_verification_pending_approval.sql`, `public.provision_founder_account` is locked down:
+- Execution privileges are explicitly revoked from `PUBLIC`, `anon`, and `authenticated`.
+- Only the postgres superuser / trusted database owner and `service_role` possess `EXECUTE` privileges.
+- The function strictly validates that the supplied Auth UUID exists in `auth.users` and that the submitted official email exactly matches the registered email on that account.
+- It does **not** falsely mark MFA as enrolled, does **not** create fictitious staff agreements, and does **not** store fabricated identity or mobile records. Genuine TOTP enrollment must occur through Supabase Auth.
+
+To provision your Founder profile from the **Supabase SQL Editor** as the database owner:
 
 ```sql
 SELECT public.provision_founder_account(
-  '<FOUNDER_AUTH_USER_UUID>'::uuid,
-  'info@uttarkunth.com',
+  'YOUR_ACTUAL_SUPABASE_AUTH_UUID'::uuid,
+  'your-registered-founder-email@uttarkunth.com',
   'Gaurav Negi',
-  '+91-0000000000'
+  '+919876543210' -- Your genuine registered contact number
 );
 ```
 
-This creates the immutable `UK-STAFF-2026-0001` Founder record in `public.staff_profiles` (`role_slug = 'founder'`, `status = 'active'`) and synchronizes `public.platform_admins`.
+### C. Verifying Function Privileges
+Run this query in the Supabase SQL Editor to confirm that anonymous and public users cannot execute the Founder provisioning procedure:
+
+```sql
+SELECT
+  has_function_privilege('anon', 'public.provision_founder_account(uuid, text, text, text)', 'EXECUTE') AS anon_can_exec,
+  has_function_privilege('authenticated', 'public.provision_founder_account(uuid, text, text, text)', 'EXECUTE') AS auth_can_exec,
+  has_function_privilege('service_role', 'public.provision_founder_account(uuid, text, text, text)', 'EXECUTE') AS service_role_can_exec;
+```
+
+**Expected Result:**
+- `anon_can_exec`: `false`
+- `auth_can_exec`: `false`
+- `service_role_can_exec`: `true`
