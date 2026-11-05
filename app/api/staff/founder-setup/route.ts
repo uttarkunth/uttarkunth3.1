@@ -113,7 +113,7 @@ export async function POST(request: NextRequest) {
     }
 
     const submittedAgreements: any[] = Array.isArray(body?.agreements) ? body.agreements : [];
-    const normalized = REQUIRED_STAFF_AGREEMENTS.map((agreement) => {
+    const normalized: any[] = REQUIRED_STAFF_AGREEMENTS.map((agreement) => {
       const submitted = submittedAgreements.find(
         (item) => item?.agreement_type === agreement.type || item?.agreement_code === agreement.code
       );
@@ -207,7 +207,7 @@ export async function POST(request: NextRequest) {
 
     await recordStaffAuditLog({
       actorUserId: context.user.id,
-      actorEmail: context.user.email,
+      actorEmail: context.user.email ?? null,
       staffId: context.profile.staff_id,
       roleSlug: 'founder',
       action: 'founder_agreements_accepted',
