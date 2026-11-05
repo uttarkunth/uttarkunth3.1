@@ -61,7 +61,8 @@ npm run preview
 - `NEXT_PUBLIC_SUPABASE_URL` (Plain text)
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY` (Plain text)
 - `SUPABASE_SERVICE_ROLE_KEY` (**Encrypted Secret** — strictly server-only; never prefix with `NEXT_PUBLIC_`)
-- `ALLOWED_ORIGINS` = `https://uttarkunth.com,https://team.uttarkunth.com`
+- `ALLOWED_ORIGINS` = `https://uttarkunth.com,https://team.uttarkunth.com,https://admin.uttarkunth.com`
+- `ENFORCE_CLOUDFLARE_ACCESS` = `true` (also enforced automatically in production)
 
 ---
 
@@ -75,13 +76,18 @@ npm run preview
    - Any unauthenticated request to `/admin/*` redirects to `/staff/login?next=...`.
    - Open staff registration paths (`/admin/register`, `/admin/signup`, `/staff/register`, `/staff/signup`) are permanently blocked and redirected to `/staff/login?error=open_registration_prohibited`.
 
-### B. Cloudflare Access (Zero Trust External Perimeter Gate — Recommended)
-1. In **Cloudflare Zero Trust > Access > Applications**, create a **Self-hosted Application** for:
-   - `team.uttarkunth.com/*`
-   - `uttarkunth.com/staff/*`
-   - `uttarkunth.com/admin/*`
-2. Create an **Allow** policy restricted to authorised Uttarkunth staff emails (`@uttarkunth.com` or Founder email list) requiring One-Time PIN or hardware MFA.
-3. **Defense-in-Depth:** Cloudflare Access is an outer perimeter gate only; application-level authentication (`middleware.ts`, `lib/auth.ts`, `requireStaffPermission()` in `lib/staff-rbac.ts`) and Supabase Auth TOTP MFA (`aal2`) remain mandatory on every request.
+### B. Cloudflare Access (Mandatory Zero Trust Perimeter for Internal Subdomains)
+1. In **Cloudflare Zero Trust > Access > Applications**, create two separate **Self-hosted Applications**:
+   - Founder application: `admin.uttarkunth.com/*`
+   - Staff application: `team.uttarkunth.com/*`
+2. Restrict the Founder application to the Founder identity only. Restrict the Staff application to approved employee identities/groups. Require an appropriate strong identity factor and configure short session durations.
+3. Add these Worker runtime variables:
+   - `CLOUDFLARE_ACCESS_TEAM_DOMAIN` = `<your-team-name>.cloudflareaccess.com`
+   - `CLOUDFLARE_ACCESS_AUD_FOUNDER` = `<Application Audience (AUD) tag for admin.uttarkunth.com>`
+   - `CLOUDFLARE_ACCESS_AUD_STAFF` = `<Application Audience (AUD) tag for team.uttarkunth.com>`
+   - `ENFORCE_CLOUDFLARE_ACCESS` = `true`
+4. The middleware verifies the JWT signature against Cloudflare's published signing keys and checks issuer, the portal-specific audience, subject, and expiry. A missing or invalid token fails closed with HTTP 403. Do not substitute a mere header-presence check.
+5. **Defense-in-Depth:** Cloudflare Access is only the outer perimeter. Supabase Auth, server-side staff RBAC, route-level permissions, and Supabase TOTP MFA (`aal2`) remain mandatory. Keep the Worker origin protected so requests cannot bypass the Access-gated custom hostnames.
 
 ---
 
