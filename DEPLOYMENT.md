@@ -134,3 +134,14 @@ SELECT
 - `anon_can_exec`: `false`
 - `auth_can_exec`: `false`
 - `service_role_can_exec`: `true`
+
+
+## 7. Phase 4 Corrective Migration (For Databases Where Phase 2/3 Are Already Applied)
+
+If the Supabase migration history already contains `20261105191418` (Phase 2) and `20261105191649` (Phase 3), do not edit or replay those historical migrations. Review and apply the forward-only migration:
+
+`supabase/migrations/20261106000100_correct_phase3_admin_host_and_private_storage_permissions.sql`
+
+This migration resets `onboarding_completed` to false only where the privacy notice or required agreement flags are incomplete; it does not fabricate consent. It closes the arbitrary-user property-host check, requires completed staff approval/consent/onboarding plus AAL2 for privileged RLS access, and restricts private HR/seller/host/production/community documents to their owner or the verified Founder with AAL2.
+
+Before applying it to production, verify the migration against a staging copy and test normal host/property access, staff onboarding, Founder first login, TOTP enrollment, and storage access for each owner bucket.
