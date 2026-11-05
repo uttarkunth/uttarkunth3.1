@@ -1,11 +1,11 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { checkIsPlatformAdmin } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const supabase = createServerSupabaseClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -29,7 +29,11 @@ export async function GET() {
     }
 
     const roleSlug = row.role_slug || row.role_code || null;
-    const isAdmin = await checkIsPlatformAdmin(user.id);
+    const isFounderPortal = request.nextUrl.hostname.toLowerCase() === 'admin.uttarkunth.com';
+    const isAdmin = await checkIsPlatformAdmin(
+      user.id,
+      isFounderPortal ? 'founder' : undefined
+    );
     const { count: founderCount, error: founderCountErr } = await (
       adminClient.from('staff_profiles' as any) as any
     )
@@ -70,7 +74,8 @@ export async function GET() {
     return NextResponse.json({
       ok: true,
       isAdmin,
-      canCompleteFounderSetup,
+      canCompleteFounderSetup: canCompleteFounderSetup && (!isFounderPortal || roleSlug === 'founder'),
+      isFounderPortal,
       staffProfile: isAdmin || canCompleteFounderSetup ? staffProfile : null,
     });
   } catch (err) {
