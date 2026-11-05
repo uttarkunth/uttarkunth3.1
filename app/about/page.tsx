@@ -32,7 +32,7 @@ export default function AboutPage() {
         <div className="bg-forest-dark text-ivory rounded-3xl p-8 sm:p-14 text-center space-y-6 shadow-lifted relative overflow-hidden">
           <span className="text-xs uppercase tracking-widest text-ukorange font-bold block">Our Core Philosophy</span>
           <blockquote className="font-serif text-3xl sm:text-5xl font-medium italic text-ivory">
-            "{BRAND.philosophy}"
+            &ldquo;{BRAND.philosophy}&rdquo;
           </blockquote>
           <p className="text-sm text-ivory/80 max-w-2xl mx-auto leading-relaxed">
             We believe sustainable progress happens when people are empowered to learn hands-on and build solutions that serve their communities.
@@ -92,7 +92,7 @@ export default function AboutPage() {
           <div className="space-y-4">
             <h3 className="font-serif text-2xl sm:text-3xl font-bold text-forest">A Note From Gaurav Negi</h3>
             <p className="text-sm text-charcoal leading-relaxed font-sans">
-              "Uttarkunth Stays was founded in Jari with a simple vision: to give mountain hosts the tools to welcome the world on their own terms. When you stay with our hosts, you are not a tourist passing through — you are a guest in our Himalayan family. Thank you for traveling responsibly and keeping our mountains pristine."
+              &ldquo;Uttarkunth Stays was founded in Jari with a simple vision: to give mountain hosts the tools to welcome the world on their own terms. When you stay with our hosts, you are not a tourist passing through — you are a guest in our Himalayan family. Thank you for traveling responsibly and keeping our mountains pristine.&rdquo;
             </p>
             <div className="text-xs font-semibold text-ukorange uppercase tracking-wider">
               Gaurav Negi — Founder, Uttarkunth
