@@ -42,22 +42,23 @@ export async function checkIsPlatformAdmin(
       return false;
     }
 
-    // 3. Require completed agreements
-    const agreementsOk = Boolean(
-      staffRow.agreements_completed ?? staffRow.all_agreements_accepted ?? false
-    );
+    // 3. Require valid staff role
+    const role = staffRow.role_slug || staffRow.role_code;
+    if (!role) {
+      return false;
+    }
+
+    // 4. Require completed agreements for all non-Founder employees
+    // (Founder holds an explicit constitutional exemption rather than fabricated consent records)
+    const agreementsOk =
+      role === 'founder' ||
+      Boolean(staffRow.agreements_completed ?? staffRow.all_agreements_accepted ?? false);
     if (!agreementsOk) {
       return false;
     }
 
-    // 4. Require genuine Founder approval and immutable Staff ID
+    // 5. Require genuine Founder approval and immutable Staff ID
     if (!staffRow.founder_approved_at || !staffRow.founder_approved_by || !staffRow.staff_id) {
-      return false;
-    }
-
-    // 5. Require valid staff role
-    const role = staffRow.role_slug || staffRow.role_code;
-    if (!role) {
       return false;
     }
 

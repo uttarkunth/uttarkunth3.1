@@ -48,12 +48,23 @@ export async function GET() {
       return NextResponse.json({ ok: true, isAdmin: false, staffProfile: null });
     }
 
+    if (!staffRow.mfa_enrolled && mfaAssuranceLevel === 'aal2') {
+      try {
+        await (adminClient.from('staff_profiles' as any) as any)
+          .update({ mfa_enrolled: true })
+          .eq('user_id', user.id);
+        staffRow.mfa_enrolled = true;
+      } catch {
+        // Non-fatal sync
+      }
+    }
+
     const roleSlug = (staffRow.role_slug ||
       staffRow.role_code ||
       'operations_admin') as StaffRoleSlug;
     const roleDef =
       STAFF_ROLE_DEFINITIONS[roleSlug] || STAFF_ROLE_DEFINITIONS.operations_admin;
-    const operationalDepartment = resolveOperationalDepartment(staffRow.department);
+    const operationalDepartment = resolveOperationalDepartment(staffRow.department, roleSlug);
 
     return NextResponse.json({
       ok: true,

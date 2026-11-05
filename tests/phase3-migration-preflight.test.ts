@@ -63,7 +63,7 @@ describe('Phase A & B — Database Migration Preflight & Contract Verification',
 
     assert.match(
       phase2Sql,
-      /CREATE\s+OR\s+REPLACE\s+VIEW\s+public\.public_member_profiles\s+WITH\s*\(\s*security_invoker\s*=\s*false\s*\)/i
+      /CREATE\s+OR\s+REPLACE\s+VIEW\s+public\.public_member_profiles\s+WITH\s*\(\s*security_invoker\s*=\s*true\s*\)/i
     );
   });
 
@@ -140,5 +140,143 @@ describe('Phase A & B — Database Migration Preflight & Contract Verification',
     }
     assert.match(phase3Sql, /\(storage\.foldername\(name\)\)\[1\]\s*=\s*auth\.uid\(\)::text/);
     assert.match(phase3Sql, /\(storage\.foldername\(name\)\)\[2\]\s*=\s*auth\.uid\(\)::text/);
+  });
+
+  it('8. Confirmed Founder identity & provision_founder_account() enforces confirmed email, Founder & Chief Executive designation, UK-STAFF-2026-0001, non-fabricated consent/MFA state, and prevents duplicate Founders', async () => {
+    assert.match(phase2Sql, /IF\s+v_auth_user\.email_confirmed_at\s+IS\s+NULL\s+THEN/i);
+    assert.match(phase2Sql, /'UK-STAFF-2026-0001'/);
+    assert.match(phase2Sql, /'Founder & Chief Executive'/);
+    assert.match(phase2Sql, /Duplicate Founder provisioning is forbidden/i);
+    assert.match(phase2Sql, /FROM\s+auth\.mfa_factors\s+mf/i);
+    assert.match(phase2Sql, /'privacy_notice_accepted',\s*false/i);
+    assert.match(phase2Sql, /'agreements_completed',\s*false/i);
+    assert.match(
+      phase2Sql,
+      /REVOKE\s+ALL\s+ON\s+FUNCTION\s+public\.provision_founder_account\(uuid,\s*text,\s*text,\s*text\)\s+FROM\s+PUBLIC/i
+    );
+    assert.match(
+      phase2Sql,
+      /REVOKE\s+ALL\s+ON\s+FUNCTION\s+public\.provision_founder_account\(uuid,\s*text,\s*text,\s*text\)\s+FROM\s+authenticated/i
+    );
+    assert.doesNotMatch(phase2Sql, /gauravnegi748@gmail\.com/i);
+    assert.doesNotMatch(phase3Sql, /gauravnegi748@gmail\.com/i);
+
+    const {
+      evaluateStaffAuthorization,
+      evaluatePortalBoundary,
+      STAFF_ROLE_DEFINITIONS,
+    } = await import('../lib/staff-rbac.ts');
+
+    // Verify all 8 roles use the canonical 4 operational departments + founder_office
+    const canonicalDepts = new Set(['stays', 'products', 'productions', 'community', 'founder_office']);
+    for (const roleDef of Object.values(STAFF_ROLE_DEFINITIONS)) {
+      assert.ok(
+        canonicalDepts.has(roleDef.department),
+        `Role ${roleDef.slug} has non-canonical department ${roleDef.department}`
+      );
+    }
+
+    // Verify Founder holds onboarding agreement exemption while non-Founder employees require agreements_completed = true
+    const founderAuth = evaluateStaffAuthorization(
+      {
+        userId: '28ba1250-9e0c-4daf-9348-0484175646ba',
+        email: 'uttarkunth@gmail.com',
+        mfaAssuranceLevel: 'aal2',
+        staffProfile: {
+          user_id: '28ba1250-9e0c-4daf-9348-0484175646ba',
+          staff_id: 'UK-STAFF-2026-0001',
+          role_slug: 'founder',
+          department: 'founder_office',
+          status: 'active',
+          founder_approved_at: '2026-11-05T18:00:00Z',
+          founder_approved_by: '28ba1250-9e0c-4daf-9348-0484175646ba',
+          mfa_enrolled: true,
+          agreements_completed: false,
+        },
+      },
+      'staff.invite'
+    );
+    assert.equal(founderAuth.authorized, true);
+
+    const portalCheck = evaluatePortalBoundary({
+      hostname: 'admin.uttarkunth.com',
+      userId: '28ba1250-9e0c-4daf-9348-0484175646ba',
+      mfaAssuranceLevel: 'aal2',
+      staffProfile: {
+        user_id: '28ba1250-9e0c-4daf-9348-0484175646ba',
+        staff_id: 'UK-STAFF-2026-0001',
+        role_slug: 'founder',
+        department: 'founder_office',
+        status: 'active',
+        founder_approved_at: '2026-11-05T18:00:00Z',
+        founder_approved_by: '28ba1250-9e0c-4daf-9348-0484175646ba',
+        mfa_enrolled: true,
+        agreements_completed: false,
+      },
+    });
+    assert.equal(portalCheck.allowed, true);
+  });
+
+  it('8b. Phase 3 migration remediates all Supabase Security Advisor findings (0008, 0010, 0014, 0028, 0029)', () => {
+    assert.match(phase3Sql, /ALTER\s+VIEW\s+IF\s+EXISTS\s+public\.public_room_availability\s+SET\s*\(\s*security_invoker\s*=\s*true\s*\)/i);
+    assert.match(phase3Sql, /ALTER\s+EXTENSION\s+btree_gist\s+SET\s+SCHEMA\s+extensions/i);
+    assert.match(phase3Sql, /'booking_rate_limits'/);
+    assert.match(phase3Sql, /'booking_requests'/);
+    assert.match(phase3Sql, /'bookings'/);
+    assert.match(phase3Sql, /'admin_review_property_changes'/);
+  });
+
+  it('9. Future Founder email change support: trg_sync_auth_user_email_change synchronizes email by UUID without resetting permissions', () => {
+    assert.match(
+      phase2Sql,
+      /CREATE\s+OR\s+REPLACE\s+FUNCTION\s+public\.sync_auth_user_email_change\(\)/i
+    );
+    assert.match(
+      phase2Sql,
+      /CREATE\s+TRIGGER\s+trg_sync_auth_user_email_change\s+AFTER\s+UPDATE\s+OF\s+email\s+ON\s+auth\.users/i
+    );
+    assert.match(phase2Sql, /'staff_auth_email_changed'/);
+  });
+
+  it('10. /api/account/security/email validator enforces AAL2 MFA and fresh password re-authentication for Founder & Staff', async () => {
+    const { validateEmailChangeRequest } = await import('../lib/staff-rbac.ts');
+
+    // Rejects Founder/Staff when MFA is only aal1
+    const aal1Result = validateEmailChangeRequest({
+      userId: '28ba1250-9e0c-4daf-9348-0484175646ba',
+      currentEmail: 'uttarkunth@gmail.com',
+      newEmail: 'founder@uttarkunth.com',
+      currentPassword: 'StrongPassword!123',
+      isPrivilegedStaffOrFounder: true,
+      mfaAssuranceLevel: 'aal1',
+    });
+    assert.equal(aal1Result.valid, false);
+    assert.equal(aal1Result.code, 'MFA_AAL2_REQUIRED');
+    assert.equal(aal1Result.statusCode, 403);
+
+    // Rejects missing current password
+    const noPassResult = validateEmailChangeRequest({
+      userId: '28ba1250-9e0c-4daf-9348-0484175646ba',
+      currentEmail: 'uttarkunth@gmail.com',
+      newEmail: 'founder@uttarkunth.com',
+      currentPassword: '',
+      isPrivilegedStaffOrFounder: true,
+      mfaAssuranceLevel: 'aal2',
+    });
+    assert.equal(noPassResult.valid, false);
+    assert.equal(noPassResult.code, 'PASSWORD_REQUIRED');
+
+    // Allows Founder with AAL2 + password + valid distinct email
+    const validFounderResult = validateEmailChangeRequest({
+      userId: '28ba1250-9e0c-4daf-9348-0484175646ba',
+      currentEmail: 'uttarkunth@gmail.com',
+      newEmail: '  Founder@Uttarkunth.com ',
+      currentPassword: 'StrongPassword!123',
+      isPrivilegedStaffOrFounder: true,
+      mfaAssuranceLevel: 'aal2',
+    });
+    assert.equal(validFounderResult.valid, true);
+    assert.equal(validFounderResult.code, 'OK');
+    assert.equal(validFounderResult.normalizedNewEmail, 'founder@uttarkunth.com');
   });
 });
