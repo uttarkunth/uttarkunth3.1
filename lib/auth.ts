@@ -1,4 +1,5 @@
 import { createAdminClient } from './supabase/admin.ts';
+import { STAFF_ROLE_DEFINITIONS, type StaffRoleSlug } from './staff-rbac';
 
 /**
  * Authoritative platform administrator & active staff verification.
@@ -7,7 +8,8 @@ import { createAdminClient } from './supabase/admin.ts';
  * Never authorizes based on email address, signup order, user_metadata, app_metadata, or preview flags.
  */
 export async function checkIsPlatformAdmin(
-  userId?: string | null
+  userId?: string | null,
+  requiredRole?: StaffRoleSlug
 ): Promise<boolean> {
   if (!userId || typeof userId !== 'string' || !userId.trim()) {
     return false;
@@ -64,7 +66,11 @@ export async function checkIsPlatformAdmin(
 
     // 5. Require valid staff role
     const role = staffRow.role_slug || staffRow.role_code;
-    if (!role) {
+    if (
+      typeof role !== 'string' ||
+      !Object.prototype.hasOwnProperty.call(STAFF_ROLE_DEFINITIONS, role) ||
+      (requiredRole && role !== requiredRole)
+    ) {
       return false;
     }
 
@@ -103,7 +109,32 @@ export async function resolveFounderOrAdminSession(supabaseClient?: any): Promis
       } = await client.auth.getUser();
 
       if (user && user.id) {
-        const isAdmin = await checkIsPlatformAdmin(user.id);
+        let hostname = '';
+        try {
+          const { headers } = await import('next/headers');
+          hostname = (await headers()).get('host')?.split(':')[0].toLowerCase() || '';
+        } catch {
+          hostname = '';
+        }
+
+        let hasVerifiedAal2 = false;
+        try {
+          const { data: assurance } = await (client.auth as any).mfa.getAuthenticatorAssuranceLevel();
+          const { data: factors } = await (client.auth as any).mfa.listFactors();
+          const hasVerifiedTotp = (factors?.totp || []).some(
+            (factor: any) => factor.status === 'verified'
+          );
+          hasVerifiedAal2 = assurance?.currentLevel === 'aal2' && hasVerifiedTotp;
+        } catch {
+          hasVerifiedAal2 = false;
+        }
+
+        // admin.uttarkunth.com is Founder-only even if another employee has an active staff role.
+        const requiredRole: StaffRoleSlug | undefined =
+          hostname === 'admin.uttarkunth.com' ? 'founder' : undefined;
+        const isAdmin = hasVerifiedAal2
+          ? await checkIsPlatformAdmin(user.id, requiredRole)
+          : false;
         return { user, isAdmin, isPreviewSession: false };
       }
     } catch {
