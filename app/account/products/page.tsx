@@ -72,7 +72,7 @@ export default async function AccountProductsPage() {
           <div className="p-4 bg-ivory-warm rounded-2xl border border-forest/10 space-y-1">
             <span className="font-serif text-sm font-bold text-forest block">Fair Artisan Revenue</span>
             <span className="text-xs text-charcoal-muted block leading-relaxed">
-              Direct settlement with artisans ensures the lion's share of revenue remains in the Himalayan villages.
+              Direct settlement with artisans ensures the lion&apos;s share of revenue remains in the Himalayan villages.
             </span>
           </div>
 
