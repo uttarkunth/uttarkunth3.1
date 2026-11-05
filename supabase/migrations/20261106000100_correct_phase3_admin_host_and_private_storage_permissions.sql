@@ -43,9 +43,9 @@ BEGIN
 
   IF NEW.founder_approved_at IS NOT NULL AND NEW.founder_approved_by IS NOT NULL THEN
     NEW.founder_approved := true;
-  ELSIF NEW.founder_approved = true AND NEW.founder_approved_at IS NULL THEN
-    NEW.founder_approved_at := now();
   END IF;
+  -- Never synthesize a Founder approval timestamp when the record has no approval time.
+  -- A missing timestamp remains incomplete and is denied by the authorization helpers.
 
   NEW.updated_at := now();
   RETURN NEW;
@@ -233,6 +233,13 @@ COMMENT ON FUNCTION public.has_staff_permission_for_user(uuid, text) IS
 
 -- These policies call the helper as authenticated users. Anonymous sessions have no access
 -- to HR, seller verification, or staff agreement records.
+DROP POLICY IF EXISTS "seller_own_verification_docs_insert" ON public.seller_verification_documents;
+CREATE POLICY "seller_own_verification_docs_insert"
+  ON public.seller_verification_documents
+  FOR INSERT
+  TO authenticated
+  WITH CHECK (auth.uid() = seller_user_id);
+
 DROP POLICY IF EXISTS "seller_own_verification_docs_select" ON public.seller_verification_documents;
 CREATE POLICY "seller_own_verification_docs_select"
   ON public.seller_verification_documents
