@@ -70,7 +70,7 @@ export async function POST(req: NextRequest) {
       profile.status !== 'active' ||
       profile.founder_approved !== true ||
       !profile.founder_approved_at ||
-      profile.founder_approved_by !== user.id ||
+      !profile.founder_approved_by ||
       profile.session_revoked_at ||
       profile.privacy_notice_accepted !== true ||
       profile.agreements_completed !== true ||
