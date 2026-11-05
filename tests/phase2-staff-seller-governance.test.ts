@@ -1242,4 +1242,48 @@ describe('TASK 9 — 12 Strict Verification Scenarios', () => {
     assert.ok(rbacSource.includes('const requireMfa = options?.requireMfaAal2 ?? true'));
   });
 
+
+  it('Server admin page sessions require verified TOTP AAL2 and the admin hostname is Founder-only', () => {
+    const authSource = fs.readFileSync(path.join(process.cwd(), 'lib', 'auth.ts'), 'utf8');
+    const roleRoute = fs.readFileSync(path.join(process.cwd(), 'app', 'api', 'auth', 'role', 'route.ts'), 'utf8');
+    assert.ok(authSource.includes("assurance?.currentLevel === 'aal2' && hasVerifiedTotp"));
+    assert.ok(authSource.includes("hostname === 'admin.uttarkunth.com' ? 'founder'"));
+    assert.ok(authSource.includes('Object.prototype.hasOwnProperty.call(STAFF_ROLE_DEFINITIONS, role)'));
+    assert.ok(roleRoute.includes("request.nextUrl.hostname.toLowerCase() === 'admin.uttarkunth.com'"));
+    assert.ok(roleRoute.includes("isFounderPortal ? 'founder' : undefined"));
+  });
+
+  it('MFA recovery is authenticated, tied to the caller staff profile and never fabricates an audit actor', () => {
+    const recoveryRoute = fs.readFileSync(
+      path.join(process.cwd(), 'app', 'api', 'staff', 'mfa-recovery', 'route.ts'),
+      'utf8'
+    );
+    assert.ok(recoveryRoute.includes('await supabase.auth.getUser()'));
+    assert.ok(recoveryRoute.includes('if (authError || !user?.id || !user.email)'));
+    assert.ok(recoveryRoute.includes('profile.founder_approved_by !== user.id'));
+    assert.ok(recoveryRoute.includes('profile.privacy_notice_accepted !== true'));
+    assert.ok(recoveryRoute.includes("eq('action', 'staff_mfa_recovery_requested')"));
+    assert.ok(!recoveryRoute.includes('00000000-0000-0000-0000-000000000000'));
+    assert.ok(recoveryRoute.includes('actorUserId: user.id'));
+  });
+
+  it('Staff registry read requires Founder-only AAL2 authorization', () => {
+    const staffApi = fs.readFileSync(
+      path.join(process.cwd(), 'app', 'api', 'admin', 'staff', 'route.ts'),
+      'utf8'
+    );
+    assert.ok(staffApi.includes("requireStaffPermission('staff.invite', { requireMfaAal2: true, requireFounderOnly: true })"));
+  });
+
+  it('Admin dashboard exposes audit details only to the Founder and does not count legacy admin rows', () => {
+    const dashboard = fs.readFileSync(
+      path.join(process.cwd(), 'app', 'admin', 'dashboard', 'page.tsx'),
+      'utf8'
+    );
+    assert.ok(dashboard.includes('if (roleCode === \'founder\')'));
+    assert.ok(!dashboard.includes("from('platform_admins')"));
+    assert.ok(dashboard.includes("staffProfile.privacy_notice_accepted !== true"));
+    assert.ok(dashboard.includes("staffProfile.onboarding_completed !== true"));
+  });
+
 });
