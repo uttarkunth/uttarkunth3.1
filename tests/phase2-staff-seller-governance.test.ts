@@ -11,6 +11,8 @@ import {
   validateStaffInvitation,
   verifyAllStaffAgreementsCompleted,
   evaluateStaffAuthorization,
+  STAFF_ROLE_DEFINITIONS,
+  FOUR_OPERATIONAL_DEPARTMENTS,
 } from '../lib/staff-rbac.ts';
 import {
   computeGstinCheckDigit,
@@ -1115,5 +1117,44 @@ describe('TASK 9 — 12 Strict Verification Scenarios', () => {
       district: 'Kullu',
     });
     assert.ok(yashSlug);
+  });
+
+  it('Four operational departments are canonical and shared services stay under Founder Office', () => {
+    assert.deepEqual(
+      FOUR_OPERATIONAL_DEPARTMENTS.map((department) => department.slug),
+      ['stays', 'products', 'productions', 'community']
+    );
+    assert.equal(STAFF_ROLE_DEFINITIONS.property_reviewer.department, 'stays');
+    assert.equal(STAFF_ROLE_DEFINITIONS.marketplace_reviewer.department, 'products');
+    assert.equal(STAFF_ROLE_DEFINITIONS.productions_editor.department, 'productions');
+    assert.equal(STAFF_ROLE_DEFINITIONS.community_manager.department, 'community');
+    assert.equal(STAFF_ROLE_DEFINITIONS.operations_admin.department, 'founder_office');
+    assert.equal(STAFF_ROLE_DEFINITIONS.support_executive.department, 'founder_office');
+    assert.equal(STAFF_ROLE_DEFINITIONS.finance_compliance_reviewer.department, 'founder_office');
+  });
+
+  it('Founder provisioning never fabricates privacy consent, agreement acceptance, or onboarding completion', () => {
+    const migrationSql = fs.readFileSync(
+      path.join(
+        process.cwd(),
+        'supabase',
+        'migrations',
+        '20261104120000_phase2_staff_governance_and_seller_verification_pending_approval.sql'
+      ),
+      'utf8'
+    );
+    const start = migrationSql.indexOf('CREATE OR REPLACE FUNCTION public.provision_founder_account');
+    const end = migrationSql.indexOf('-- 4. Synchronize into public.platform_admins', start);
+    assert.ok(start >= 0 && end > start, 'Founder provisioning function must exist');
+    const provisioner = migrationSql.slice(start, end);
+    assert.match(provisioner, /NULL,\s*NULL,\s*false,\s*false,\s*false,\s*false,\s*false,\s*true,/);
+    assert.doesNotMatch(
+      provisioner,
+      /all_agreements_accepted\s*=\s*true|agreements_completed\s*=\s*true|onboarding_completed\s*=\s*true/
+    );
+    assert.match(
+      migrationSql,
+      /department text NOT NULL CHECK \(department IN \('founder_office', 'stays', 'products', 'productions', 'community'\)\)/
+    );
   });
 });
