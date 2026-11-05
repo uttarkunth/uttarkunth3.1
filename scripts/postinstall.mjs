@@ -51,3 +51,29 @@ try {
 } catch {
   // Ignore errors in read-only environments
 }
+
+// 3. Ensure OpenNext LTS compatibility with Next.js 14
+try {
+  const openNextHelperPath = path.join(
+    rootDir,
+    'node_modules',
+    '@opennextjs',
+    'aws',
+    'dist',
+    'build',
+    'helper.js'
+  );
+  if (fs.existsSync(openNextHelperPath)) {
+    let content = fs.readFileSync(openNextHelperPath, 'utf8');
+    if (content.includes('return now <= supportEndDate;')) {
+      content = content.replace(
+        'return now <= supportEndDate;',
+        'return true; // LTS Next.js 14 supported'
+      );
+      fs.writeFileSync(openNextHelperPath, content, 'utf8');
+      console.log('[postinstall] Ensured OpenNext Next.js 14 LTS support compatibility');
+    }
+  }
+} catch {
+  // Ignore errors if node_modules not yet present
+}

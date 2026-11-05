@@ -846,46 +846,6 @@ export async function requireStaffPermission(
     }
 
     if (!staffRow) {
-      let paRow: any = null;
-      try {
-        const { data } = await (adminClient.from('platform_admins') as any)
-          .select('user_id, email, role, created_at')
-          .eq('user_id', user.id)
-          .maybeSingle();
-        paRow = data;
-      } catch {
-        paRow = null;
-      }
-
-      if (paRow && paRow.user_id === user.id) {
-        const isFounderRole =
-          paRow.role === 'founder' ||
-          paRow.role === 'superadmin' ||
-          paRow.role === 'super_admin' ||
-          paRow.role === 'platform_admin' ||
-          paRow.role === 'admin';
-        const resolvedRole: StaffRoleSlug = isFounderRole
-          ? 'founder'
-          : paRow.role in STAFF_ROLE_DEFINITIONS
-          ? (paRow.role as StaffRoleSlug)
-          : 'operations_admin';
-
-        staffRow = {
-          user_id: user.id,
-          staff_id: 'UK-STAFF-2026-0001',
-          role_slug: resolvedRole,
-          department: STAFF_ROLE_DEFINITIONS[resolvedRole].department,
-          status: 'active',
-          founder_approved_at: paRow.created_at || '2026-01-01T00:00:00Z',
-          founder_approved_by: user.id,
-          mfa_enrolled: hasVerifiedTotpFactor || mfaLevel === 'aal2',
-          agreements_completed: true,
-          custom_permissions: [],
-        };
-      }
-    }
-
-    if (!staffRow) {
       return {
         authorized: false,
         allowed: false,
@@ -911,12 +871,12 @@ export async function requireStaffPermission(
       const { data: permRows } = await (
         adminClient.from('staff_permission_assignments' as any) as any
       )
-        .select('permission_code, revoked_at')
+        .select('permission_code, permission_key, revoked_at')
         .or(queryTarget);
       if (Array.isArray(permRows)) {
         for (const row of permRows) {
-          if (!row.revoked_at && row.permission_code) {
-            assignedPermissions.push(row.permission_code as StaffPermission);
+          if (!row.revoked_at && (row.permission_code || row.permission_key)) {
+            assignedPermissions.push((row.permission_code || row.permission_key) as StaffPermission);
           }
         }
       }

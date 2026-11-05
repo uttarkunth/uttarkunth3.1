@@ -16,52 +16,52 @@ export async function checkIsPlatformAdmin(
   try {
     const adminClient = createAdminClient();
 
-    // 1. Direct query on public.platform_admins
-    const { data, error } = await (adminClient.from('platform_admins') as any)
-      .select('user_id, role')
+    // The authoritative internal staff identity must be a genuine public.staff_profiles record.
+    // Legacy platform_admins records never automatically grant admin access without an active staff profile.
+    const { data: staffRow, error: staffErr } = await (
+      adminClient.from('staff_profiles' as any) as any
+    )
+      .select(
+        'user_id, status, founder_approved_at, founder_approved_by, staff_id, session_revoked_at, agreements_completed, all_agreements_accepted, role_slug, role_code'
+      )
       .eq('user_id', userId)
-      .in('role', [
-        'admin',
-        'superadmin',
-        'super_admin',
-        'platform_admin',
-        'founder',
-        'operations_admin',
-        'property_reviewer',
-        'marketplace_reviewer',
-        'productions_editor',
-        'community_manager',
-        'support_executive',
-        'finance_compliance_reviewer',
-      ])
       .maybeSingle();
 
-    const hasPlatformAdminRow = Boolean(!error && data);
-
-    // 2. Check public.staff_profiles for active status and revocation state
-    let hasActiveStaffProfile = false;
-    try {
-      const { data: staffRow, error: staffErr } = await (
-        adminClient.from('staff_profiles' as any) as any
-      )
-        .select('user_id, status, founder_approved_at, staff_id')
-        .eq('user_id', userId)
-        .maybeSingle();
-
-      if (!staffErr && staffRow) {
-        if (staffRow.status !== 'active') {
-          // Immediately revoke admin access if staff profile is suspended, terminated, or pending
-          return false;
-        }
-        if (staffRow.founder_approved_at && staffRow.staff_id) {
-          hasActiveStaffProfile = true;
-        }
-      }
-    } catch {
-      // If staff_profiles is not yet migrated, rely solely on platform_admins
+    if (staffErr || !staffRow) {
+      // Fails closed: Missing or failed staff profile query never falls back to legacy admin
+      return false;
     }
 
-    return hasPlatformAdminRow || hasActiveStaffProfile;
+    // 1. Require active status (immediately revokes access if suspended, terminated, or pending)
+    if (staffRow.status !== 'active') {
+      return false;
+    }
+
+    // 2. Reject revoked sessions
+    if (staffRow.session_revoked_at) {
+      return false;
+    }
+
+    // 3. Require completed agreements
+    const agreementsOk = Boolean(
+      staffRow.agreements_completed ?? staffRow.all_agreements_accepted ?? false
+    );
+    if (!agreementsOk) {
+      return false;
+    }
+
+    // 4. Require genuine Founder approval and immutable Staff ID
+    if (!staffRow.founder_approved_at || !staffRow.founder_approved_by || !staffRow.staff_id) {
+      return false;
+    }
+
+    // 5. Require valid staff role
+    const role = staffRow.role_slug || staffRow.role_code;
+    if (!role) {
+      return false;
+    }
+
+    return true;
   } catch (err) {
     console.error('Failed to verify platform admin status (failing closed):', err);
     return false;

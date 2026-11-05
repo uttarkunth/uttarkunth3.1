@@ -47,6 +47,28 @@ export const PropertyFormSchema = z.object({
 
 export type PropertyFormInput = z.infer<typeof PropertyFormSchema>;
 
+export const HostApplySchema = z.object({
+  name: z.string().trim().min(3, 'Property name must be at least 3 characters').max(120),
+  property_type: z.string().trim().min(2).default('homestay'),
+  village: z.string().trim().min(2, 'Village is required'),
+  district: z.string().trim().min(2, 'District is required'),
+  state: z.string().trim().min(2).default('Himachal Pradesh'),
+  address: z.string().trim().optional(),
+  description: z
+    .string()
+    .trim()
+    .min(20, 'Authentic property description (at least 20 chars) is required')
+    .max(2000),
+  host_phone: z.string().trim().optional(),
+  amenities: z.array(z.string()).optional().default([]),
+  initial_room_name: z.string().trim().min(2).default('Mountain View Room'),
+  initial_room_guests: z.coerce.number().int().min(1).max(16).default(2),
+  initial_room_price: z.coerce.number().min(100).default(2000),
+  initial_room_description: z.string().trim().optional(),
+});
+
+export type HostApplyInput = z.infer<typeof HostApplySchema>;
+
 export const SearchFilterSchema = z.object({
   destination: z.string().optional(),
   checkIn: z.string().optional(),
