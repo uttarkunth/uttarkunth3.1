@@ -3,10 +3,6 @@ name: Uttarkunth Quality Checks
 on:
   pull_request:
     branches: [main]
-  push:
-    branches:
-      - main
-      - security/uttarkunth-3.1-release
 
 permissions:
   contents: read
