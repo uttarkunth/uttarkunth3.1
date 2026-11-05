@@ -6,6 +6,52 @@
 
 BEGIN;
 
+-- Correct the Phase 2 profile trigger: metadata timestamps and aggregate flags
+-- must never be treated as evidence of explicit privacy/agreement acceptance.
+CREATE OR REPLACE FUNCTION public.sync_staff_profile_cols()
+RETURNS trigger
+LANGUAGE plpgsql
+SET search_path = public
+AS $func$
+BEGIN
+  IF NEW.role_slug IS NULL AND NEW.role_code IS NOT NULL THEN
+    NEW.role_slug := NEW.role_code;
+  ELSIF NEW.role_code IS NULL AND NEW.role_slug IS NOT NULL THEN
+    NEW.role_code := NEW.role_slug;
+  END IF;
+
+  IF NEW.identity_document_reference IS NULL AND NEW.identity_document_ref IS NOT NULL THEN
+    NEW.identity_document_reference := NEW.identity_document_ref;
+  ELSIF NEW.identity_document_ref IS NULL AND NEW.identity_document_reference IS NOT NULL THEN
+    NEW.identity_document_ref := NEW.identity_document_reference;
+  END IF;
+
+  -- Explicit consent only: do not infer acceptance from a timestamp or one aggregate flag.
+  -- The application must persist every current agreement acceptance row first.
+
+  IF NEW.founder_approved_at IS NULL AND NEW.approved_at IS NOT NULL THEN
+    NEW.founder_approved_at := NEW.approved_at;
+  ELSIF NEW.approved_at IS NULL AND NEW.founder_approved_at IS NOT NULL THEN
+    NEW.approved_at := NEW.founder_approved_at;
+  END IF;
+
+  IF NEW.founder_approved_by IS NULL AND NEW.approved_by IS NOT NULL THEN
+    NEW.founder_approved_by := NEW.approved_by;
+  ELSIF NEW.approved_by IS NULL AND NEW.founder_approved_by IS NOT NULL THEN
+    NEW.approved_by := NEW.founder_approved_by;
+  END IF;
+
+  IF NEW.founder_approved_at IS NOT NULL AND NEW.founder_approved_by IS NOT NULL THEN
+    NEW.founder_approved := true;
+  ELSIF NEW.founder_approved = true AND NEW.founder_approved_at IS NULL THEN
+    NEW.founder_approved_at := now();
+  END IF;
+
+  NEW.updated_at := now();
+  RETURN NEW;
+END;
+$func$;
+
 -- 1. Repair inconsistent completion flags without fabricating consent.
 UPDATE public.staff_profiles
 SET onboarding_completed = false,
