@@ -105,7 +105,7 @@ export function BookingsManager({ initialBookings }: BookingsManagerProps) {
             { id: 'confirmed', label: `Confirmed (${initialBookings.filter((b) => b.status === 'confirmed').length})` },
             { id: 'past', label: `History (${initialBookings.filter((b) => b.status === 'declined' || b.status === 'cancelled').length})` },
           ].map((tab) => (
-            <button suppressHydrationWarning
+            <button
               key={tab.id}
               onClick={() => setFilter(tab.id as any)}
               className={`px-3 py-1.5 text-xs font-semibold rounded-xl whitespace-nowrap transition-colors ${
@@ -246,7 +246,7 @@ export function BookingsManager({ initialBookings }: BookingsManagerProps) {
                         <span>
                           Pending requests do not block dates for other travelers until formally approved.
                         </span>
-                        <button suppressHydrationWarning
+                        <button
                           type="button"
                           onClick={() => setActiveNotesId(activeNotesId === b.id ? null : b.id)}
                           className="ml-2 text-forest font-semibold hover:underline inline-flex items-center gap-1"
@@ -257,7 +257,7 @@ export function BookingsManager({ initialBookings }: BookingsManagerProps) {
                       </div>
 
                       <div className="flex items-center gap-3">
-                        <button suppressHydrationWarning
+                        <button
                           type="button"
                           disabled={isLoading}
                           onClick={() => handleDecision(b.id, 'decline')}
@@ -266,7 +266,7 @@ export function BookingsManager({ initialBookings }: BookingsManagerProps) {
                           {isLoading ? 'Processing...' : 'Decline'}
                         </button>
 
-                        <button suppressHydrationWarning
+                        <button
                           type="button"
                           disabled={isLoading}
                           onClick={() => handleDecision(b.id, 'confirm')}
@@ -283,7 +283,7 @@ export function BookingsManager({ initialBookings }: BookingsManagerProps) {
                         <label className="block text-[11px] font-semibold text-charcoal-muted">
                           Host Message / Check-in Guidance (will be saved with this decision)
                         </label>
-                        <input suppressHydrationWarning
+                        <input
                           type="text"
                           value={notesText}
                           onChange={(e) => setNotesText(e.target.value)}

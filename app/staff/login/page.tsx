@@ -5,10 +5,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { Logo } from '@/components/logo';
-import {
-  isValidStaffIdFormat,
-  sanitizeInternalRedirectPath,
-} from '@/lib/staff-rbac-shared';
+import { isValidStaffIdFormat } from '@/lib/staff-rbac-shared';
 import { ShieldCheck, Lock, KeyRound, AlertTriangle, HelpCircle, CheckCircle2, ArrowRight } from 'lucide-react';
 
 function StaffLoginContent() {
@@ -35,41 +32,8 @@ function StaffLoginContent() {
 
   const router = useRouter();
   const searchParams = useSearchParams();
-  const portalParam = searchParams.get('portal');
-  const defaultNextPath = portalParam === 'staff' ? '/staff' : '/admin/dashboard';
-  const nextPath = sanitizeInternalRedirectPath(searchParams.get('next'), defaultNextPath);
+  const nextPath = searchParams.get('next') || '/admin/dashboard';
   const queryError = searchParams.get('error');
-
-  const isFounderPortal =
-    portalParam === 'founder' ||
-    (typeof window !== 'undefined' &&
-      (window.location.hostname.startsWith('admin.uttarkunth.com') ||
-        window.location.hostname.startsWith('admin.')));
-
-  const handleStartMfaEnrollment = async () => {
-    setError(null);
-    setLoading(true);
-    try {
-      const supabase = createClient();
-      const { data, error: enrollErr } = await supabase.auth.mfa.enroll({
-        factorType: 'totp',
-        friendlyName: 'Uttarkunth Staff Authenticator',
-      });
-      if (enrollErr || !data) {
-        setError(enrollErr?.message || 'Sign in with your password first to enroll TOTP MFA.');
-        setLoading(false);
-        return;
-      }
-      setMfaFactorId(data.id);
-      setMfaQrCode(data.totp.qr_code);
-      setMfaSecret(data.totp.secret);
-      setMfaStep('enroll');
-    } catch (err: any) {
-      setError(err?.message || 'Unable to start TOTP enrollment.');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleStaffSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -101,6 +65,13 @@ function StaffLoginContent() {
       const roleRes = await fetch('/api/auth/role', { cache: 'no-store' });
       const roleData = await roleRes.json();
 
+      if (roleData?.canCompleteFounderSetup) {
+        router.replace('/staff/founder-setup');
+        router.refresh();
+        setLoading(false);
+        return;
+      }
+
       if (!roleData?.isAdmin || !roleData?.staffProfile) {
         await supabase.auth.signOut();
         setError(
@@ -110,28 +81,18 @@ function StaffLoginContent() {
         return;
       }
 
-      // Enforce Founder Command Centre boundary on admin.uttarkunth.com
-      if (isFounderPortal && !roleData?.isFounder) {
-        await supabase.auth.signOut();
-        setError(
-          'Founder Command Centre Restricted: admin.uttarkunth.com is accessible exclusively to the Founder & Chief Executive. Department staff must sign in via the Staff Portal (team.uttarkunth.com / /staff).'
-        );
-        setLoading(false);
-        return;
-      }
-
-      // Check Authenticator Assurance Level (TOTP MFA) — Mandatory AAL2 for all Staff & Founder logins
+      // Staff without a verified TOTP factor must enroll before entering a protected portal.
       const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
       const { data: factorsData } = await supabase.auth.mfa.listFactors();
       const verifiedTotpFactor = factorsData?.totp?.find((f) => f.status === 'verified');
 
-      // If no verified TOTP factor is enrolled yet, force mandatory TOTP enrollment before entering portal
       if (!verifiedTotpFactor) {
-        await handleStartMfaEnrollment();
+        setError('Mandatory TOTP security is not enrolled yet. Select “Enroll TOTP Factor” below and verify the authenticator to continue.');
+        setLoading(false);
         return;
       }
 
-      if (aalData?.currentLevel !== 'aal2') {
+      if (verifiedTotpFactor && aalData?.currentLevel !== 'aal2') {
         const { data: challengeData, error: challengeErr } = await supabase.auth.mfa.challenge({
           factorId: verifiedTotpFactor.id,
         });
@@ -193,6 +154,31 @@ function StaffLoginContent() {
     }
   };
 
+  const handleStartMfaEnrollment = async () => {
+    setError(null);
+    setLoading(true);
+    try {
+      const supabase = createClient();
+      const { data, error: enrollErr } = await supabase.auth.mfa.enroll({
+        factorType: 'totp',
+        friendlyName: 'Uttarkunth Staff Authenticator',
+      });
+      if (enrollErr || !data) {
+        setError(enrollErr?.message || 'Sign in with your password first to enroll TOTP MFA.');
+        setLoading(false);
+        return;
+      }
+      setMfaFactorId(data.id);
+      setMfaQrCode(data.totp.qr_code);
+      setMfaSecret(data.totp.secret);
+      setMfaStep('enroll');
+    } catch (err: any) {
+      setError(err?.message || 'Unable to start TOTP enrollment.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSubmitRecovery = async (e: React.FormEvent) => {
     e.preventDefault();
     setRecoveryLoading(true);
@@ -228,15 +214,13 @@ function StaffLoginContent() {
         <div className="flex items-center gap-4">
           <Logo variant="dark" />
           <span className="text-[10px] uppercase tracking-[0.25em] px-2.5 py-1 bg-[#C55B23]/20 text-[#E07A43] border border-[#C55B23]/40 font-mono">
-            {isFounderPortal
-              ? 'admin.uttarkunth.com · Founder Command Centre'
-              : 'team.uttarkunth.com · Internal Staff Portal'}
+            team.uttarkunth.com · Internal Governance
           </span>
         </div>
         <div className="flex items-center gap-6 text-xs text-[#FBF9F5]/60">
           <span className="flex items-center gap-1.5">
             <ShieldCheck className="w-3.5 h-3.5 text-[#C55B23]" />
-            No Open Self-Registration · Mandatory TOTP MFA (AAL2)
+            No Open Self-Registration
           </span>
           <Link
             href="/staff/onboard"
@@ -251,17 +235,11 @@ function StaffLoginContent() {
       <div className="max-w-lg w-full mx-auto my-12 bg-[#1F1D1A] border border-white/15 p-8 md:p-10 shadow-2xl">
         <div className="mb-8">
           <p className="text-[11px] uppercase tracking-[0.25em] text-[#E07A43] font-semibold mb-2">
-            {isFounderPortal
-              ? 'Uttarkunth Founder Command Centre'
-              : 'Uttarkunth Staff Identity System'}
+            Uttarkunth Staff Identity System
           </p>
-          <h1 className="font-serif text-3xl text-[#FBF9F5] mb-2">
-            {isFounderPortal ? 'Founder Executive Sign In' : 'Internal Staff Sign In'}
-          </h1>
+          <h1 className="font-serif text-3xl text-[#FBF9F5] mb-2">Internal Staff Sign In</h1>
           <p className="text-xs text-[#FBF9F5]/65 leading-relaxed">
-            {isFounderPortal
-              ? 'Restricted exclusively to the Founder & Chief Executive (role_slug = founder) with active TOTP Multi-Factor Authentication (AAL2).'
-              : 'Restricted exclusively to authorised Uttarkunth personnel across Stays, Products, Productions, and Community with Founder-approved permissions and active TOTP Multi-Factor Authentication (AAL2).'}
+            Restricted exclusively to authorised Uttarkunth personnel with Founder-approved permissions and active TOTP Multi-Factor Authentication.
           </p>
         </div>
 
@@ -291,7 +269,6 @@ function StaffLoginContent() {
                 Official Work Email
               </label>
               <input
-                suppressHydrationWarning
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -311,7 +288,6 @@ function StaffLoginContent() {
                 </span>
               </div>
               <input
-                suppressHydrationWarning
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -322,7 +298,6 @@ function StaffLoginContent() {
             </div>
 
             <button
-              suppressHydrationWarning
               type="submit"
               disabled={loading}
               className="w-full bg-[#C55B23] hover:bg-[#A94918] text-white py-3.5 px-6 text-xs uppercase tracking-[0.2em] font-semibold transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
@@ -350,7 +325,6 @@ function StaffLoginContent() {
                 6-Digit TOTP Code
               </label>
               <input
-                suppressHydrationWarning
                 type="text"
                 inputMode="numeric"
                 pattern="[0-9]{6}"
@@ -364,12 +338,11 @@ function StaffLoginContent() {
             </div>
 
             <button
-              suppressHydrationWarning
               type="submit"
               disabled={loading}
               className="w-full bg-[#C55B23] hover:bg-[#A94918] text-white py-3.5 px-6 text-xs uppercase tracking-[0.2em] font-semibold transition-colors"
             >
-              {loading ? 'Verifying AAL2 Code...' : 'Verify & Enter Portal'}
+              {loading ? 'Verifying AAL2 Code...' : 'Verify & Enter Staff Portal'}
             </button>
           </form>
         )}
@@ -378,10 +351,10 @@ function StaffLoginContent() {
           <form onSubmit={handleVerifyMfa} className="space-y-5">
             <div className="p-4 bg-[#161513] border border-white/15 text-xs space-y-3">
               <p className="font-semibold text-[#E07A43] uppercase tracking-wider">
-                Enroll Mandatory TOTP Multi-Factor Authenticator (AAL2)
+                Enroll TOTP Multi-Factor Authenticator
               </p>
               <p className="text-[#FBF9F5]/75">
-                TOTP Multi-Factor Authentication is mandatory before accessing the Founder Command Centre or Staff Portal. Scan this QR code with an authenticator app (Google Authenticator, 1Password, Authy) and enter the 6-digit code below.
+                Scan this QR code with an authenticator app (Google Authenticator, 1Password, Authy) and enter the 6-digit code below.
               </p>
               {mfaQrCode && (
                 <div className="bg-white p-3 w-44 h-44 mx-auto flex items-center justify-center">
@@ -401,7 +374,6 @@ function StaffLoginContent() {
                 Confirm 6-Digit Code
               </label>
               <input
-                suppressHydrationWarning
                 type="text"
                 inputMode="numeric"
                 maxLength={6}
@@ -414,12 +386,11 @@ function StaffLoginContent() {
             </div>
 
             <button
-              suppressHydrationWarning
               type="submit"
               disabled={loading}
               className="w-full bg-[#C55B23] hover:bg-[#A94918] text-white py-3.5 px-6 text-xs uppercase tracking-[0.2em] font-semibold transition-colors"
             >
-              Complete MFA Enrollment &amp; Continue
+              Complete MFA Enrollment
             </button>
           </form>
         )}
@@ -428,7 +399,6 @@ function StaffLoginContent() {
         <div className="mt-8 pt-6 border-t border-white/10 space-y-3 text-xs text-[#FBF9F5]/60">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <button
-              suppressHydrationWarning
               type="button"
               onClick={() => setShowRecoveryModal(!showRecoveryModal)}
               className="text-[#FBF9F5]/70 hover:text-[#E07A43] flex items-center gap-1.5 transition-colors"
@@ -437,7 +407,6 @@ function StaffLoginContent() {
               Lost Authenticator Device? Request Founder MFA Recovery
             </button>
             <button
-              suppressHydrationWarning
               type="button"
               onClick={handleStartMfaEnrollment}
               className="text-[#E07A43] hover:underline"
@@ -452,7 +421,7 @@ function StaffLoginContent() {
               href="/staff/onboard"
               className="text-[#FBF9F5] hover:text-[#E07A43] inline-flex items-center gap-1 font-medium"
             >
-              Staff Onboarding &amp; Agreements <ArrowRight className="w-3 h-3" />
+              Staff Onboarding & Agreements <ArrowRight className="w-3 h-3" />
             </Link>
           </div>
         </div>
@@ -474,7 +443,6 @@ function StaffLoginContent() {
             ) : (
               <form onSubmit={handleSubmitRecovery} className="space-y-3">
                 <input
-                  suppressHydrationWarning
                   type="email"
                   required
                   value={recoveryEmail}
@@ -483,7 +451,6 @@ function StaffLoginContent() {
                   className="w-full bg-[#161513] border border-white/20 px-3 py-2 text-xs text-[#FBF9F5]"
                 />
                 <input
-                  suppressHydrationWarning
                   type="text"
                   value={recoveryStaffId}
                   onChange={(e) => setRecoveryStaffId(e.target.value)}
@@ -491,7 +458,6 @@ function StaffLoginContent() {
                   className="w-full bg-[#161513] border border-white/20 px-3 py-2 text-xs text-[#FBF9F5] font-mono"
                 />
                 <textarea
-                  suppressHydrationWarning
                   required
                   rows={2}
                   value={recoveryReason}
@@ -500,7 +466,6 @@ function StaffLoginContent() {
                   className="w-full bg-[#161513] border border-white/20 px-3 py-2 text-xs text-[#FBF9F5]"
                 />
                 <button
-                  suppressHydrationWarning
                   type="submit"
                   disabled={recoveryLoading}
                   className="w-full bg-white/10 hover:bg-white/20 text-[#FBF9F5] py-2.5 text-xs uppercase tracking-widest font-semibold"

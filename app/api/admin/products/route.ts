@@ -12,15 +12,9 @@ export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
-    const auth = await requireStaffPermission('seller.verify_documents', {
-      requireMfaAal2: true,
-      requiredDepartment: 'products',
-    });
+    const auth = await requireStaffPermission('seller.verify_documents', { requireMfaAal2: false });
     const fallbackAuth = !auth.authorized
-      ? await requireStaffPermission('seller.approve', {
-          requireMfaAal2: true,
-          requiredDepartment: 'products',
-        })
+      ? await requireStaffPermission('seller.approve', { requireMfaAal2: false })
       : auth;
 
     if (!fallbackAuth.authorized || !fallbackAuth.user) {

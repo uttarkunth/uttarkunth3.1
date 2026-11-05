@@ -211,7 +211,7 @@ export function SellerDeskGovernancePanel({ seller }: SellerDeskGovernancePanelP
             <label className="block text-xs font-semibold text-charcoal mb-1">
               Public Brand / Storefront Name
             </label>
-            <input suppressHydrationWarning
+            <input
               type="text"
               value={brandName}
               onChange={(e) => setBrandName(e.target.value)}
@@ -223,7 +223,7 @@ export function SellerDeskGovernancePanel({ seller }: SellerDeskGovernancePanelP
             <label className="block text-xs font-semibold text-charcoal mb-1">
               Private Legal Entity Name (Triggers Re-Verification if Changed)
             </label>
-            <input suppressHydrationWarning
+            <input
               type="text"
               value={legalBusinessName}
               onChange={(e) => setLegalBusinessName(e.target.value)}
@@ -235,7 +235,7 @@ export function SellerDeskGovernancePanel({ seller }: SellerDeskGovernancePanelP
             <label className="block text-xs font-semibold text-charcoal mb-1">
               15-Character Indian GSTIN (Optional if Exempt Artisan)
             </label>
-            <input suppressHydrationWarning
+            <input
               type="text"
               maxLength={15}
               value={gstin}
@@ -245,7 +245,7 @@ export function SellerDeskGovernancePanel({ seller }: SellerDeskGovernancePanelP
             />
           </div>
 
-          <button suppressHydrationWarning
+          <button
             type="submit"
             className="px-5 py-2.5 bg-forest hover:bg-forest-hover text-white text-xs font-semibold rounded-xl transition-colors"
           >
@@ -263,7 +263,7 @@ export function SellerDeskGovernancePanel({ seller }: SellerDeskGovernancePanelP
               <label className="block text-xs font-semibold text-charcoal mb-1">
                 Document Category
               </label>
-              <select suppressHydrationWarning
+              <select
                 value={docType}
                 onChange={(e) => setDocType(e.target.value as SellerDocumentType)}
                 className="w-full px-3 py-2 text-xs rounded-xl border border-forest/20 bg-white"
@@ -277,14 +277,14 @@ export function SellerDeskGovernancePanel({ seller }: SellerDeskGovernancePanelP
             </div>
 
             <div className="grid grid-cols-2 gap-2">
-              <input suppressHydrationWarning
+              <input
                 type="text"
                 placeholder="Licence / Certificate No."
                 value={docRefNumber}
                 onChange={(e) => setDocRefNumber(e.target.value)}
                 className="px-3 py-2 text-xs rounded-xl border border-forest/20"
               />
-              <input suppressHydrationWarning
+              <input
                 type="date"
                 title="Document Expiry Date (if applicable)"
                 value={docExpiry}
@@ -293,7 +293,7 @@ export function SellerDeskGovernancePanel({ seller }: SellerDeskGovernancePanelP
               />
             </div>
 
-            <input suppressHydrationWarning
+            <input
               type="file"
               accept=".pdf,.jpg,.jpeg,.png,.webp"
               onChange={(e) => {
@@ -304,7 +304,7 @@ export function SellerDeskGovernancePanel({ seller }: SellerDeskGovernancePanelP
               className="w-full text-xs text-charcoal-muted"
             />
 
-            <button suppressHydrationWarning
+            <button
               type="submit"
               className="inline-flex items-center gap-1.5 px-4 py-2 bg-ivory-warm hover:bg-forest/10 text-forest border border-forest/20 text-xs font-semibold rounded-xl"
             >

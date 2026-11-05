@@ -24,28 +24,31 @@ LANGUAGE sql
 STABLE
 SECURITY DEFINER
 SET search_path = public
-AS $$
+AS $func$
+  -- p_user_id remains for compatibility but is deliberately ignored.
+  -- A caller can only inspect their own host assignment through auth.uid().
   SELECT CASE
-    WHEN p_property_id IS NULL OR p_user_id IS NULL THEN false
+    WHEN p_property_id IS NULL OR auth.uid() IS NULL THEN false
     ELSE EXISTS (
       SELECT 1
       FROM public.properties p
       WHERE p.id = p_property_id
-        AND p.host_id = p_user_id
+        AND p.host_id = auth.uid()
     ) OR EXISTS (
       SELECT 1
       FROM public.property_hosts ph
       WHERE ph.property_id = p_property_id
-        AND ph.user_id = p_user_id
+        AND ph.user_id = auth.uid()
         AND COALESCE(ph.status, 'active') = 'active'
     )
   END;
-$$;
+$func$;
 
 REVOKE ALL ON FUNCTION public.is_property_host(uuid, uuid) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.is_property_host(uuid, uuid) TO authenticated, service_role;
+COMMENT ON FUNCTION public.is_property_host(uuid, uuid) IS
+  'Checks the current JWT user only. The retained p_user_id parameter is ignored for backwards compatibility.';
 
--- ============================================================================
 -- 2. TOTP MFA ASSURANCE LEVEL (AAL2) HELPER FUNCTION
 -- ============================================================================
 CREATE OR REPLACE FUNCTION public.current_session_is_aal2()
@@ -54,9 +57,9 @@ LANGUAGE sql
 STABLE
 SECURITY INVOKER
 SET search_path = public
-AS $$
+AS $func$
   SELECT COALESCE(auth.jwt()->>'aal', '') = 'aal2';
-$$;
+$func$;
 
 REVOKE ALL ON FUNCTION public.current_session_is_aal2() FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.current_session_is_aal2() TO authenticated, service_role;
@@ -72,54 +75,32 @@ ALTER TABLE public.platform_admins
 REVOKE ALL ON TABLE public.platform_admins FROM PUBLIC, anon, authenticated;
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.platform_admins TO service_role;
 
+-- staff_profiles is the sole administrative identity registry once Phase 2 is installed.
+-- Legacy platform_admins rows must never bypass staff approval, consent, or agreement checks.
 CREATE OR REPLACE FUNCTION public.is_platform_admin_for_user(p_user_id uuid)
 RETURNS boolean
-LANGUAGE plpgsql
+LANGUAGE sql
 STABLE
 SECURITY DEFINER
 SET search_path = public
-AS $$
-DECLARE
-  v_has_staff_table boolean;
-BEGIN
-  IF p_user_id IS NULL THEN
-    RETURN false;
-  END IF;
-
-  SELECT EXISTS (
+AS $func$
+  SELECT p_user_id IS NOT NULL AND EXISTS (
     SELECT 1
-    FROM information_schema.tables
-    WHERE table_schema = 'public'
-      AND table_name = 'staff_profiles'
-  ) INTO v_has_staff_table;
-
-  IF v_has_staff_table THEN
-    IF EXISTS (
-      SELECT 1
-      FROM public.staff_profiles sp
-      WHERE sp.user_id = p_user_id
-        AND sp.status = 'active'
-        AND sp.session_revoked_at IS NULL
-        AND sp.founder_approved_at IS NOT NULL
-        AND sp.founder_approved_by IS NOT NULL
-        AND sp.staff_id IS NOT NULL
-        AND (
-          sp.role_slug = 'founder'
-          OR COALESCE(sp.agreements_completed, false) = true
-          OR COALESCE(sp.all_agreements_accepted, false) = true
-        )
-    ) THEN
-      RETURN true;
-    END IF;
-  END IF;
-
-  RETURN EXISTS (
-    SELECT 1
-    FROM public.platform_admins pa
-    WHERE pa.user_id = p_user_id
+    FROM public.staff_profiles sp
+    WHERE sp.user_id = p_user_id
+      AND sp.status = 'active'
+      AND sp.session_revoked_at IS NULL
+      AND sp.founder_approved = true
+      AND sp.founder_approved_at IS NOT NULL
+      AND sp.founder_approved_by IS NOT NULL
+      AND sp.staff_id IS NOT NULL
+      AND sp.role_slug IS NOT NULL
+      AND sp.privacy_notice_accepted = true
+      AND COALESCE(sp.agreements_completed, false) = true
+      AND COALESCE(sp.all_agreements_accepted, false) = true
+      AND COALESCE(sp.onboarding_completed, false) = true
   );
-END;
-$$;
+$func$;
 
 REVOKE ALL ON FUNCTION public.is_platform_admin_for_user(uuid) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.is_platform_admin_for_user(uuid) TO service_role;
@@ -137,12 +118,140 @@ BEGIN
   IF v_uid IS NULL THEN
     RETURN false;
   END IF;
-  RETURN public.is_platform_admin_for_user(v_uid);
+  RETURN public.is_platform_admin_for_user(v_uid)
+    AND public.current_session_is_aal2();
 END;
 $$;
 
 REVOKE ALL ON FUNCTION public.is_platform_admin() FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.is_platform_admin() TO authenticated, service_role;
+
+-- Permission helper used by staff-profile, agreement and seller-document RLS policies.
+-- The compatibility p_user_id argument is deliberately ignored: callers can inspect
+-- only the current JWT user's own permissions. It requires completed onboarding and AAL2.
+CREATE OR REPLACE FUNCTION public.has_staff_permission_for_user(
+  p_user_id uuid,
+  p_perm text
+)
+RETURNS boolean
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public, auth, pg_temp
+AS $func$
+  SELECT auth.uid() IS NOT NULL
+    AND p_perm IS NOT NULL
+    AND length(trim(p_perm)) > 0
+    AND public.current_session_is_aal2()
+    AND EXISTS (
+      SELECT 1
+      FROM public.staff_profiles sp
+      WHERE sp.user_id = auth.uid()
+        AND sp.status = 'active'
+        AND sp.founder_approved = true
+        AND sp.founder_approved_at IS NOT NULL
+        AND sp.founder_approved_by IS NOT NULL
+        AND sp.staff_id IS NOT NULL
+        AND sp.role_slug IS NOT NULL
+        AND sp.session_revoked_at IS NULL
+        AND sp.privacy_notice_accepted = true
+        AND COALESCE(sp.agreements_completed, false) = true
+        AND COALESCE(sp.all_agreements_accepted, false) = true
+        AND COALESCE(sp.onboarding_completed, false) = true
+        AND (
+          sp.role_slug = 'founder'
+          OR p_perm = ANY(COALESCE(sp.custom_permissions, ARRAY[]::text[]))
+          OR EXISTS (
+            SELECT 1
+            FROM public.staff_role_permissions srp
+            WHERE srp.role_slug = sp.role_slug
+              AND srp.permission_key = p_perm
+          )
+          OR EXISTS (
+            SELECT 1
+            FROM public.staff_permission_assignments spa
+            WHERE (spa.staff_profile_id = sp.id OR spa.user_id = auth.uid())
+              AND spa.permission_key = p_perm
+              AND spa.grant_type IN ('allow', 'grant')
+              AND spa.is_active = true
+              AND spa.revoked_at IS NULL
+              AND (spa.expires_at IS NULL OR spa.expires_at > now())
+          )
+        )
+        AND NOT (p_perm = ANY(COALESCE(sp.revoked_permissions, ARRAY[]::text[])))
+    );
+$func$;
+
+REVOKE ALL ON FUNCTION public.has_staff_permission_for_user(uuid, text) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.has_staff_permission_for_user(uuid, text) TO authenticated, service_role;
+COMMENT ON FUNCTION public.has_staff_permission_for_user(uuid, text) IS
+  'Checks only auth.uid(); the legacy p_user_id argument is ignored. Requires approved, consented, fully onboarded staff and AAL2.';
+
+-- Sensitive private-document review is Founder-only in the initial release.
+-- Employee access is intentionally owner-only until pillar-specific document permissions
+-- are implemented and tested. This helper derives identity from auth.uid() to prevent probing.
+CREATE OR REPLACE FUNCTION public.is_active_founder()
+RETURNS boolean
+LANGUAGE sql
+STABLE
+SECURITY INVOKER
+SET search_path = public
+AS $func$
+  SELECT auth.uid() IS NOT NULL AND EXISTS (
+    SELECT 1
+    FROM public.staff_profiles sp
+    WHERE sp.user_id = auth.uid()
+      AND sp.role_slug = 'founder'
+      AND sp.status = 'active'
+      AND sp.session_revoked_at IS NULL
+      AND sp.founder_approved = true
+      AND sp.founder_approved_at IS NOT NULL
+      AND sp.founder_approved_by IS NOT NULL
+      AND sp.staff_id = 'UK-STAFF-2026-0001'
+      AND sp.privacy_notice_accepted = true
+      AND COALESCE(sp.agreements_completed, false) = true
+      AND COALESCE(sp.all_agreements_accepted, false) = true
+      AND COALESCE(sp.onboarding_completed, false) = true
+  );
+$func$;
+
+REVOKE ALL ON FUNCTION public.is_active_founder() FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.is_active_founder() TO authenticated, service_role;
+
+-- These policies call the helper as authenticated users. Anonymous sessions have no access
+-- to HR, seller verification, or staff agreement records.
+DROP POLICY IF EXISTS "seller_own_verification_docs_select" ON public.seller_verification_documents;
+CREATE POLICY "seller_own_verification_docs_select"
+  ON public.seller_verification_documents
+  FOR SELECT
+  TO authenticated
+  USING (
+    auth.uid() = seller_user_id
+    OR public.has_staff_permission_for_user(auth.uid(), 'seller.verify_documents')
+    OR public.has_staff_permission_for_user(auth.uid(), 'finance.review_agreements')
+  );
+
+DROP POLICY IF EXISTS "staff_agreements_self_or_reviewer_select" ON public.staff_agreement_acceptances;
+CREATE POLICY "staff_agreements_self_or_reviewer_select"
+  ON public.staff_agreement_acceptances
+  FOR SELECT
+  TO authenticated
+  USING (
+    auth.uid() = user_id
+    OR public.has_staff_permission_for_user(auth.uid(), 'staff.hr_docs.view')
+    OR public.has_staff_permission_for_user(auth.uid(), 'staff.hire_approve')
+  );
+
+DROP POLICY IF EXISTS "staff_profiles_self_or_founder_select" ON public.staff_profiles;
+CREATE POLICY "staff_profiles_self_or_founder_select"
+  ON public.staff_profiles
+  FOR SELECT
+  TO authenticated
+  USING (
+    auth.uid() = user_id
+    OR public.has_staff_permission_for_user(auth.uid(), 'staff.permissions.manage')
+    OR public.has_staff_permission_for_user(auth.uid(), 'staff.hire_approve')
+  );
 
 -- ============================================================================
 -- 4. FIX PUBLIC SELECT & HOST POLICIES ON properties, room_units & room_availability_blocks
@@ -447,8 +556,8 @@ CREATE POLICY "Staff can moderate reviews"
   ON public.reviews
   FOR ALL
   TO authenticated
-  USING (public.is_platform_admin() AND public.current_session_is_aal2())
-  WITH CHECK (public.is_platform_admin() AND public.current_session_is_aal2());
+  USING (public.is_active_founder() AND public.current_session_is_aal2())
+  WITH CHECK (public.is_active_founder() AND public.current_session_is_aal2());
 
 -- ============================================================================
 -- 7. ENABLE & FORCE ROW LEVEL SECURITY ACROSS ALL SENSITIVE TABLES
@@ -463,9 +572,6 @@ DECLARE
     'properties',
     'room_units',
     'stay_bookings',
-    'bookings',
-    'booking_requests',
-    'booking_rate_limits',
     'room_availability_blocks',
     'host_agreements',
     'property_hosts',
@@ -525,206 +631,6 @@ END;
 $$;
 
 -- ============================================================================
--- 7B. SUPABASE SECURITY ADVISOR REMEDIATION (SECTIONS G.1, G.2, G.3)
--- 1. Separate public/anon read policies from authenticated owner/admin policies
---    so anon never requires EXECUTE on is_platform_admin() or is_property_host().
--- 2. Move btree_gist extension out of public schema into extensions schema.
--- 3. Switch public.public_room_availability & public.public_member_profiles
---    to security_invoker = true (eliminating 0010_security_definer_view ERROR)
---    and provide server-only get_public_room_availability(uuid) function.
--- 4. Revoke EXECUTE from PUBLIC, anon, authenticated on all non-RLS-helper
---    SECURITY DEFINER RPCs and trigger functions.
--- 5. Lock down server-only tables (admin_audit_log, booking_rate_limits,
---    booking_requests, bookings, platform_admins, rate_limits).
--- ============================================================================
-
--- Separate public vs authenticated policies so anon never calls is_platform_admin()
-DROP POLICY IF EXISTS "Destinations can be modified by platform admins" ON public.destinations;
-CREATE POLICY "Destinations can be modified by platform admins"
-  ON public.destinations
-  FOR ALL
-  TO authenticated
-  USING (public.is_platform_admin())
-  WITH CHECK (public.is_platform_admin());
-
-DROP POLICY IF EXISTS "products_select_public_approved_or_owner_or_admin" ON public.products;
-DROP POLICY IF EXISTS "Public can view approved products" ON public.products;
-CREATE POLICY "Public can view approved products"
-  ON public.products
-  FOR SELECT
-  TO anon, authenticated
-  USING (moderation_status = 'approved');
-
-DROP POLICY IF EXISTS "Sellers and staff can view own or all products" ON public.products;
-CREATE POLICY "Sellers and staff can view own or all products"
-  ON public.products
-  FOR SELECT
-  TO authenticated
-  USING (seller_id = auth.uid() OR public.is_platform_admin());
-
-DROP POLICY IF EXISTS "filmmaker_select_own_or_admin" ON public.filmmaker_profiles;
-CREATE POLICY "filmmaker_select_own_or_admin"
-  ON public.filmmaker_profiles
-  FOR SELECT
-  TO authenticated
-  USING (user_id = auth.uid() OR public.is_platform_admin());
-
-DROP POLICY IF EXISTS "proposals_select_own_or_admin" ON public.production_proposals;
-CREATE POLICY "proposals_select_own_or_admin"
-  ON public.production_proposals
-  FOR SELECT
-  TO authenticated
-  USING (user_id = auth.uid() OR public.is_platform_admin());
-
-DROP POLICY IF EXISTS "participations_select_own_or_admin" ON public.community_participations;
-CREATE POLICY "participations_select_own_or_admin"
-  ON public.community_participations
-  FOR SELECT
-  TO authenticated
-  USING (user_id = auth.uid() OR public.is_platform_admin());
-
-DROP POLICY IF EXISTS "stories_select_published_or_author" ON public.community_stories;
-DROP POLICY IF EXISTS "Public can view published community stories" ON public.community_stories;
-CREATE POLICY "Public can view published community stories"
-  ON public.community_stories
-  FOR SELECT
-  TO anon, authenticated
-  USING (status = 'published');
-
-DROP POLICY IF EXISTS "Authors and staff can view own or all community stories" ON public.community_stories;
-CREATE POLICY "Authors and staff can view own or all community stories"
-  ON public.community_stories
-  FOR SELECT
-  TO authenticated
-  USING (user_id = auth.uid() OR public.is_platform_admin());
-
--- Move btree_gist extension from public to extensions schema (0014_extension_in_public)
-CREATE SCHEMA IF NOT EXISTS extensions;
-DO $$
-BEGIN
-  IF EXISTS (
-    SELECT 1
-    FROM pg_extension e
-    JOIN pg_namespace n ON n.oid = e.extnamespace
-    WHERE e.extname = 'btree_gist'
-      AND n.nspname = 'public'
-  ) THEN
-    ALTER EXTENSION btree_gist SET SCHEMA extensions;
-  END IF;
-END;
-$$;
-
--- Switch public.public_room_availability to security_invoker = true (0010_security_definer_view)
-ALTER VIEW IF EXISTS public.public_room_availability SET (security_invoker = true);
-ALTER VIEW IF EXISTS public.public_member_profiles SET (security_invoker = true);
-
--- Controlled server-only availability lookup returning ONLY sanitized room_unit_id and date boundaries
-CREATE OR REPLACE FUNCTION public.get_public_room_availability(p_property_id uuid DEFAULT NULL)
-RETURNS TABLE (
-  room_unit_id uuid,
-  blocked_from date,
-  blocked_until date
-)
-LANGUAGE sql
-STABLE
-SECURITY DEFINER
-SET search_path = public
-AS $$
-  SELECT
-    b.room_unit_id,
-    b.blocked_from,
-    b.blocked_until
-  FROM public.room_availability_blocks b
-  JOIN public.room_units r ON r.id = b.room_unit_id
-  JOIN public.properties p ON p.id = r.property_id
-  WHERE r.active = true
-    AND p.published = true
-    AND p.moderation_status = 'approved'
-    AND (p_property_id IS NULL OR p.id = p_property_id);
-$$;
-
-REVOKE ALL ON FUNCTION public.get_public_room_availability(uuid) FROM PUBLIC, anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.get_public_room_availability(uuid) TO service_role;
-
--- Revoke direct client access to server-only rate-limit, audit, and legacy booking tables
-DO $$
-DECLARE
-  v_srv_tbl text;
-  v_srv_tables text[] := ARRAY[
-    'admin_audit_log',
-    'booking_rate_limits',
-    'booking_requests',
-    'bookings',
-    'platform_admins',
-    'rate_limits'
-  ];
-BEGIN
-  FOREACH v_srv_tbl IN ARRAY v_srv_tables LOOP
-    IF EXISTS (
-      SELECT 1
-      FROM information_schema.tables
-      WHERE table_schema = 'public'
-        AND table_name = v_srv_tbl
-        AND table_type = 'BASE TABLE'
-    ) THEN
-      EXECUTE format('REVOKE ALL ON TABLE public.%I FROM PUBLIC, anon, authenticated;', v_srv_tbl);
-      EXECUTE format('GRANT ALL ON TABLE public.%I TO service_role;', v_srv_tbl);
-    END IF;
-  END LOOP;
-END;
-$$;
-
--- Revoke EXECUTE from PUBLIC, anon, authenticated on all non-RLS-helper SECURITY DEFINER and internal functions
-DO $$
-DECLARE
-  r record;
-BEGIN
-  FOR r IN
-    SELECT p.oid::regprocedure AS func_sig
-    FROM pg_proc p
-    JOIN pg_namespace n ON n.oid = p.pronamespace
-    WHERE n.nspname = 'public'
-      AND p.proname IN (
-        'admin_review_property_changes',
-        'calculate_host_agreement_digest',
-        'cancel_guest_booking',
-        'enforce_host_agreement_draft_on_insert',
-        'enforce_host_agreement_immutability',
-        'enforce_legal_terms_documents_immutability',
-        'enforce_product_moderation_lifecycle',
-        'enforce_property_moderation_guard',
-        'enforce_property_ownership_and_moderation',
-        'enforce_seller_status_immutability',
-        'enforce_filmmaker_status_immutability',
-        'prevent_accepted_agreement_deletion',
-        'prevent_audit_log_mutation',
-        'prevent_host_agreements_truncate',
-        'prevent_legal_terms_documents_truncate',
-        'protect_confirmed_booking_snapshots',
-        'generate_uk_staff_id',
-        'sync_staff_invitation_cols',
-        'sync_staff_profile_cols',
-        'sync_staff_permission_cols',
-        'sync_staff_doc_size',
-        'sync_staff_agreement_cols',
-        'sync_dual_approval_cols',
-        'sync_seller_doc_size',
-        'sync_auth_user_email_change',
-        'prevent_staff_id_mutation',
-        'prevent_staff_audit_log_mutation',
-        'provision_founder_account',
-        'has_staff_permission_for_user',
-        'is_active_staff_for_user'
-      )
-  LOOP
-    EXECUTE format('ALTER FUNCTION %s SET search_path = public;', r.func_sig);
-    EXECUTE format('REVOKE ALL ON FUNCTION %s FROM PUBLIC, anon, authenticated;', r.func_sig);
-    EXECUTE format('GRANT EXECUTE ON FUNCTION %s TO postgres, supabase_admin, service_role;', r.func_sig);
-  END LOOP;
-END;
-$$;
-
--- ============================================================================
 -- 8. PROVISION ALL 6 STORAGE BUCKETS & STRICT STORAGE RLS POLICIES
 -- ============================================================================
 INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
@@ -759,7 +665,7 @@ CREATE POLICY "Sellers can access own verification docs"
     AND (
       (storage.foldername(name))[1] = auth.uid()::text
       OR (storage.foldername(name))[2] = auth.uid()::text
-      OR (public.is_platform_admin() AND public.current_session_is_aal2())
+      OR (public.is_active_founder() AND public.current_session_is_aal2())
     )
   );
 
@@ -787,7 +693,7 @@ CREATE POLICY "Staff HR docs restricted to owner or Founder AAL2"
     AND (
       (storage.foldername(name))[1] = auth.uid()::text
       OR (storage.foldername(name))[2] = auth.uid()::text
-      OR (public.is_platform_admin() AND public.current_session_is_aal2())
+      OR (public.is_active_founder() AND public.current_session_is_aal2())
     )
   );
 
@@ -802,7 +708,7 @@ CREATE POLICY "Private pillar docs restricted to owner or Staff AAL2"
     AND (
       (storage.foldername(name))[1] = auth.uid()::text
       OR (storage.foldername(name))[2] = auth.uid()::text
-      OR (public.is_platform_admin() AND public.current_session_is_aal2())
+      OR (public.is_active_founder() AND public.current_session_is_aal2())
     )
   );
 

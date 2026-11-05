@@ -1,6 +1,6 @@
 # Uttarkunth 3.1 — Cloudflare Workers, Staff Subdomain & Supabase Deployment Guide
 
-**Platform:** Uttarkunth (`uttarkunth.com` & `team.uttarkunth.com`)  
+**Platform:** Uttarkunth (`uttarkunth.com`, `admin.uttarkunth.com` & `team.uttarkunth.com`)  
 **Repository:** `uttarkunth/uttarkunth3.1`  
 **Working Branch:** `uttarkunthmain2` (Release Candidate)  
 **Supabase Project:** `xyplgugxpmlnjsvlosdg`  
@@ -61,7 +61,8 @@ npm run preview
 - `NEXT_PUBLIC_SUPABASE_URL` (Plain text)
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY` (Plain text)
 - `SUPABASE_SERVICE_ROLE_KEY` (**Encrypted Secret** — strictly server-only; never prefix with `NEXT_PUBLIC_`)
-- `ALLOWED_ORIGINS` = `https://uttarkunth.com,https://team.uttarkunth.com`
+- `ALLOWED_ORIGINS` = `https://uttarkunth.com,https://team.uttarkunth.com,https://admin.uttarkunth.com`
+- `ENFORCE_CLOUDFLARE_ACCESS` = `true` (also enforced automatically in production)
 
 ---
 
@@ -71,17 +72,23 @@ npm run preview
 1. In **Workers & Pages > `uttarkunth3-1` > Settings > Domains & Routes**, add custom domains:
    - `uttarkunth.com`
    - `team.uttarkunth.com`
+   - `admin.uttarkunth.com`
 2. `middleware.ts` automatically enforces staff portal isolation:
    - Any unauthenticated request to `/admin/*` redirects to `/staff/login?next=...`.
    - Open staff registration paths (`/admin/register`, `/admin/signup`, `/staff/register`, `/staff/signup`) are permanently blocked and redirected to `/staff/login?error=open_registration_prohibited`.
 
-### B. Cloudflare Access (Zero Trust External Perimeter Gate — Recommended)
-1. In **Cloudflare Zero Trust > Access > Applications**, create a **Self-hosted Application** for:
-   - `team.uttarkunth.com/*`
-   - `uttarkunth.com/staff/*`
-   - `uttarkunth.com/admin/*`
-2. Create an **Allow** policy restricted to authorised Uttarkunth staff emails (`@uttarkunth.com` or Founder email list) requiring One-Time PIN or hardware MFA.
-3. **Defense-in-Depth:** Cloudflare Access is an outer perimeter gate only; application-level authentication (`middleware.ts`, `lib/auth.ts`, `requireStaffPermission()` in `lib/staff-rbac.ts`) and Supabase Auth TOTP MFA (`aal2`) remain mandatory on every request.
+### B. Cloudflare Access (Mandatory Zero Trust Perimeter for Internal Subdomains)
+1. In **Cloudflare Zero Trust > Access > Applications**, create two separate **Self-hosted Applications**:
+   - Founder application: `admin.uttarkunth.com/*`
+   - Staff application: `team.uttarkunth.com/*`
+2. Restrict the Founder application to the Founder identity only. Restrict the Staff application to approved employee identities/groups. Require an appropriate strong identity factor and configure short session durations.
+3. Add these Worker runtime variables:
+   - `CLOUDFLARE_ACCESS_TEAM_DOMAIN` = `<your-team-name>.cloudflareaccess.com`
+   - `CLOUDFLARE_ACCESS_AUD_FOUNDER` = `<Application Audience (AUD) tag for admin.uttarkunth.com>`
+   - `CLOUDFLARE_ACCESS_AUD_STAFF` = `<Application Audience (AUD) tag for team.uttarkunth.com>`
+   - `ENFORCE_CLOUDFLARE_ACCESS` = `true`
+4. The middleware verifies the JWT signature against Cloudflare's published signing keys and checks issuer, the portal-specific audience, subject, and expiry. A missing or invalid token fails closed with HTTP 403. Do not substitute a mere header-presence check.
+5. **Defense-in-Depth:** Cloudflare Access is only the outer perimeter. Supabase Auth, server-side staff RBAC, route-level permissions, and Supabase TOTP MFA (`aal2`) remain mandatory. Keep the Worker origin protected so requests cannot bypass the Access-gated custom hostnames.
 
 ---
 
@@ -127,3 +134,14 @@ SELECT
 - `anon_can_exec`: `false`
 - `auth_can_exec`: `false`
 - `service_role_can_exec`: `true`
+
+
+## 7. Phase 4 Corrective Migration (For Databases Where Phase 2/3 Are Already Applied)
+
+If the Supabase migration history already contains `20261105191418` (Phase 2) and `20261105191649` (Phase 3), do not edit or replay those historical migrations. Review and apply the forward-only migration:
+
+`supabase/migrations/20261106000100_correct_phase3_admin_host_and_private_storage_permissions.sql`
+
+This migration resets `onboarding_completed` to false only where the privacy notice or required agreement flags are incomplete; it does not fabricate consent. It closes the arbitrary-user property-host check, requires completed staff approval/consent/onboarding plus AAL2 for privileged RLS access, and restricts private HR/seller/host/production/community documents to their owner or the verified Founder with AAL2.
+
+Before applying it to production, verify the migration against a staging copy and test normal host/property access, staff onboarding, Founder first login, TOTP enrollment, and storage access for each owner bucket.

@@ -20,36 +20,7 @@ export type StaffDepartment =
   | 'stays'
   | 'products'
   | 'productions'
-  | 'community'
-  | 'operations'
-  | 'stays_curation'
-  | 'marketplace_compliance'
-  | 'customer_support'
-  | 'finance_legal';
-
-export const CANONICAL_STAFF_DEPARTMENTS = [
-  {
-    slug: 'stays' as const,
-    label: 'UTTARKUNTH STAYS (Operational Department 01)',
-  },
-  {
-    slug: 'products' as const,
-    label: 'UTTARKUNTH PRODUCTS (Operational Department 02)',
-  },
-  {
-    slug: 'productions' as const,
-    label: 'UTTARKUNTH PRODUCTIONS (Operational Department 03)',
-  },
-  {
-    slug: 'community' as const,
-    label: 'UTTARKUNTH COMMUNITY (Operational Department 04)',
-  },
-  {
-    slug: 'founder_office' as const,
-    label:
-      'FOUNDER OFFICE (Central Admin & Shared Functions: HR, Finance, Legal, Tech, Support, Governance)',
-  },
-] as const;
+  | 'community';
 
 export type StaffEmploymentCategory =
   | 'full_time_employee'
@@ -243,18 +214,12 @@ export const REQUIRED_STAFF_AGREEMENTS: ReadonlyArray<{
   },
 ] as const;
 
-/**
- * Pure deterministic 64-char hex digest for agreement versioning/hashing
- * that works in both Node.js and browser environments without external deps.
- */
 export function computeDocumentHash(content: string): string {
   const normalized = content.trim();
   try {
-    // Use Node's built-in crypto when running on server / Node test runner
     const nodeCrypto = require('crypto');
     return nodeCrypto.createHash('sha256').update(normalized, 'utf8').digest('hex');
   } catch {
-    // Deterministic 64-char hex fallback if invoked synchronously in browser
     let h1 = 0xdeadbeef ^ normalized.length;
     let h2 = 0x41c6ce57 ^ normalized.length;
     for (let i = 0; i < normalized.length; i++) {
@@ -285,7 +250,7 @@ export const STAFF_ROLE_DEFINITIONS: Record<StaffRoleSlug, StaffRoleDefinition> 
   founder: {
     slug: 'founder',
     code: 'founder',
-    title: 'Founder & Chief Executive',
+    title: 'Founder / Superadmin',
     department: 'founder_office',
     description:
       'Ultimate platform governance, staff hiring & termination, permission assignment, dual approvals, and full ecosystem oversight.',
@@ -322,7 +287,7 @@ export const STAFF_ROLE_DEFINITIONS: Record<StaffRoleSlug, StaffRoleDefinition> 
     title: 'Operations Administrator',
     department: 'founder_office',
     description:
-      'Shared Founder-managed platform operations function: coordinates cross-pillar operations, property host assignments, and booking supervision via delegated permissions without unilateral staff hiring authority.',
+      'Coordinates cross-pillar operations, property host assignments, and booking supervision without unilateral staff hiring authority.',
     permissions: ['property.review', 'property.assign_host', 'support.manage_tickets'],
     defaultPermissions: ['property.review', 'property.assign_host', 'support.manage_tickets'],
     allowedNavModules: ['dashboard', 'properties', 'users', 'bookings'],
@@ -334,7 +299,7 @@ export const STAFF_ROLE_DEFINITIONS: Record<StaffRoleSlug, StaffRoleDefinition> 
     title: 'Property Reviewer',
     department: 'stays',
     description:
-      'Reviews homestay listings and staged property changes in the Stays department. Cannot assign primary hosts, approve sellers, or appoint administrators.',
+      'Reviews homestay listings and staged property changes. Cannot assign primary hosts, approve sellers, or appoint administrators.',
     permissions: ['property.review'],
     defaultPermissions: ['property.review'],
     allowedNavModules: ['dashboard', 'properties'],
@@ -346,7 +311,7 @@ export const STAFF_ROLE_DEFINITIONS: Record<StaffRoleSlug, StaffRoleDefinition> 
     title: 'Marketplace & Seller Reviewer',
     department: 'products',
     description:
-      'Reviews artisan/seller brand applications, verifies business documents, and moderates product submissions in the Products department.',
+      'Reviews artisan/seller brand applications, verifies business documents, and moderates product submissions.',
     permissions: ['seller.approve', 'product.approve', 'seller.verify_documents'],
     defaultPermissions: ['seller.approve', 'product.approve', 'seller.verify_documents'],
     allowedNavModules: ['dashboard', 'products'],
@@ -357,8 +322,7 @@ export const STAFF_ROLE_DEFINITIONS: Record<StaffRoleSlug, StaffRoleDefinition> 
     code: 'productions_editor',
     title: 'Productions Editor',
     department: 'productions',
-    description:
-      'Reviews filmmaker & co-producer profiles and documentary/film proposals in the Productions department.',
+    description: 'Reviews filmmaker & co-producer profiles and documentary/film proposals.',
     permissions: ['productions.approve_profile', 'productions.review_proposal'],
     defaultPermissions: ['productions.approve_profile', 'productions.review_proposal'],
     allowedNavModules: ['dashboard', 'productions'],
@@ -370,7 +334,7 @@ export const STAFF_ROLE_DEFINITIONS: Record<StaffRoleSlug, StaffRoleDefinition> 
     title: 'Community Manager',
     department: 'community',
     description:
-      'Moderates community residency participations, village initiatives, and oral history stories in the Community department.',
+      'Moderates community residency participations, village initiatives, and oral history stories.',
     permissions: ['community.moderate'],
     defaultPermissions: ['community.moderate'],
     allowedNavModules: ['dashboard', 'community'],
@@ -382,7 +346,7 @@ export const STAFF_ROLE_DEFINITIONS: Record<StaffRoleSlug, StaffRoleDefinition> 
     title: 'Customer Support Executive',
     department: 'founder_office',
     description:
-      'Shared Founder-managed Customer Support function delegated via support.manage_tickets. Strictly prohibited from accessing private seller licences or HR documents.',
+      'Assists guests and hosts with booking inquiries. Strictly prohibited from accessing private seller licences or HR documents.',
     permissions: ['support.manage_tickets'],
     defaultPermissions: ['support.manage_tickets'],
     allowedNavModules: ['dashboard', 'bookings'],
@@ -394,7 +358,7 @@ export const STAFF_ROLE_DEFINITIONS: Record<StaffRoleSlug, StaffRoleDefinition> 
     title: 'Finance & Compliance Reviewer',
     department: 'founder_office',
     description:
-      'Shared Founder-managed Finance, Legal & Compliance function delegated via explicit permissions to review bilateral agreements, verify GSTIN/tax compliance records, and audit regulatory licences.',
+      'Reviews bilateral commercial agreements, verifies GSTIN/tax compliance records, and audits regulatory licences.',
     permissions: [
       'seller.verify_documents',
       'finance.review_agreements',
@@ -435,7 +399,7 @@ export const FOUR_OPERATIONAL_DEPARTMENTS = [
     title: 'Stays Department',
     description:
       'Homestay applications, property moderation, room units, host & co-host assignments, bilateral host agreements, and stay booking governance.',
-    legacyDepartmentCodes: ['stays_curation', 'operations', 'customer_support'],
+    legacyDepartmentCodes: ['stays_curation'],
     deskRoute: '/admin/properties',
   },
   {
@@ -576,13 +540,6 @@ export interface EmailChangeValidationResult {
   error?: string;
 }
 
-/**
- * Pure validator for UUID-anchored Founder/Staff/Member email change requests.
- * Security invariants:
- * 1. Founder & Staff accounts MUST hold an active AAL2 (TOTP MFA verified) session.
- * 2. Fresh password re-authentication is required before initiating email change.
- * 3. Authorization remains permanently anchored to user_id (UUID), never email strings.
- */
 export function validateEmailChangeRequest(
   input: EmailChangeValidationInput
 ): EmailChangeValidationResult {
@@ -649,10 +606,6 @@ export function validateEmailChangeRequest(
   };
 }
 
-/**
- * Formats an immutable Staff ID (e.g. UK-STAFF-2026-0001).
- * The Staff ID is strictly an accountability identifier, never a password or authentication factor.
- */
 export function formatImmutableStaffId(year: number, sequenceNumber: number): string {
   const safeYear = year >= 2026 && year <= 2100 ? year : 2026;
   const seq = Math.max(1, Math.floor(sequenceNumber));
@@ -664,9 +617,6 @@ export function isValidStaffIdFormat(staffId: string | null | undefined): boolea
   return /^UK-(?:STAFF|FOUNDER)-\d{4}-\d{4,}$/.test(staffId);
 }
 
-/**
- * Validates a staff invitation record for single-use, non-expired, non-cancelled integrity.
- */
 export interface StaffInvitationRecord {
   id: string;
   token_hash: string;
@@ -877,7 +827,6 @@ export function evaluateStaffAuthorization(
     effectivePermissions,
   });
 
-  // 1. Reject any attempt to use a Staff ID (UK-STAFF-YYYY-NNNN) as a password or bearer credential
   if (ctx.attemptedPasswordOrToken && isValidStaffIdFormat(ctx.attemptedPasswordOrToken)) {
     return deny(
       401,
@@ -886,12 +835,10 @@ export function evaluateStaffAuthorization(
     );
   }
 
-  // 2. Require authenticated user
   if (!ctx.userId) {
     return deny(401, 'UNAUTHENTICATED', 'Authentication required for Uttarkunth Staff Portal.');
   }
 
-  // 3. Reject ordinary public members who do not have an authoritative staff profile
   if (ctx.isOrdinaryMemberOnly || !ctx.staffProfile) {
     return deny(
       403,
@@ -902,7 +849,6 @@ export function evaluateStaffAuthorization(
 
   const profile = ctx.staffProfile;
 
-  // 4. Check for revoked sessions (e.g. after suspension or termination)
   if (profile.session_revoked_at) {
     if (
       !ctx.sessionIssuedAt ||
@@ -916,7 +862,6 @@ export function evaluateStaffAuthorization(
     }
   }
 
-  // 5. Require active account status
   if (profile.status !== 'active') {
     return deny(
       403,
@@ -925,9 +870,7 @@ export function evaluateStaffAuthorization(
     );
   }
 
-  // 6. Require completed agreements for all non-Founder employees
-  // (Founder holds an explicit constitutional exemption rather than fabricated consent records)
-  if (profile.role_slug !== 'founder' && profile.agreements_completed === false) {
+  if (profile.agreements_completed === false) {
     return deny(
       403,
       'AGREEMENTS_INCOMPLETE',
@@ -935,7 +878,6 @@ export function evaluateStaffAuthorization(
     );
   }
 
-  // 7. Require Founder approval & immutable Staff ID
   if (
     !profile.founder_approved_at ||
     !profile.founder_approved_by ||
@@ -968,7 +910,6 @@ export function evaluateStaffAuthorization(
     );
   }
 
-  // 8. Enforce Founder-Only boundary on admin.uttarkunth.com or Founder-exclusive operations
   const hostLower = (options?.portalHost || '').toLowerCase();
   const isFounderPortalHost =
     hostLower.startsWith('admin.uttarkunth.com') || hostLower.startsWith('admin.');
@@ -980,7 +921,6 @@ export function evaluateStaffAuthorization(
     );
   }
 
-  // 9. Require TOTP MFA (Supabase AAL2) for privileged operations
   if (requireMfa && (!profile.mfa_enrolled || ctx.mfaAssuranceLevel !== 'aal2')) {
     return deny(
       403,
@@ -989,8 +929,6 @@ export function evaluateStaffAuthorization(
     );
   }
 
-  // 10. Compute effective permissions from role definition + explicit Founder grants MINUS explicit revocations
-  // Explicit denials (revoked_permissions / grant_type === 'revoke') always override inherited role grants.
   const roleDef = STAFF_ROLE_DEFINITIONS[profile.role_slug];
   const basePermissions = roleDef ? roleDef.permissions : [];
   const normalizedCustom = (profile.custom_permissions || []).map((p) =>
@@ -1040,7 +978,6 @@ export function evaluateStaffAuthorization(
     );
   }
 
-  // 11. Optional department check (Founder bypasses departmental isolation; also supports 4-department slugs)
   if (options?.requiredDepartment && profile.role_slug !== 'founder') {
     const exactMatch = profile.department === options.requiredDepartment;
     const operationalMatch =
@@ -1056,7 +993,6 @@ export function evaluateStaffAuthorization(
     }
   }
 
-  // 12. Dual authorisation check for high-risk actions
   if (
     options?.highRiskAction &&
     HIGH_RISK_ACTIONS_REQUIRING_DUAL_APPROVAL.includes(options.highRiskAction)
@@ -1090,12 +1026,6 @@ export function evaluateStaffAuthorization(
   };
 }
 
-/**
- * Evaluates portal boundary access for the 3 Uttarkunth domains:
- * - uttarkunth.com (Public platform)
- * - team.uttarkunth.com (Staff Portal — Active approved staff & Founder with AAL2)
- * - admin.uttarkunth.com (Founder Command Centre — Founder only with AAL2)
- */
 export function evaluatePortalBoundary(params: {
   hostname?: string;
   portalHost?: string;
@@ -1152,7 +1082,7 @@ export function evaluatePortalBoundary(params: {
   if (
     sp.status !== 'active' ||
     sp.session_revoked_at ||
-    (sp.role_slug !== 'founder' && sp.agreements_completed === false) ||
+    sp.agreements_completed === false ||
     !sp.founder_approved_at ||
     !isValidStaffIdFormat(sp.staff_id)
   ) {
@@ -1195,12 +1125,6 @@ export function evaluatePortalBoundary(params: {
   };
 }
 
-/**
- * Server-side reusable authorization guard for Next.js API routes and Server Components.
- * Uses dynamic imports for server-only Supabase modules so client components and Node tests
- * can safely import constants and pure validators from this file.
- * Strictly fails closed on any missing session, non-staff identity, inactive profile, or missing MFA.
- */
 export async function requireStaffPermission(
   requiredPermission: StaffPermission | string,
   options?: {
@@ -1287,7 +1211,6 @@ export async function requireStaffPermission(
       };
     }
 
-    // Load explicit granular permission assignments & revocations from staff_permission_assignments
     const assignedPermissions: StaffPermission[] = Array.isArray(staffRow.custom_permissions)
       ? staffRow.custom_permissions.map((p: string) => normalizeStaffPermission(p))
       : [];
@@ -1348,17 +1271,6 @@ export async function requireStaffPermission(
       }
     }
 
-    // Synchronize mfa_enrolled to true in database when a real verified TOTP factor is active
-    if (!staffRow.mfa_enrolled && (hasVerifiedTotpFactor || mfaLevel === 'aal2')) {
-      try {
-        await (adminClient.from('staff_profiles' as any) as any)
-          .update({ mfa_enrolled: true })
-          .eq('user_id', user.id);
-      } catch {
-        // Non-fatal sync
-      }
-    }
-
     const normalizedProfile: NonNullable<StaffAuthContext['staffProfile']> = {
       user_id: staffRow.user_id,
       staff_id: staffRow.staff_id || null,
@@ -1371,8 +1283,14 @@ export async function requireStaffPermission(
       session_revoked_at: staffRow.session_revoked_at || null,
       custom_permissions: Array.from(new Set(assignedPermissions)),
       revoked_permissions: Array.from(new Set(revokedPermissions)),
+      // A profile is considered complete only when every explicit consent and approval flag is true.
+      // The pure evaluator denies access when this aggregate gate is false.
       agreements_completed: Boolean(
-        staffRow.agreements_completed ?? staffRow.all_agreements_accepted ?? false
+        staffRow.founder_approved === true &&
+        staffRow.privacy_notice_accepted === true &&
+        staffRow.agreements_completed === true &&
+        staffRow.all_agreements_accepted === true &&
+        staffRow.onboarding_completed === true
       ),
     };
 

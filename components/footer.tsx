@@ -18,7 +18,7 @@ export function Footer() {
             <div className="p-3.5 bg-forest/40 border border-beige/20 rounded-xl max-w-sm">
               <span className="text-xs uppercase tracking-widest text-terracotta font-semibold block mb-1">Our Philosophy</span>
               <p className="font-serif italic text-base text-warm-canvas font-medium">
-                "{BRAND.philosophy}"
+                &ldquo;{BRAND.philosophy}&rdquo;
               </p>
               <p className="text-xs text-beige/80 mt-1 font-sans">
                 {BRAND.motto}
@@ -147,10 +147,10 @@ export function Footer() {
           </div>
         </div>
 
-        {/* Bottom Bar — Strict Brand Rule: No version suffixes, zero internal portal links */}
+        {/* Bottom Bar — Strict Brand Rule: No version suffixes */}
         <div className="pt-8 mt-8 border-t border-forest/40 flex flex-col sm:flex-row items-center justify-between text-xs text-warm-canvas/60 gap-4">
           <p>© {new Date().getFullYear()} Uttarkunth. All rights reserved.</p>
-          <div className="flex flex-wrap items-center gap-6">
+          <div className="flex items-center gap-6">
             <Link href="/privacy" className="hover:text-warm-canvas transition-colors">Privacy</Link>
             <Link href="/terms" className="hover:text-warm-canvas transition-colors">Terms</Link>
             <Link href="/booking-policy" className="hover:text-warm-canvas transition-colors">Booking Policy</Link>

@@ -110,7 +110,7 @@ export function ProfileForm({
           </label>
           <div className="relative">
             <User className="w-4 h-4 text-charcoal-muted absolute left-3 top-3" />
-            <input suppressHydrationWarning
+            <input
               type="text"
               required
               value={fullName}
@@ -127,7 +127,7 @@ export function ProfileForm({
           </label>
           <div className="relative">
             <User className="w-4 h-4 text-charcoal-muted absolute left-3 top-3" />
-            <input suppressHydrationWarning
+            <input
               type="text"
               value={preferredName}
               onChange={(e) => setPreferredName(e.target.value)}
@@ -143,7 +143,7 @@ export function ProfileForm({
           </label>
           <div className="relative">
             <Phone className="w-4 h-4 text-charcoal-muted absolute left-3 top-3" />
-            <input suppressHydrationWarning
+            <input
               type="tel"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
@@ -159,7 +159,7 @@ export function ProfileForm({
           </label>
           <div className="relative">
             <MapPin className="w-4 h-4 text-charcoal-muted absolute left-3 top-3" />
-            <input suppressHydrationWarning
+            <input
               type="text"
               value={location}
               onChange={(e) => setLocation(e.target.value)}
@@ -176,7 +176,7 @@ export function ProfileForm({
         </label>
         <div className="relative">
           <Home className="w-4 h-4 text-charcoal-muted absolute left-3 top-3" />
-          <input suppressHydrationWarning
+          <input
             type="text"
             value={address}
             onChange={(e) => setAddress(e.target.value)}
@@ -190,7 +190,7 @@ export function ProfileForm({
         <label className="block text-xs font-semibold text-charcoal-muted mb-1.5">
           About You / Himalayan Connection
         </label>
-        <textarea suppressHydrationWarning
+        <textarea
           rows={3}
           value={bio}
           onChange={(e) => setBio(e.target.value)}
@@ -207,7 +207,7 @@ export function ProfileForm({
           {MOUNTAIN_INTEREST_OPTIONS.map((tag) => {
             const isSelected = interests.includes(tag);
             return (
-              <button suppressHydrationWarning
+              <button
                 type="button"
                 key={tag}
                 onClick={() => toggleInterest(tag)}
@@ -225,7 +225,7 @@ export function ProfileForm({
       </div>
 
       <div className="pt-2 flex justify-end">
-        <button suppressHydrationWarning
+        <button
           type="submit"
           disabled={saving}
           className="inline-flex items-center gap-2 px-5 py-2.5 bg-forest hover:bg-forest-hover disabled:bg-forest/50 text-white text-xs font-semibold rounded-xl shadow-xs transition-colors"

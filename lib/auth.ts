@@ -2,8 +2,8 @@ import { createAdminClient } from './supabase/admin.ts';
 
 /**
  * Authoritative platform administrator & active staff verification.
- * Strictly verifies explicit provisioning in public.platform_admins and/or active status in public.staff_profiles.
- * Sole authoritative source in production — fails closed on any missing configuration or unverified user.
+ * Only a fully approved, consented, and onboarded staff_profiles record grants privileged status.
+ * Legacy platform_admins rows never grant access by themselves.
  * Never authorizes based on email address, signup order, user_metadata, app_metadata, or preview flags.
  */
 export async function checkIsPlatformAdmin(
@@ -22,7 +22,7 @@ export async function checkIsPlatformAdmin(
       adminClient.from('staff_profiles' as any) as any
     )
       .select(
-        'user_id, status, founder_approved_at, founder_approved_by, staff_id, session_revoked_at, agreements_completed, all_agreements_accepted, role_slug, role_code'
+        'user_id, status, founder_approved, founder_approved_at, founder_approved_by, staff_id, session_revoked_at, agreements_completed, all_agreements_accepted, privacy_notice_accepted, onboarding_completed, role_slug, role_code'
       )
       .eq('user_id', userId)
       .maybeSingle();
@@ -42,23 +42,29 @@ export async function checkIsPlatformAdmin(
       return false;
     }
 
-    // 3. Require valid staff role
+    // 3. Require explicit privacy consent and completion of every required agreement.
+    if (
+      staffRow.privacy_notice_accepted !== true ||
+      staffRow.agreements_completed !== true ||
+      staffRow.all_agreements_accepted !== true ||
+      staffRow.onboarding_completed !== true
+    ) {
+      return false;
+    }
+
+    // 4. Require Founder approval and immutable Staff ID.
+    if (
+      staffRow.founder_approved !== true ||
+      !staffRow.founder_approved_at ||
+      !staffRow.founder_approved_by ||
+      !staffRow.staff_id
+    ) {
+      return false;
+    }
+
+    // 5. Require valid staff role
     const role = staffRow.role_slug || staffRow.role_code;
     if (!role) {
-      return false;
-    }
-
-    // 4. Require completed agreements for all non-Founder employees
-    // (Founder holds an explicit constitutional exemption rather than fabricated consent records)
-    const agreementsOk =
-      role === 'founder' ||
-      Boolean(staffRow.agreements_completed ?? staffRow.all_agreements_accepted ?? false);
-    if (!agreementsOk) {
-      return false;
-    }
-
-    // 5. Require genuine Founder approval and immutable Staff ID
-    if (!staffRow.founder_approved_at || !staffRow.founder_approved_by || !staffRow.staff_id) {
       return false;
     }
 

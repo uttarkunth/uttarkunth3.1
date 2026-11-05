@@ -20,36 +20,7 @@ export type StaffDepartment =
   | 'stays'
   | 'products'
   | 'productions'
-  | 'community'
-  | 'operations'
-  | 'stays_curation'
-  | 'marketplace_compliance'
-  | 'customer_support'
-  | 'finance_legal';
-
-export const CANONICAL_STAFF_DEPARTMENTS = [
-  {
-    slug: 'stays' as const,
-    label: 'UTTARKUNTH STAYS (Operational Department 01)',
-  },
-  {
-    slug: 'products' as const,
-    label: 'UTTARKUNTH PRODUCTS (Operational Department 02)',
-  },
-  {
-    slug: 'productions' as const,
-    label: 'UTTARKUNTH PRODUCTIONS (Operational Department 03)',
-  },
-  {
-    slug: 'community' as const,
-    label: 'UTTARKUNTH COMMUNITY (Operational Department 04)',
-  },
-  {
-    slug: 'founder_office' as const,
-    label:
-      'FOUNDER OFFICE (Central Admin & Shared Functions: HR, Finance, Legal, Tech, Support, Governance)',
-  },
-] as const;
+  | 'community';
 
 export type StaffEmploymentCategory =
   | 'full_time_employee'
@@ -259,7 +230,7 @@ export const STAFF_ROLE_DEFINITIONS: Record<StaffRoleSlug, StaffRoleDefinition> 
   founder: {
     slug: 'founder',
     code: 'founder',
-    title: 'Founder & Chief Executive',
+    title: 'Founder / Superadmin',
     department: 'founder_office',
     description:
       'Ultimate platform governance, staff hiring & termination, permission assignment, dual approvals, and full ecosystem oversight.',
@@ -296,7 +267,7 @@ export const STAFF_ROLE_DEFINITIONS: Record<StaffRoleSlug, StaffRoleDefinition> 
     title: 'Operations Administrator',
     department: 'founder_office',
     description:
-      'Shared Founder-managed platform operations function: coordinates cross-pillar operations, property host assignments, and booking supervision via delegated permissions without unilateral staff hiring authority.',
+      'Coordinates cross-pillar operations, property host assignments, and booking supervision without unilateral staff hiring authority.',
     permissions: ['property.review', 'property.assign_host', 'support.manage_tickets'],
     defaultPermissions: ['property.review', 'property.assign_host', 'support.manage_tickets'],
     allowedNavModules: ['dashboard', 'properties', 'users', 'bookings'],
@@ -308,7 +279,7 @@ export const STAFF_ROLE_DEFINITIONS: Record<StaffRoleSlug, StaffRoleDefinition> 
     title: 'Property Reviewer',
     department: 'stays',
     description:
-      'Reviews homestay listings and staged property changes in the Stays department. Cannot assign primary hosts, approve sellers, or appoint administrators.',
+      'Reviews homestay listings and staged property changes. Cannot assign primary hosts, approve sellers, or appoint administrators.',
     permissions: ['property.review'],
     defaultPermissions: ['property.review'],
     allowedNavModules: ['dashboard', 'properties'],
@@ -320,7 +291,7 @@ export const STAFF_ROLE_DEFINITIONS: Record<StaffRoleSlug, StaffRoleDefinition> 
     title: 'Marketplace & Seller Reviewer',
     department: 'products',
     description:
-      'Reviews artisan/seller brand applications, verifies business documents, and moderates product submissions in the Products department.',
+      'Reviews artisan/seller brand applications, verifies business documents, and moderates product submissions.',
     permissions: ['seller.approve', 'product.approve', 'seller.verify_documents'],
     defaultPermissions: ['seller.approve', 'product.approve', 'seller.verify_documents'],
     allowedNavModules: ['dashboard', 'products'],
@@ -331,8 +302,7 @@ export const STAFF_ROLE_DEFINITIONS: Record<StaffRoleSlug, StaffRoleDefinition> 
     code: 'productions_editor',
     title: 'Productions Editor',
     department: 'productions',
-    description:
-      'Reviews filmmaker & co-producer profiles and documentary/film proposals in the Productions department.',
+    description: 'Reviews filmmaker & co-producer profiles and documentary/film proposals.',
     permissions: ['productions.approve_profile', 'productions.review_proposal'],
     defaultPermissions: ['productions.approve_profile', 'productions.review_proposal'],
     allowedNavModules: ['dashboard', 'productions'],
@@ -344,7 +314,7 @@ export const STAFF_ROLE_DEFINITIONS: Record<StaffRoleSlug, StaffRoleDefinition> 
     title: 'Community Manager',
     department: 'community',
     description:
-      'Moderates community residency participations, village initiatives, and oral history stories in the Community department.',
+      'Moderates community residency participations, village initiatives, and oral history stories.',
     permissions: ['community.moderate'],
     defaultPermissions: ['community.moderate'],
     allowedNavModules: ['dashboard', 'community'],
@@ -356,7 +326,7 @@ export const STAFF_ROLE_DEFINITIONS: Record<StaffRoleSlug, StaffRoleDefinition> 
     title: 'Customer Support Executive',
     department: 'founder_office',
     description:
-      'Shared Founder-managed Customer Support function delegated via support.manage_tickets. Strictly prohibited from accessing private seller licences or HR documents.',
+      'Assists guests and hosts with booking inquiries. Strictly prohibited from accessing private seller licences or HR documents.',
     permissions: ['support.manage_tickets'],
     defaultPermissions: ['support.manage_tickets'],
     allowedNavModules: ['dashboard', 'bookings'],
@@ -368,7 +338,7 @@ export const STAFF_ROLE_DEFINITIONS: Record<StaffRoleSlug, StaffRoleDefinition> 
     title: 'Finance & Compliance Reviewer',
     department: 'founder_office',
     description:
-      'Shared Founder-managed Finance, Legal & Compliance function delegated via explicit permissions to review bilateral agreements, verify GSTIN/tax compliance records, and audit regulatory licences.',
+      'Reviews bilateral commercial agreements, verifies GSTIN/tax compliance records, and audits regulatory licences.',
     permissions: [
       'seller.verify_documents',
       'finance.review_agreements',
@@ -395,145 +365,6 @@ export const HIGH_RISK_ACTIONS_REQUIRING_DUAL_APPROVAL: ReadonlyArray<HighRiskAc
   'destructive_published_record_action',
 ];
 
-/**
- * Canonical 4 Operational Departments of Uttarkunth + Centralized Founder Office Shared Functions.
- * HR, Finance, Technology, Customer Support, Administration, and Compliance remain centralized
- * shared functions under the Founder rather than independent operational departments.
- */
-export type OperationalDepartmentSlug =
-  | 'stays'
-  | 'products'
-  | 'productions'
-  | 'community'
-  | 'founder_office';
-
-export const FOUR_OPERATIONAL_DEPARTMENTS: ReadonlyArray<{
-  slug: 'stays' | 'products' | 'productions' | 'community';
-  name: string;
-  title: string;
-  description: string;
-  legacyDepartmentCodes: StaffDepartment[];
-  deskRoute: string;
-}> = [
-  {
-    slug: 'stays',
-    name: 'UTTARKUNTH STAYS',
-    title: 'Stays Department',
-    description:
-      'Property onboarding, host applications, property & room verification, availability, booking supervision, reviews, and host agreements.',
-    legacyDepartmentCodes: ['stays_curation', 'operations'],
-    deskRoute: '/admin/properties',
-  },
-  {
-    slug: 'products',
-    name: 'UTTARKUNTH PRODUCTS',
-    title: 'Products Department',
-    description:
-      'Seller applications, GSTIN & licence verification, artisan product curation, inventory governance, and buyer inquiries.',
-    legacyDepartmentCodes: ['marketplace_compliance'],
-    deskRoute: '/admin/products',
-  },
-  {
-    slug: 'productions',
-    name: 'UTTARKUNTH PRODUCTIONS',
-    title: 'Productions Department',
-    description:
-      'Filmmaker & creator profiles, documentary/media proposals, scripts, collaboration requests, and copyright/takedown workflows.',
-    legacyDepartmentCodes: ['productions'],
-    deskRoute: '/admin/productions',
-  },
-  {
-    slug: 'community',
-    name: 'UTTARKUNTH COMMUNITY',
-    title: 'Community Department',
-    description:
-      'Village development initiatives, volunteer/fellowship applications, participation records, and oral history moderation.',
-    legacyDepartmentCodes: ['community'],
-    deskRoute: '/admin/community',
-  },
-] as const;
-
-export function resolveOperationalDepartment(
-  dept: StaffDepartment | OperationalDepartmentSlug | string | null | undefined,
-  roleSlug?: StaffRoleSlug | string | null
-): OperationalDepartmentSlug {
-  const normalized = String(dept || '').trim().toLowerCase();
-  if (normalized === 'stays' || normalized === 'stays_curation') return 'stays';
-  if (normalized === 'products' || normalized === 'marketplace_compliance') return 'products';
-  if (normalized === 'productions') return 'productions';
-  if (normalized === 'community') return 'community';
-
-  const normRole = String(roleSlug || '').trim().toLowerCase();
-  if (normRole === 'property_reviewer') return 'stays';
-  if (normRole === 'marketplace_reviewer') return 'products';
-  if (normRole === 'productions_editor') return 'productions';
-  if (normRole === 'community_manager') return 'community';
-
-  return 'founder_office';
-}
-
-/**
- * Maps action-based permission aliases (e.g. 'stays.properties.approve', 'products.sellers.verify')
- * to the canonical StaffPermission keys while preserving all existing permission strings.
- */
-export const ACTION_PERMISSION_ALIAS_MAP: Record<string, StaffPermission> = {
-  // Stays
-  'property.approve': 'property.review',
-  'stays.properties.view': 'property.review',
-  'stays.properties.create': 'property.review',
-  'stays.properties.update': 'property.review',
-  'stays.properties.edit': 'property.review',
-  'stays.properties.approve': 'property.review',
-  'stays.properties.publish': 'property.review',
-  'stays.hosts.verify': 'property.assign_host',
-  'stays.agreements.manage': 'finance.review_agreements',
-  'stays.bookings.view': 'support.manage_tickets',
-  'stays.bookings.manage': 'support.manage_tickets',
-  // Products
-  'products.sellers.view': 'seller.verify_documents',
-  'products.sellers.verify': 'seller.verify_documents',
-  'products.sellers.approve': 'seller.approve',
-  'products.products.create': 'product.approve',
-  'products.products.approve': 'product.approve',
-  'products.items.approve': 'product.approve',
-  'products.items.publish': 'product.approve',
-  'products.orders.manage': 'product.approve',
-  // Productions
-  'productions.proposals.view': 'productions.review_proposal',
-  'productions.proposals.review': 'productions.review_proposal',
-  'productions.proposals.approve': 'productions.review_proposal',
-  'productions.projects.manage': 'productions.review_proposal',
-  'productions.content.approve': 'productions.approve_profile',
-  // Community
-  'community.members.view': 'community.moderate',
-  'community.applications.review': 'community.moderate',
-  'community.projects.manage': 'community.moderate',
-  'community.initiatives.manage': 'community.moderate',
-  'community.stories.moderate': 'community.moderate',
-  // Governance & Shared Functions
-  'governance.staff.invite': 'staff.invite',
-  'governance.staff.approve': 'staff.hire_approve',
-  'governance.staff.suspend': 'staff.terminate',
-  'governance.staff.terminate': 'staff.terminate',
-  'governance.permissions.assign': 'staff.permissions.manage',
-  'governance.dual_approve': 'governance.dual_approve',
-  'staff.System.view': 'staff.permissions.manage',
-  'staff.invitations.create': 'staff.invite',
-  'staff.onboarding.approve': 'staff.hire_approve',
-  'staff.status.manage': 'staff.terminate',
-  'staff.permissions.grant': 'staff.permissions.manage',
-  'staff.documents.view': 'staff.hr_docs.view',
-};
-
-export function normalizeStaffPermission(
-  permission: StaffPermission | string
-): StaffPermission {
-  if ((ALL_STAFF_PERMISSIONS as ReadonlyArray<string>).includes(permission)) {
-    return permission as StaffPermission;
-  }
-  return ACTION_PERMISSION_ALIAS_MAP[permission] || (permission as StaffPermission);
-}
-
 export function formatImmutableStaffId(year: number, sequenceNumber: number): string {
   const safeYear = year >= 2026 && year <= 2100 ? year : 2026;
   const seq = Math.max(1, Math.floor(sequenceNumber));
@@ -542,21 +373,5 @@ export function formatImmutableStaffId(year: number, sequenceNumber: number): st
 
 export function isValidStaffIdFormat(staffId: string | null | undefined): boolean {
   if (!staffId || typeof staffId !== 'string') return false;
-  return /^UK-(?:STAFF|FOUNDER)-\d{4}-\d{4,}$/.test(staffId);
-}
-
-/**
- * Sanitizes a post-login or callback redirect path to prevent Open Redirect vulnerabilities.
- * Only permits internal relative paths starting with a single '/' and never '//' or '/\'.
- */
-export function sanitizeInternalRedirectPath(
-  rawNext: string | null | undefined,
-  fallback: string = '/'
-): string {
-  if (!rawNext || typeof rawNext !== 'string') return fallback;
-  const trimmed = rawNext.trim();
-  if (!trimmed.startsWith('/')) return fallback;
-  if (trimmed.startsWith('//') || trimmed.startsWith('/\\')) return fallback;
-  if (/^\/[a-zA-Z0-9+.-]+:/.test(trimmed)) return fallback;
-  return trimmed;
+  return /^UK-STAFF-\d{4}-\d{4,}$/.test(staffId);
 }

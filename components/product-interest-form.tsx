@@ -59,7 +59,7 @@ export function ProductInterestForm({ initialCategories = [], userEmail }: Produ
           <h3 className="font-serif text-base font-bold">Register for Collection Previews</h3>
         </div>
         <p className="text-xs text-charcoal-muted">
-          Select categories you'd like preview access to when the 2027 Himalayan harvest and artisan batches open.
+          Select categories you&apos;d like preview access to when the 2027 Himalayan harvest and artisan batches open.
         </p>
       </div>
 
@@ -79,7 +79,7 @@ export function ProductInterestForm({ initialCategories = [], userEmail }: Produ
             {PRODUCT_CATEGORIES.map((cat) => {
               const isChecked = selected.includes(cat.id);
               return (
-                <button suppressHydrationWarning
+                <button
                   type="button"
                   key={cat.id}
                   onClick={() => toggleCategory(cat.id)}
@@ -101,7 +101,7 @@ export function ProductInterestForm({ initialCategories = [], userEmail }: Produ
             })}
           </div>
 
-          <button suppressHydrationWarning
+          <button
             type="submit"
             disabled={saving || selected.length === 0}
             className="inline-flex items-center gap-2 px-4 py-2 bg-forest hover:bg-forest-hover disabled:bg-forest/40 text-white text-xs font-semibold rounded-xl transition-colors"

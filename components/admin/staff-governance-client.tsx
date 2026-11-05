@@ -59,7 +59,7 @@ export function StaffGovernanceClient({
 
   // Invitation Form State
   const [inviteEmail, setInviteEmail] = useState('');
-  const [inviteDepartment, setInviteDepartment] = useState('products');
+  const [inviteDepartment, setInviteDepartment] = useState('Marketplace & Compliance');
   const [inviteDesignation, setInviteDesignation] = useState('Marketplace & Seller Reviewer');
   const [inviteRole, setInviteRole] = useState<StaffRoleCode>('marketplace_reviewer');
   const [inviteEmploymentCategory, setInviteEmploymentCategory] = useState<
@@ -370,7 +370,7 @@ export function StaffGovernanceClient({
         ].map((tab) => {
           const Icon = tab.icon;
           return (
-            <button suppressHydrationWarning
+            <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id as any)}
               className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all ${
@@ -395,7 +395,7 @@ export function StaffGovernanceClient({
           }`}
         >
           <span>{feedback.message}</span>
-          <button suppressHydrationWarning onClick={() => setFeedback(null)} className="text-[11px] underline">
+          <button onClick={() => setFeedback(null)} className="text-[11px] underline">
             Dismiss
           </button>
         </div>
@@ -414,7 +414,7 @@ export function StaffGovernanceClient({
                   Suspending or terminating a staff member immediately revokes active sessions and removes `platform_admins` privileges while preserving their historical employment &amp; audit records.
                 </p>
               </div>
-              <button suppressHydrationWarning
+              <button
                 onClick={fetchGovernanceState}
                 className="p-2 rounded-xl border border-forest/15 text-forest hover:bg-forest/5"
                 title="Refresh Registry"
@@ -477,7 +477,7 @@ export function StaffGovernanceClient({
                             </span>
                           ) : linkedProfile ? (
                             <div className="flex flex-col gap-1.5">
-                              <input suppressHydrationWarning
+                              <input
                                 type="text"
                                 placeholder="Reason for suspension/termination..."
                                 value={lifecycleReason[linkedProfile.id] || ''}
@@ -490,7 +490,7 @@ export function StaffGovernanceClient({
                                 className="px-2 py-1 border border-forest/20 rounded text-[11px]"
                               />
                               <div className="flex items-center gap-1.5">
-                                <button suppressHydrationWarning
+                                <button
                                   onClick={() =>
                                     handleSuspendOrTerminate(linkedProfile.id, 'suspend_staff')
                                   }
@@ -498,7 +498,7 @@ export function StaffGovernanceClient({
                                 >
                                   Suspend
                                 </button>
-                                <button suppressHydrationWarning
+                                <button
                                   onClick={() =>
                                     handleSuspendOrTerminate(linkedProfile.id, 'terminate_staff')
                                   }
@@ -570,7 +570,7 @@ export function StaffGovernanceClient({
               <label className="block text-xs font-semibold text-charcoal mb-1">
                 Official Staff Email *
               </label>
-              <input suppressHydrationWarning
+              <input
                 type="email"
                 required
                 value={inviteEmail}
@@ -585,7 +585,7 @@ export function StaffGovernanceClient({
                 <label className="block text-xs font-semibold text-charcoal mb-1">
                   Assigned Role *
                 </label>
-                <select suppressHydrationWarning
+                <select
                   value={inviteRole}
                   onChange={(e) => {
                     const r = e.target.value as StaffRoleCode;
@@ -607,26 +607,20 @@ export function StaffGovernanceClient({
                 <label className="block text-xs font-semibold text-charcoal mb-1">
                   Department *
                 </label>
-                <select suppressHydrationWarning
+                <input
+                  type="text"
+                  required
                   value={inviteDepartment}
                   onChange={(e) => setInviteDepartment(e.target.value)}
-                  className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-forest/20 bg-white"
-                >
-                  <option value="stays">stays — UTTARKUNTH STAYS (Operational Pillar 01)</option>
-                  <option value="products">products — UTTARKUNTH PRODUCTS (Operational Pillar 02)</option>
-                  <option value="productions">productions — UTTARKUNTH PRODUCTIONS (Operational Pillar 03)</option>
-                  <option value="community">community — UTTARKUNTH COMMUNITY (Operational Pillar 04)</option>
-                  <option value="founder_office">
-                    founder_office — FOUNDER OFFICE (Central Admin &amp; Shared Functions)
-                  </option>
-                </select>
+                  className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-forest/20"
+                />
               </div>
 
               <div>
                 <label className="block text-xs font-semibold text-charcoal mb-1">
                   Proposed Designation *
                 </label>
-                <input suppressHydrationWarning
+                <input
                   type="text"
                   required
                   value={inviteDesignation}
@@ -639,7 +633,7 @@ export function StaffGovernanceClient({
                 <label className="block text-xs font-semibold text-charcoal mb-1">
                   Employment / Contractor Status *
                 </label>
-                <select suppressHydrationWarning
+                <select
                   value={inviteEmploymentCategory}
                   onChange={(e) => setInviteEmploymentCategory(e.target.value as any)}
                   className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-forest/20 bg-white"
@@ -657,7 +651,7 @@ export function StaffGovernanceClient({
               <label className="block text-xs font-semibold text-charcoal mb-1">
                 Invitation Expiry (Hours) *
               </label>
-              <input suppressHydrationWarning
+              <input
                 type="number"
                 min={1}
                 max={720}
@@ -680,7 +674,7 @@ export function StaffGovernanceClient({
               </div>
             </div>
 
-            <button suppressHydrationWarning
+            <button
               type="submit"
               className="w-full bg-forest hover:bg-forest-hover text-white py-3 rounded-xl text-xs font-semibold transition-colors"
             >
@@ -691,7 +685,7 @@ export function StaffGovernanceClient({
               <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl space-y-2 text-xs">
                 <div className="font-bold text-emerald-900 flex items-center justify-between">
                   <span>Single-Use Invitation Token Generated</span>
-                  <button suppressHydrationWarning
+                  <button
                     type="button"
                     onClick={() => navigator.clipboard?.writeText(issuedInviteToken)}
                     className="inline-flex items-center gap-1 text-emerald-800 underline"
@@ -733,7 +727,7 @@ export function StaffGovernanceClient({
                       </div>
                     </div>
                     {inv.status === 'pending' && (
-                      <button suppressHydrationWarning
+                      <button
                         onClick={() => handleCancelInvitation(inv.id)}
                         className="px-3 py-1.5 bg-red-100 hover:bg-red-200 text-red-800 rounded-xl text-[11px] font-semibold"
                       >
@@ -805,27 +799,27 @@ export function StaffGovernanceClient({
                   </div>
 
                   <div className="flex flex-wrap items-center gap-2 pt-2">
-                    <button suppressHydrationWarning
+                    <button
                       onClick={() => handleReviewApplication(app.id, 'approve')}
                       className="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-semibold rounded-xl"
                     >
                       Approve &amp; Issue UK-STAFF ID
                     </button>
-                    <button suppressHydrationWarning
+                    <button
                       onClick={() => handleReviewApplication(app.id, 'request_info')}
                       className="px-3.5 py-2 bg-amber-100 hover:bg-amber-200 text-amber-900 font-semibold rounded-xl"
                     >
                       Request Additional Info
                     </button>
-                    <button suppressHydrationWarning
+                    <button
                       onClick={() => handleReviewApplication(app.id, 'keep_under_review')}
                       className="px-3.5 py-2 bg-white border border-forest/20 text-forest font-semibold rounded-xl"
                     >
                       Keep Under Review
                     </button>
-                    <button suppressHydrationWarning
+                    <button
                       onClick={() => handleReviewApplication(app.id, 'reject')}
-                      className="px-3.5 py-2 bg-red-100 hover:bg-red-200 text-red-900 rounded-xl font-semibold"
+                      className="px-3.5 py-2 bg-red-100 hover:bg-red-200 text-red-900 font-semibold rounded-xl"
                     >
                       Reject Application
                     </button>
@@ -845,7 +839,7 @@ export function StaffGovernanceClient({
               Authoritative 8-Role &amp; 18-Permission Departmental Matrix
             </h2>
             <p className="text-xs text-charcoal-muted mt-1">
-              Server-side API handlers enforce <code className="font-mono">requireStaffPermission(permission)</code> on every request. No staff role other than Founder/Operations Admin can cross departmental boundaries.
+              Server-side API handlers enforce <code className="font-mono">requireStaffPermission(permission)</code> on every request. Departmental access is limited by role permissions. Cross-pillar shared services remain under Founder Office governance and do not create additional operational departments.
             </p>
           </div>
 
@@ -920,7 +914,7 @@ export function StaffGovernanceClient({
                 <label className="block font-semibold text-charcoal mb-1">
                   Target Staff Member *
                 </label>
-                <select suppressHydrationWarning
+                <select
                   value={selectedStaffForRbac}
                   onChange={(e) => {
                     const uid = e.target.value;
@@ -950,7 +944,7 @@ export function StaffGovernanceClient({
 
               <div>
                 <label className="block font-semibold text-charcoal mb-1">Assigned Role *</label>
-                <select suppressHydrationWarning
+                <select
                   value={editRoleSlug}
                   onChange={(e) => setEditRoleSlug(e.target.value as StaffRoleCode)}
                   className="w-full px-3 py-2 rounded-xl border border-forest/20 bg-white"
@@ -967,7 +961,7 @@ export function StaffGovernanceClient({
                 <label className="block font-semibold text-charcoal mb-1">
                   Dual Approval ID (if promoting to Superadmin)
                 </label>
-                <input suppressHydrationWarning
+                <input
                   type="text"
                   value={editDualApprovalId}
                   onChange={(e) => setEditDualApprovalId(e.target.value)}
@@ -989,7 +983,7 @@ export function StaffGovernanceClient({
                       key={perm}
                       className="flex items-center gap-2 p-2 bg-white rounded-lg border border-forest/15 cursor-pointer"
                     >
-                      <input suppressHydrationWarning
+                      <input
                         type="checkbox"
                         checked={checked}
                         onChange={() => {
@@ -1007,14 +1001,14 @@ export function StaffGovernanceClient({
             </div>
 
             <div className="flex flex-col sm:flex-row items-center gap-3">
-              <input suppressHydrationWarning
+              <input
                 type="text"
                 value={editRbacReason}
                 onChange={(e) => setEditRbacReason(e.target.value)}
                 placeholder="Documented governance reason for permission change..."
                 className="flex-1 w-full px-3 py-2 rounded-xl border border-forest/20 bg-white"
               />
-              <button suppressHydrationWarning
+              <button
                 type="submit"
                 className="px-5 py-2.5 bg-forest hover:bg-forest-hover text-white font-semibold rounded-xl shrink-0"
               >
@@ -1043,7 +1037,7 @@ export function StaffGovernanceClient({
               <label className="block text-xs font-semibold text-charcoal mb-1">
                 High-Risk Action Category *
               </label>
-              <select suppressHydrationWarning
+              <select
                 value={dualActionType}
                 onChange={(e) => setDualActionType(e.target.value as any)}
                 className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-forest/20 bg-white"
@@ -1066,7 +1060,7 @@ export function StaffGovernanceClient({
                 <label className="block text-xs font-semibold text-charcoal mb-1">
                   Target Entity Type *
                 </label>
-                <input suppressHydrationWarning
+                <input
                   type="text"
                   required
                   value={dualTargetType}
@@ -1078,7 +1072,7 @@ export function StaffGovernanceClient({
                 <label className="block text-xs font-semibold text-charcoal mb-1">
                   Target Record ID *
                 </label>
-                <input suppressHydrationWarning
+                <input
                   type="text"
                   required
                   value={dualTargetId}
@@ -1093,7 +1087,7 @@ export function StaffGovernanceClient({
               <label className="block text-xs font-semibold text-charcoal mb-1">
                 Documented Justification (Min 10 chars) *
               </label>
-              <textarea suppressHydrationWarning
+              <textarea
                 rows={3}
                 required
                 minLength={10}
@@ -1104,7 +1098,7 @@ export function StaffGovernanceClient({
               />
             </div>
 
-            <button suppressHydrationWarning
+            <button
               type="submit"
               className="w-full bg-forest hover:bg-forest-hover text-white py-3 rounded-xl text-xs font-semibold"
             >
@@ -1145,14 +1139,14 @@ export function StaffGovernanceClient({
                             </span>
                           ) : (
                             <>
-                              <button suppressHydrationWarning
+                              <button
                                 type="button"
                                 onClick={() => handleDecideDualApproval(da.id, 'approve')}
                                 className="px-3 py-1 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg font-semibold text-[11px]"
                               >
                                 Approve Dual Auth
                               </button>
-                              <button suppressHydrationWarning
+                              <button
                                 type="button"
                                 onClick={() => handleDecideDualApproval(da.id, 'reject')}
                                 className="px-3 py-1 bg-red-100 hover:bg-red-200 text-red-900 rounded-lg font-semibold text-[11px]"

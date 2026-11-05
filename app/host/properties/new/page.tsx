@@ -181,7 +181,7 @@ export default function HostNewPropertyApplicationPage() {
               <label className="block text-xs font-semibold text-charcoal mb-1">
                 Homestay / Property Name *
               </label>
-              <input suppressHydrationWarning
+              <input
                 type="text"
                 required
                 value={name}
@@ -195,7 +195,7 @@ export default function HostNewPropertyApplicationPage() {
               <label className="block text-xs font-semibold text-charcoal mb-1">
                 Property Category *
               </label>
-              <select suppressHydrationWarning
+              <select
                 value={propertyType}
                 onChange={(e) => setPropertyType(e.target.value)}
                 className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-forest/20 bg-ivory-warm"
@@ -211,7 +211,7 @@ export default function HostNewPropertyApplicationPage() {
               <label className="block text-xs font-semibold text-charcoal mb-1">
                 Village / Hamlet *
               </label>
-              <input suppressHydrationWarning
+              <input
                 type="text"
                 required
                 value={village}
@@ -225,7 +225,7 @@ export default function HostNewPropertyApplicationPage() {
               <label className="block text-xs font-semibold text-charcoal mb-1">
                 District *
               </label>
-              <input suppressHydrationWarning
+              <input
                 type="text"
                 required
                 value={district}
@@ -239,7 +239,7 @@ export default function HostNewPropertyApplicationPage() {
               <label className="block text-xs font-semibold text-charcoal mb-1">
                 State / UT *
               </label>
-              <select suppressHydrationWarning
+              <select
                 value={state}
                 onChange={(e) => setState(e.target.value)}
                 className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-forest/20 bg-ivory-warm"
@@ -256,7 +256,7 @@ export default function HostNewPropertyApplicationPage() {
               <label className="block text-xs font-semibold text-charcoal mb-1">
                 Direct Host Phone / WhatsApp *
               </label>
-              <input suppressHydrationWarning
+              <input
                 type="tel"
                 required
                 value={hostPhone}
@@ -270,7 +270,7 @@ export default function HostNewPropertyApplicationPage() {
               <label className="block text-xs font-semibold text-charcoal mb-1">
                 Landmark / Trail Directions
               </label>
-              <input suppressHydrationWarning
+              <input
                 type="text"
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
@@ -283,7 +283,7 @@ export default function HostNewPropertyApplicationPage() {
               <label className="block text-xs font-semibold text-charcoal mb-1">
                 Story of Your Home &amp; Hosting Philosophy (Min 20 chars) *
               </label>
-              <textarea suppressHydrationWarning
+              <textarea
                 rows={4}
                 required
                 minLength={20}
@@ -303,7 +303,7 @@ export default function HostNewPropertyApplicationPage() {
               {AMENITY_OPTIONS.map((item) => {
                 const active = amenities.includes(item);
                 return (
-                  <button suppressHydrationWarning
+                  <button
                     type="button"
                     key={item}
                     onClick={() => toggleAmenity(item)}
@@ -335,7 +335,7 @@ export default function HostNewPropertyApplicationPage() {
               <label className="block text-xs font-semibold text-charcoal mb-1">
                 Room Title *
               </label>
-              <input suppressHydrationWarning
+              <input
                 type="text"
                 required
                 value={initialRoomName}
@@ -348,7 +348,7 @@ export default function HostNewPropertyApplicationPage() {
               <label className="block text-xs font-semibold text-charcoal mb-1">
                 Max Guests per Room *
               </label>
-              <input suppressHydrationWarning
+              <input
                 type="number"
                 min={1}
                 max={16}
@@ -363,7 +363,7 @@ export default function HostNewPropertyApplicationPage() {
               <label className="block text-xs font-semibold text-charcoal mb-1">
                 Nightly Tariff (INR) *
               </label>
-              <input suppressHydrationWarning
+              <input
                 type="number"
                 min={500}
                 step={100}
@@ -378,7 +378,7 @@ export default function HostNewPropertyApplicationPage() {
               <label className="block text-xs font-semibold text-charcoal mb-1">
                 Room Notes (Bedding, Private Bath, View)
               </label>
-              <input suppressHydrationWarning
+              <input
                 type="text"
                 value={initialRoomDescription}
                 onChange={(e) => setInitialRoomDescription(e.target.value)}
@@ -396,7 +396,7 @@ export default function HostNewPropertyApplicationPage() {
               Your listing will be saved as <strong>Pending Review</strong>. It will only appear on public destination pages after verification by an authorised Uttarkunth Property Reviewer.
             </span>
           </div>
-          <button suppressHydrationWarning
+          <button
             type="submit"
             disabled={submitting}
             className="px-7 py-3.5 bg-ukorange hover:bg-ukorange-deep disabled:opacity-50 text-white text-xs font-semibold rounded-full shadow-lifted shrink-0 transition-all"

@@ -310,14 +310,6 @@ export function getNearbyPropertiesForDestination(properties: any[], destination
 }
 
 /**
- * Browser-safe curated destinations list (zero server/DB imports).
- * For live DB-enriched destinations on server pages, use getActiveDestinations from '@/lib/destinations.server'.
- */
-export async function getActiveDestinations(): Promise<Destination[]> {
-  return CURATED_DESTINATIONS;
-}
-
-/**
  * Browser-safe curated destination lookup by slug (zero server/DB imports).
  * For live DB-enriched destinations on server pages, use getDestinationBySlug from '@/lib/destinations.server'.
  */

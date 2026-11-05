@@ -113,7 +113,7 @@ export default function SignUpPage() {
                 </label>
                 <div className="relative">
                   <User className="w-4 h-4 text-charcoal-muted absolute left-3 top-3.5" />
-                  <input suppressHydrationWarning
+                  <input
                     type="text"
                     required
                     placeholder="Gaurav Negi"
@@ -130,7 +130,7 @@ export default function SignUpPage() {
                 </label>
                 <div className="relative">
                   <User className="w-4 h-4 text-charcoal-muted absolute left-3 top-3.5" />
-                  <input suppressHydrationWarning
+                  <input
                     type="text"
                     placeholder="How hosts and community members should address you"
                     value={preferredName}
@@ -146,7 +146,7 @@ export default function SignUpPage() {
                 </label>
                 <div className="relative">
                   <Mail className="w-4 h-4 text-charcoal-muted absolute left-3 top-3.5" />
-                  <input suppressHydrationWarning
+                  <input
                     type="email"
                     required
                     placeholder="name@example.com"
@@ -163,7 +163,7 @@ export default function SignUpPage() {
                 </label>
                 <div className="relative">
                   <Phone className="w-4 h-4 text-charcoal-muted absolute left-3 top-3.5" />
-                  <input suppressHydrationWarning
+                  <input
                     type="tel"
                     placeholder="+91 98765 43210"
                     value={phone}
@@ -179,7 +179,7 @@ export default function SignUpPage() {
                 </label>
                 <div className="relative">
                   <Lock className="w-4 h-4 text-charcoal-muted absolute left-3 top-3.5" />
-                  <input suppressHydrationWarning
+                  <input
                     type="password"
                     required
                     minLength={8}
@@ -191,7 +191,7 @@ export default function SignUpPage() {
                 </div>
               </div>
 
-              <button suppressHydrationWarning
+              <button
                 type="submit"
                 disabled={loading}
                 className="w-full py-3 bg-forest hover:bg-forest-hover disabled:bg-forest/50 text-white font-semibold text-sm rounded-xl shadow-md transition-all mt-2"

@@ -244,13 +244,13 @@ export function SellerApplicationForm() {
           <strong>{formData.contact_email}</strong> within 48 hours.
         </p>
         <div className="pt-4 flex flex-wrap items-center justify-center gap-3">
-          <button suppressHydrationWarning
+          <button
             onClick={() => router.push('/account/products/seller')}
             className="px-6 py-2.5 bg-forest text-white text-xs font-semibold rounded-xl hover:bg-forest-hover transition-colors"
           >
             Open Seller Desk
           </button>
-          <button suppressHydrationWarning
+          <button
             onClick={() => router.push('/products')}
             className="px-6 py-2.5 bg-ivory-warm border border-forest/20 text-forest text-xs font-semibold rounded-xl hover:bg-forest/10 transition-colors"
           >
@@ -304,7 +304,7 @@ export function SellerApplicationForm() {
             <label className="block text-xs font-semibold text-charcoal mb-1">
               Business / Cooperative / Brand Name *
             </label>
-            <input suppressHydrationWarning
+            <input
               type="text"
               required
               name="business_name"
@@ -319,7 +319,7 @@ export function SellerApplicationForm() {
             <label className="block text-xs font-semibold text-charcoal mb-1">
               Lead Artisan / Contact Name *
             </label>
-            <input suppressHydrationWarning
+            <input
               type="text"
               required
               name="maker_name"
@@ -334,7 +334,7 @@ export function SellerApplicationForm() {
             <label className="block text-xs font-semibold text-charcoal mb-1">
               Primary Marketplace Category *
             </label>
-            <select suppressHydrationWarning
+            <select
               name="primary_category"
               value={formData.primary_category}
               onChange={handleChange}
@@ -352,7 +352,7 @@ export function SellerApplicationForm() {
             <label className="block text-xs font-semibold text-charcoal mb-1">
               Specific Craft or Harvest Specialty *
             </label>
-            <input suppressHydrationWarning
+            <input
               type="text"
               required
               name="craft_type"
@@ -367,7 +367,7 @@ export function SellerApplicationForm() {
             <label className="block text-xs font-semibold text-charcoal mb-1">
               Valley / Sub-region *
             </label>
-            <input suppressHydrationWarning
+            <input
               type="text"
               required
               name="valley"
@@ -382,7 +382,7 @@ export function SellerApplicationForm() {
             <label className="block text-xs font-semibold text-charcoal mb-1">
               Origin Village / Town
             </label>
-            <input suppressHydrationWarning
+            <input
               type="text"
               name="origin_village"
               value={formData.origin_village}
@@ -396,7 +396,7 @@ export function SellerApplicationForm() {
             <label className="block text-xs font-semibold text-charcoal mb-1">
               State *
             </label>
-            <select suppressHydrationWarning
+            <select
               name="state"
               value={formData.state}
               onChange={handleChange}
@@ -414,7 +414,7 @@ export function SellerApplicationForm() {
             <label className="block text-xs font-semibold text-charcoal mb-1">
               Contact Email *
             </label>
-            <input suppressHydrationWarning
+            <input
               type="email"
               required
               name="contact_email"
@@ -429,7 +429,7 @@ export function SellerApplicationForm() {
             <label className="block text-xs font-semibold text-charcoal mb-1">
               Contact Phone / WhatsApp (Optional)
             </label>
-            <input suppressHydrationWarning
+            <input
               type="tel"
               name="contact_phone"
               value={formData.contact_phone}
@@ -443,7 +443,7 @@ export function SellerApplicationForm() {
             <label className="block text-xs font-semibold text-charcoal mb-1">
               Workshop &amp; Heritage Narrative *
             </label>
-            <textarea suppressHydrationWarning
+            <textarea
               required
               rows={3}
               name="bio"
@@ -458,7 +458,7 @@ export function SellerApplicationForm() {
             <label className="block text-xs font-semibold text-charcoal mb-1">
               Natural Materials Used
             </label>
-            <input suppressHydrationWarning
+            <input
               type="text"
               name="materials"
               value={formData.materials}
@@ -489,7 +489,7 @@ export function SellerApplicationForm() {
             <label className="block text-xs font-semibold text-charcoal mb-1">
               Legal Business / Entity Name
             </label>
-            <input suppressHydrationWarning
+            <input
               type="text"
               name="legal_business_name"
               value={formData.legal_business_name}
@@ -503,7 +503,7 @@ export function SellerApplicationForm() {
             <label className="block text-xs font-semibold text-charcoal mb-1">
               Business Constitution
             </label>
-            <select suppressHydrationWarning
+            <select
               name="business_constitution"
               value={formData.business_constitution}
               onChange={handleChange}
@@ -524,7 +524,7 @@ export function SellerApplicationForm() {
             <label className="block text-xs font-semibold text-charcoal mb-1">
               GST &amp; Tax Registration Status
             </label>
-            <select suppressHydrationWarning
+            <select
               name="tax_registration_status"
               value={formData.tax_registration_status}
               onChange={handleChange}
@@ -546,7 +546,7 @@ export function SellerApplicationForm() {
                 formData.tax_registration_status === 'composition_scheme') &&
                 '*'}
             </label>
-            <input suppressHydrationWarning
+            <input
               type="text"
               name="gstin"
               maxLength={15}
@@ -574,7 +574,7 @@ export function SellerApplicationForm() {
             <label className="block text-xs font-semibold text-charcoal mb-1">
               Registered Workshop / Business Address
             </label>
-            <input suppressHydrationWarning
+            <input
               type="text"
               name="registered_address"
               value={formData.registered_address}
@@ -588,7 +588,7 @@ export function SellerApplicationForm() {
             <label className="block text-xs font-semibold text-charcoal mb-1">
               Trademark Registration / Application Number (Optional — Never Mandatory)
             </label>
-            <input suppressHydrationWarning
+            <input
               type="text"
               name="trademark_registration_number"
               value={formData.trademark_registration_number}
@@ -617,7 +617,7 @@ export function SellerApplicationForm() {
           {Object.values(CATEGORY_LICENCE_REQUIREMENTS).map((cat) => {
             const active = selectedCategories.includes(cat.category);
             return (
-              <button suppressHydrationWarning
+              <button
                 key={cat.category}
                 type="button"
                 onClick={() => toggleCategory(cat.category)}
@@ -654,7 +654,7 @@ export function SellerApplicationForm() {
                   <span>{SELLER_DOCUMENT_LABELS[docType]}</span>
                   <span className="text-[10px] text-ukorange font-mono uppercase">Required</span>
                 </div>
-                <input suppressHydrationWarning
+                <input
                   type="text"
                   placeholder="Licence / Certificate / Reference No."
                   value={attachedDocs[docType]?.referenceNumber || ''}
@@ -671,7 +671,7 @@ export function SellerApplicationForm() {
                   }
                   className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-forest/15"
                 />
-                <input suppressHydrationWarning
+                <input
                   type="file"
                   accept=".pdf,.jpg,.jpeg,.png,.webp"
                   onChange={(e) => {
@@ -701,7 +701,7 @@ export function SellerApplicationForm() {
           <strong className="text-charcoal">Data Protection &amp; Compliance Notice:</strong> Private business documents are stored in an encrypted private bucket and are never accessible to other sellers, public visitors, or general support staff.
         </div>
 
-        <button suppressHydrationWarning
+        <button
           type="submit"
           disabled={loading}
           className="inline-flex items-center gap-2 bg-forest hover:bg-forest-hover text-white px-6 py-3 rounded-xl font-semibold text-xs transition-all shadow-xs disabled:opacity-60 shrink-0"
