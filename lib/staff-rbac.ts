@@ -217,18 +217,12 @@ export const REQUIRED_STAFF_AGREEMENTS: ReadonlyArray<{
   },
 ] as const;
 
-/**
- * Pure deterministic 64-char hex digest for agreement versioning/hashing
- * that works in both Node.js and browser environments without external deps.
- */
 export function computeDocumentHash(content: string): string {
   const normalized = content.trim();
   try {
-    // Use Node's built-in crypto when running on server / Node test runner
     const nodeCrypto = require('crypto');
     return nodeCrypto.createHash('sha256').update(normalized, 'utf8').digest('hex');
   } catch {
-    // Deterministic 64-char hex fallback if invoked synchronously in browser
     let h1 = 0xdeadbeef ^ normalized.length;
     let h2 = 0x41c6ce57 ^ normalized.length;
     for (let i = 0; i < normalized.length; i++) {
@@ -394,10 +388,227 @@ export const HIGH_RISK_ACTIONS_REQUIRING_DUAL_APPROVAL: ReadonlyArray<HighRiskAc
   'destructive_published_record_action',
 ];
 
-/**
- * Formats an immutable Staff ID (e.g. UK-STAFF-2026-0001).
- * The Staff ID is strictly an accountability identifier, never a password or authentication factor.
- */
+export type OperationalDepartmentSlug =
+  | 'stays'
+  | 'products'
+  | 'productions'
+  | 'community'
+  | 'founder_office';
+
+export const FOUR_OPERATIONAL_DEPARTMENTS = [
+  {
+    slug: 'stays',
+    name: 'UTTARKUNTH STAYS',
+    title: 'Stays Department',
+    description:
+      'Homestay applications, property moderation, room units, host & co-host assignments, bilateral host agreements, and stay booking governance.',
+    legacyDepartmentCodes: ['stays_curation', 'operations', 'customer_support'],
+    deskRoute: '/admin/properties',
+  },
+  {
+    slug: 'products',
+    name: 'UTTARKUNTH PRODUCTS',
+    title: 'Products Department',
+    description:
+      'Seller applications, GSTIN & licence verification, artisan product curation, inventory governance, and buyer inquiries.',
+    legacyDepartmentCodes: ['marketplace_compliance'],
+    deskRoute: '/admin/products',
+  },
+  {
+    slug: 'productions',
+    name: 'UTTARKUNTH PRODUCTIONS',
+    title: 'Productions Department',
+    description:
+      'Filmmaker & creator profiles, documentary/media proposals, scripts, collaboration requests, and copyright/takedown workflows.',
+    legacyDepartmentCodes: ['productions'],
+    deskRoute: '/admin/productions',
+  },
+  {
+    slug: 'community',
+    name: 'UTTARKUNTH COMMUNITY',
+    title: 'Community Department',
+    description:
+      'Village development initiatives, volunteer/fellowship applications, participation records, and oral history moderation.',
+    legacyDepartmentCodes: ['community'],
+    deskRoute: '/admin/community',
+  },
+] as const;
+
+export function resolveOperationalDepartment(
+  dept: StaffDepartment | OperationalDepartmentSlug | string | null | undefined,
+  roleSlug?: StaffRoleSlug | string | null
+): OperationalDepartmentSlug {
+  const normalized = String(dept || '').trim().toLowerCase();
+  if (normalized === 'stays' || normalized === 'stays_curation') return 'stays';
+  if (normalized === 'products' || normalized === 'marketplace_compliance') return 'products';
+  if (normalized === 'productions') return 'productions';
+  if (normalized === 'community') return 'community';
+
+  const normRole = String(roleSlug || '').trim().toLowerCase();
+  if (normRole === 'property_reviewer') return 'stays';
+  if (normRole === 'marketplace_reviewer') return 'products';
+  if (normRole === 'productions_editor') return 'productions';
+  if (normRole === 'community_manager') return 'community';
+
+  return 'founder_office';
+}
+
+export const ACTION_PERMISSION_ALIAS_MAP: Record<string, StaffPermission> = {
+  'property.approve': 'property.review',
+  'stays.properties.view': 'property.review',
+  'stays.properties.create': 'property.review',
+  'stays.properties.update': 'property.review',
+  'stays.properties.edit': 'property.review',
+  'stays.properties.approve': 'property.review',
+  'stays.properties.publish': 'property.review',
+  'stays.hosts.verify': 'property.assign_host',
+  'stays.agreements.manage': 'finance.review_agreements',
+  'stays.bookings.view': 'support.manage_tickets',
+  'stays.bookings.manage': 'support.manage_tickets',
+  'products.sellers.view': 'seller.verify_documents',
+  'products.sellers.verify': 'seller.verify_documents',
+  'products.sellers.approve': 'seller.approve',
+  'products.products.create': 'product.approve',
+  'products.products.approve': 'product.approve',
+  'products.items.approve': 'product.approve',
+  'products.items.publish': 'product.approve',
+  'products.orders.manage': 'product.approve',
+  'productions.proposals.view': 'productions.review_proposal',
+  'productions.proposals.review': 'productions.review_proposal',
+  'productions.proposals.approve': 'productions.review_proposal',
+  'productions.projects.manage': 'productions.review_proposal',
+  'productions.content.approve': 'productions.approve_profile',
+  'community.members.view': 'community.moderate',
+  'community.applications.review': 'community.moderate',
+  'community.projects.manage': 'community.moderate',
+  'community.initiatives.manage': 'community.moderate',
+  'community.stories.moderate': 'community.moderate',
+  'governance.staff.invite': 'staff.invite',
+  'governance.staff.approve': 'staff.hire_approve',
+  'governance.staff.suspend': 'staff.terminate',
+  'governance.staff.terminate': 'staff.terminate',
+  'governance.permissions.assign': 'staff.permissions.manage',
+  'governance.dual_approve': 'governance.dual_approve',
+  'staff.System.view': 'staff.permissions.manage',
+  'staff.invitations.create': 'staff.invite',
+  'staff.onboarding.approve': 'staff.hire_approve',
+  'staff.status.manage': 'staff.terminate',
+  'staff.permissions.grant': 'staff.permissions.manage',
+  'staff.documents.view': 'staff.hr_docs.view',
+};
+
+export function normalizeStaffPermission(
+  permission: StaffPermission | string
+): StaffPermission {
+  if ((ALL_STAFF_PERMISSIONS as ReadonlyArray<string>).includes(permission)) {
+    return permission as StaffPermission;
+  }
+  return ACTION_PERMISSION_ALIAS_MAP[permission] || (permission as StaffPermission);
+}
+
+export function sanitizeInternalRedirectPath(
+  rawNext: string | null | undefined,
+  fallback: string = '/'
+): string {
+  if (!rawNext || typeof rawNext !== 'string') return fallback;
+  const trimmed = rawNext.trim();
+  if (!trimmed.startsWith('/')) return fallback;
+  if (trimmed.startsWith('//') || trimmed.startsWith('/\\')) return fallback;
+  if (/^\/[a-zA-Z0-9+.-]+:/.test(trimmed)) return fallback;
+  return trimmed;
+}
+
+const EMAIL_CHANGE_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+export interface EmailChangeValidationInput {
+  userId?: string | null;
+  currentEmail?: string | null;
+  newEmail?: string | null;
+  currentPassword?: string | null;
+  isPrivilegedStaffOrFounder: boolean;
+  mfaAssuranceLevel: 'aal1' | 'aal2';
+}
+
+export interface EmailChangeValidationResult {
+  valid: boolean;
+  statusCode: number;
+  code:
+    | 'OK'
+    | 'UNAUTHENTICATED'
+    | 'MFA_AAL2_REQUIRED'
+    | 'PASSWORD_REQUIRED'
+    | 'INVALID_EMAIL'
+    | 'EMAIL_UNCHANGED';
+  normalizedNewEmail: string;
+  error?: string;
+}
+
+export function validateEmailChangeRequest(
+  input: EmailChangeValidationInput
+): EmailChangeValidationResult {
+  if (!input.userId || !input.currentEmail) {
+    return {
+      valid: false,
+      statusCode: 401,
+      code: 'UNAUTHENTICATED',
+      normalizedNewEmail: '',
+      error: 'Authentication required to change account email.',
+    };
+  }
+
+  if (input.isPrivilegedStaffOrFounder && input.mfaAssuranceLevel !== 'aal2') {
+    return {
+      valid: false,
+      statusCode: 403,
+      code: 'MFA_AAL2_REQUIRED',
+      normalizedNewEmail: '',
+      error:
+        'Multi-Factor Authentication (AAL2) verification is required before changing a Founder or Staff login email.',
+    };
+  }
+
+  const currentPassword = String(input.currentPassword || '');
+  if (!currentPassword.trim()) {
+    return {
+      valid: false,
+      statusCode: 400,
+      code: 'PASSWORD_REQUIRED',
+      normalizedNewEmail: '',
+      error: 'Current password is required to verify identity before changing email.',
+    };
+  }
+
+  const normalizedCurrent = String(input.currentEmail).trim().toLowerCase();
+  const normalizedNew = String(input.newEmail || '').trim().toLowerCase();
+
+  if (!normalizedNew || !EMAIL_CHANGE_REGEX.test(normalizedNew) || normalizedNew.length > 254) {
+    return {
+      valid: false,
+      statusCode: 400,
+      code: 'INVALID_EMAIL',
+      normalizedNewEmail: normalizedNew,
+      error: 'Please provide a valid new email address.',
+    };
+  }
+
+  if (normalizedNew === normalizedCurrent) {
+    return {
+      valid: false,
+      statusCode: 400,
+      code: 'EMAIL_UNCHANGED',
+      normalizedNewEmail: normalizedNew,
+      error: 'New email address must be different from your current email address.',
+    };
+  }
+
+  return {
+    valid: true,
+    statusCode: 200,
+    code: 'OK',
+    normalizedNewEmail: normalizedNew,
+  };
+}
+
 export function formatImmutableStaffId(year: number, sequenceNumber: number): string {
   const safeYear = year >= 2026 && year <= 2100 ? year : 2026;
   const seq = Math.max(1, Math.floor(sequenceNumber));
@@ -406,12 +617,9 @@ export function formatImmutableStaffId(year: number, sequenceNumber: number): st
 
 export function isValidStaffIdFormat(staffId: string | null | undefined): boolean {
   if (!staffId || typeof staffId !== 'string') return false;
-  return /^UK-STAFF-\d{4}-\d{4,}$/.test(staffId);
+  return /^UK-(?:STAFF|FOUNDER)-\d{4}-\d{4,}$/.test(staffId);
 }
 
-/**
- * Validates a staff invitation record for single-use, non-expired, non-cancelled integrity.
- */
 export interface StaffInvitationRecord {
   id: string;
   token_hash: string;
@@ -540,12 +748,22 @@ export interface StaffAuthContext {
     founder_approved_by: string | null;
     mfa_enrolled: boolean;
     session_revoked_at?: string | null;
-    custom_permissions?: StaffPermission[];
+    custom_permissions?: Array<StaffPermission | string>;
+    revoked_permissions?: Array<StaffPermission | string>;
+    resource_scope?: string[];
+    region_scope?: string[];
     agreements_completed?: boolean;
   } | null;
   mfaAssuranceLevel?: 'aal1' | 'aal2' | null;
   sessionIssuedAt?: string | null;
   attemptedPasswordOrToken?: string | null;
+  permissionAssignments?: Array<{
+    permission_key?: string;
+    permission_code?: string;
+    grant_type?: 'grant' | 'revoke';
+    is_active?: boolean;
+    expires_at?: string | null;
+  }>;
   dualApprovalRecord?: {
     id: string;
     action_type: HighRiskActionType;
@@ -571,7 +789,9 @@ export interface StaffAuthorizationResult {
     | 'AGREEMENTS_INCOMPLETE'
     | 'SESSION_REVOKED'
     | 'MFA_AAL2_REQUIRED'
+    | 'FOUNDER_ONLY_PORTAL'
     | 'PERMISSION_DENIED'
+    | 'PERMISSION_REVOKED'
     | 'DEPARTMENT_MISMATCH'
     | 'DUAL_AUTHORIZATION_REQUIRED';
   error?: string;
@@ -581,15 +801,18 @@ export interface StaffAuthorizationResult {
 
 export function evaluateStaffAuthorization(
   ctx: StaffAuthContext,
-  requiredPermission: StaffPermission,
+  requiredPermission: StaffPermission | string,
   options?: {
     requireMfaAal2?: boolean;
-    requiredDepartment?: StaffDepartment;
+    requiredDepartment?: StaffDepartment | string;
     highRiskAction?: HighRiskActionType;
     targetCandidateUserId?: string;
+    requireFounderOnly?: boolean;
+    portalHost?: string;
   }
 ): StaffAuthorizationResult {
   const requireMfa = options?.requireMfaAal2 ?? true;
+  const canonicalRequiredPerm = normalizeStaffPermission(requiredPermission);
 
   const deny = (
     status: 401 | 403,
@@ -607,7 +830,6 @@ export function evaluateStaffAuthorization(
     effectivePermissions,
   });
 
-  // 1. Reject any attempt to use a Staff ID (UK-STAFF-YYYY-NNNN) as a password or bearer credential
   if (ctx.attemptedPasswordOrToken && isValidStaffIdFormat(ctx.attemptedPasswordOrToken)) {
     return deny(
       401,
@@ -616,12 +838,10 @@ export function evaluateStaffAuthorization(
     );
   }
 
-  // 2. Require authenticated user
   if (!ctx.userId) {
     return deny(401, 'UNAUTHENTICATED', 'Authentication required for Uttarkunth Staff Portal.');
   }
 
-  // 3. Reject ordinary public members who do not have an authoritative staff profile
   if (ctx.isOrdinaryMemberOnly || !ctx.staffProfile) {
     return deny(
       403,
@@ -632,7 +852,6 @@ export function evaluateStaffAuthorization(
 
   const profile = ctx.staffProfile;
 
-  // 4. Check for revoked sessions (e.g. after suspension or termination)
   if (profile.session_revoked_at) {
     if (
       !ctx.sessionIssuedAt ||
@@ -646,7 +865,6 @@ export function evaluateStaffAuthorization(
     }
   }
 
-  // 5. Require active account status
   if (profile.status !== 'active') {
     return deny(
       403,
@@ -655,7 +873,6 @@ export function evaluateStaffAuthorization(
     );
   }
 
-  // 6. Require completed agreements
   if (profile.agreements_completed === false) {
     return deny(
       403,
@@ -664,7 +881,6 @@ export function evaluateStaffAuthorization(
     );
   }
 
-  // 7. Require Founder approval & immutable Staff ID
   if (
     !profile.founder_approved_at ||
     !profile.founder_approved_by ||
@@ -687,7 +903,7 @@ export function evaluateStaffAuthorization(
 
   if (
     options?.targetCandidateUserId &&
-    requiredPermission === 'staff.hire_approve' &&
+    canonicalRequiredPerm === 'staff.hire_approve' &&
     options.targetCandidateUserId === ctx.userId
   ) {
     return deny(
@@ -697,7 +913,17 @@ export function evaluateStaffAuthorization(
     );
   }
 
-  // 8. Require TOTP MFA (Supabase AAL2) for privileged operations
+  const hostLower = (options?.portalHost || '').toLowerCase();
+  const isFounderPortalHost =
+    hostLower.startsWith('admin.uttarkunth.com') || hostLower.startsWith('admin.');
+  if ((options?.requireFounderOnly || isFounderPortalHost) && profile.role_slug !== 'founder') {
+    return deny(
+      403,
+      'FOUNDER_ONLY_PORTAL',
+      'Forbidden: The Founder Command Centre (admin.uttarkunth.com) is restricted exclusively to the Founder & Chief Executive.'
+    );
+  }
+
   if (requireMfa && (!profile.mfa_enrolled || ctx.mfaAssuranceLevel !== 'aal2')) {
     return deny(
       403,
@@ -706,14 +932,47 @@ export function evaluateStaffAuthorization(
     );
   }
 
-  // 9. Compute effective permissions from role definition + explicit founder-assigned permissions
   const roleDef = STAFF_ROLE_DEFINITIONS[profile.role_slug];
   const basePermissions = roleDef ? roleDef.permissions : [];
-  const effectivePermissions = Array.from(
-    new Set<StaffPermission>([...basePermissions, ...(profile.custom_permissions || [])])
+  const normalizedCustom = (profile.custom_permissions || []).map((p) =>
+    normalizeStaffPermission(p)
+  );
+  const normalizedRevoked = new Set<StaffPermission>(
+    (profile.revoked_permissions || []).map((p) => normalizeStaffPermission(p))
   );
 
-  if (!effectivePermissions.includes(requiredPermission)) {
+  if (Array.isArray(ctx.permissionAssignments)) {
+    const nowMs = Date.now();
+    for (const row of ctx.permissionAssignments) {
+      if (row.is_active === false) continue;
+      if (row.expires_at && new Date(row.expires_at).getTime() <= nowMs) continue;
+      const rawKey = row.permission_key || row.permission_code;
+      if (!rawKey) continue;
+      const normKey = normalizeStaffPermission(rawKey);
+      if (row.grant_type === 'revoke') {
+        normalizedRevoked.add(normKey);
+      } else {
+        normalizedCustom.push(normKey);
+      }
+    }
+  }
+
+  const effectiveSet = new Set<StaffPermission>([...basePermissions, ...normalizedCustom]);
+  for (const revoked of normalizedRevoked) {
+    effectiveSet.delete(revoked);
+  }
+  const effectivePermissions = Array.from(effectiveSet);
+
+  if (normalizedRevoked.has(canonicalRequiredPerm)) {
+    return deny(
+      403,
+      'PERMISSION_REVOKED',
+      `Forbidden: Permission '${requiredPermission}' has been explicitly revoked for this staff profile.`,
+      effectivePermissions
+    );
+  }
+
+  if (!effectiveSet.has(canonicalRequiredPerm)) {
     return deny(
       403,
       'PERMISSION_DENIED',
@@ -722,21 +981,21 @@ export function evaluateStaffAuthorization(
     );
   }
 
-  // 10. Optional department check (Founder bypasses departmental isolation)
-  if (
-    options?.requiredDepartment &&
-    profile.role_slug !== 'founder' &&
-    profile.department !== options.requiredDepartment
-  ) {
-    return deny(
-      403,
-      'DEPARTMENT_MISMATCH',
-      `Forbidden: Operation restricted to '${options.requiredDepartment}' department.`,
-      effectivePermissions
-    );
+  if (options?.requiredDepartment && profile.role_slug !== 'founder') {
+    const exactMatch = profile.department === options.requiredDepartment;
+    const operationalMatch =
+      resolveOperationalDepartment(profile.department) ===
+      resolveOperationalDepartment(options.requiredDepartment);
+    if (!exactMatch && !operationalMatch) {
+      return deny(
+        403,
+        'DEPARTMENT_MISMATCH',
+        `Forbidden: Operation restricted to '${options.requiredDepartment}' department.`,
+        effectivePermissions
+      );
+    }
   }
 
-  // 11. Dual authorisation check for high-risk actions
   if (
     options?.highRiskAction &&
     HIGH_RISK_ACTIONS_REQUIRING_DUAL_APPROVAL.includes(options.highRiskAction)
@@ -770,20 +1029,115 @@ export function evaluateStaffAuthorization(
   };
 }
 
-/**
- * Server-side reusable authorization guard for Next.js API routes and Server Components.
- * Uses dynamic imports for server-only Supabase modules so client components and Node tests
- * can safely import constants and pure validators from this file.
- * Strictly fails closed on any missing session, non-staff identity, inactive profile, or missing MFA.
- */
+export function evaluatePortalBoundary(params: {
+  hostname?: string;
+  portalHost?: string;
+  userId: string | null;
+  staffProfile?: StaffAuthContext['staffProfile'] | null;
+  mfaAssuranceLevel?: 'aal1' | 'aal2' | null;
+}): {
+  allowed: boolean;
+  portal: 'public' | 'staff' | 'founder';
+  statusCode: 200 | 401 | 403;
+  code: string;
+  reason: string;
+} {
+  const host = (params.hostname || params.portalHost || '').toLowerCase();
+  const isFounderPortal =
+    host.startsWith('admin.uttarkunth.com') || host.startsWith('admin.');
+  const isStaffPortal =
+    host.startsWith('team.uttarkunth.com') ||
+    host.startsWith('team.') ||
+    host.startsWith('staff.uttarkunth.com') ||
+    host.startsWith('staff.');
+
+  if (!isFounderPortal && !isStaffPortal) {
+    return {
+      allowed: true,
+      portal: 'public',
+      statusCode: 200,
+      code: 'PUBLIC_PORTAL_OK',
+      reason: 'Public portal access allowed.',
+    };
+  }
+
+  if (!params.userId) {
+    return {
+      allowed: false,
+      portal: isFounderPortal ? 'founder' : 'staff',
+      statusCode: 401,
+      code: 'UNAUTHENTICATED',
+      reason: 'Authentication is required to access internal Uttarkunth portals.',
+    };
+  }
+
+  if (!params.staffProfile) {
+    return {
+      allowed: false,
+      portal: isFounderPortal ? 'founder' : 'staff',
+      statusCode: 403,
+      code: 'ORDINARY_MEMBER_FORBIDDEN',
+      reason: 'Ordinary member accounts cannot access internal Staff or Founder portals.',
+    };
+  }
+
+  const sp = params.staffProfile;
+  if (
+    sp.status !== 'active' ||
+    sp.session_revoked_at ||
+    sp.agreements_completed === false ||
+    !sp.founder_approved_at ||
+    !isValidStaffIdFormat(sp.staff_id)
+  ) {
+    return {
+      allowed: false,
+      portal: isFounderPortal ? 'founder' : 'staff',
+      statusCode: 403,
+      code: 'STAFF_NOT_ACTIVE',
+      reason: 'Only active, Founder-approved staff with completed agreements may enter.',
+    };
+  }
+
+  if (!sp.mfa_enrolled || params.mfaAssuranceLevel !== 'aal2') {
+    return {
+      allowed: false,
+      portal: isFounderPortal ? 'founder' : 'staff',
+      statusCode: 403,
+      code: 'MFA_AAL2_REQUIRED',
+      reason: 'Mandatory TOTP Multi-Factor Authentication (AAL2) is required.',
+    };
+  }
+
+  if (isFounderPortal && sp.role_slug !== 'founder') {
+    return {
+      allowed: false,
+      portal: 'founder',
+      statusCode: 403,
+      code: 'FOUNDER_ONLY_PORTAL',
+      reason:
+        'Forbidden: Staff members cannot access the Founder Command Centre (admin.uttarkunth.com).',
+    };
+  }
+
+  return {
+    allowed: true,
+    portal: isFounderPortal ? 'founder' : 'staff',
+    statusCode: 200,
+    code: 'AUTHORIZED',
+    reason: 'Authorized for portal.',
+  };
+}
+
 export async function requireStaffPermission(
-  requiredPermission: StaffPermission,
+  requiredPermission: StaffPermission | string,
   options?: {
     requireMfaAal2?: boolean;
-    requiredDepartment?: StaffDepartment;
+    requiredDepartment?: StaffDepartment | string;
     highRiskAction?: HighRiskActionType;
     targetCandidateUserId?: string;
     dualApprovalId?: string;
+    requireFounderOnly?: boolean;
+    portalHost?: string;
   }
 ): Promise<
   StaffAuthorizationResult & {
@@ -860,10 +1214,13 @@ export async function requireStaffPermission(
       };
     }
 
-    // Load any explicit granular permission assignments from staff_permission_assignments
-    let assignedPermissions: StaffPermission[] = Array.isArray(staffRow.custom_permissions)
-      ? [...staffRow.custom_permissions]
+    const assignedPermissions: StaffPermission[] = Array.isArray(staffRow.custom_permissions)
+      ? staffRow.custom_permissions.map((p: string) => normalizeStaffPermission(p))
       : [];
+    const revokedPermissions: StaffPermission[] = Array.isArray(staffRow.revoked_permissions)
+      ? staffRow.revoked_permissions.map((p: string) => normalizeStaffPermission(p))
+      : [];
+
     try {
       const queryTarget = staffRow.id
         ? `staff_profile_id.eq.${staffRow.id},user_id.eq.${user.id}`
@@ -871,17 +1228,29 @@ export async function requireStaffPermission(
       const { data: permRows } = await (
         adminClient.from('staff_permission_assignments' as any) as any
       )
-        .select('permission_code, permission_key, revoked_at')
+        .select('permission_code, permission_key, grant_type, is_active, revoked_at, expires_at')
         .or(queryTarget);
+
       if (Array.isArray(permRows)) {
+        const nowMs = Date.now();
         for (const row of permRows) {
-          if (!row.revoked_at && (row.permission_code || row.permission_key)) {
-            assignedPermissions.push((row.permission_code || row.permission_key) as StaffPermission);
+          const rawCode = row.permission_code || row.permission_key;
+          if (!rawCode) continue;
+          const isExpired = row.expires_at && new Date(row.expires_at).getTime() <= nowMs;
+          if (isExpired) continue;
+
+          const normPerm = normalizeStaffPermission(String(rawCode));
+          if (row.grant_type === 'revoke') {
+            if (row.is_active !== false) {
+              revokedPermissions.push(normPerm);
+            }
+          } else if (!row.revoked_at && row.is_active !== false) {
+            assignedPermissions.push(normPerm);
           }
         }
       }
     } catch {
-      // Table not yet migrated; rely on staffRow.custom_permissions and role definition
+      // Table not yet migrated; rely on staffRow.custom_permissions / revoked_permissions and role definition
     }
 
     let dualApprovalRecord: StaffAuthContext['dualApprovalRecord'] = null;
@@ -916,6 +1285,7 @@ export async function requireStaffPermission(
       mfa_enrolled: Boolean(staffRow.mfa_enrolled || hasVerifiedTotpFactor || mfaLevel === 'aal2'),
       session_revoked_at: staffRow.session_revoked_at || null,
       custom_permissions: Array.from(new Set(assignedPermissions)),
+      revoked_permissions: Array.from(new Set(revokedPermissions)),
       agreements_completed: Boolean(
         staffRow.agreements_completed ?? staffRow.all_agreements_accepted ?? false
       ),
