@@ -1,6 +1,6 @@
 # Uttarkunth 3.1 — Cloudflare Workers, Staff Subdomain & Supabase Deployment Guide
 
-**Platform:** Uttarkunth (`uttarkunth.com` & `team.uttarkunth.com`)  
+**Platform:** Uttarkunth (`uttarkunth.com`, `admin.uttarkunth.com` & `team.uttarkunth.com`)  
 **Repository:** `uttarkunth/uttarkunth3.1`  
 **Working Branch:** `uttarkunthmain2` (Release Candidate)  
 **Supabase Project:** `xyplgugxpmlnjsvlosdg`  
@@ -72,6 +72,7 @@ npm run preview
 1. In **Workers & Pages > `uttarkunth3-1` > Settings > Domains & Routes**, add custom domains:
    - `uttarkunth.com`
    - `team.uttarkunth.com`
+   - `admin.uttarkunth.com`
 2. `middleware.ts` automatically enforces staff portal isolation:
    - Any unauthenticated request to `/admin/*` redirects to `/staff/login?next=...`.
    - Open staff registration paths (`/admin/register`, `/admin/signup`, `/staff/register`, `/staff/signup`) are permanently blocked and redirected to `/staff/login?error=open_registration_prohibited`.
