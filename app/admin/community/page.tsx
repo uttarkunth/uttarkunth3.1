@@ -1,24 +1,20 @@
 import React from 'react';
-import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { AdminNav } from '@/components/admin-nav';
-import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { checkIsPlatformAdmin } from '@/lib/auth';
+import { resolveFounderOrAdminSession } from '@/lib/auth';
 import { CommunityModerationClient } from '@/components/community-moderation-client';
-import { Heart, Users, Shield, BookOpen, CheckCircle2 } from 'lucide-react';
+import { Shield } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 
 export default async function AdminCommunityPage() {
-  const supabase = createServerSupabaseClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const { user, isAdmin } = await resolveFounderOrAdminSession();
 
   if (!user) {
-    redirect('/login?next=/admin/community');
+    redirect('/staff/login?next=/admin/community');
   }
 
-  const isAdmin = await checkIsPlatformAdmin(user.id);
   if (!isAdmin) {
     return (
       <div className="max-w-xl mx-auto py-24 px-4 text-center space-y-4">

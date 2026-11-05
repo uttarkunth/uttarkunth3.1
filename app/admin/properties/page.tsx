@@ -1,18 +1,15 @@
 import React from 'react';
 import { redirect } from 'next/navigation';
 import { AdminNav } from '@/components/admin-nav';
-import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { checkIsPlatformAdmin } from '@/lib/auth';
+import { resolveFounderOrAdminSession } from '@/lib/auth';
 import { PropertyModerationEngine } from '@/components/admin/property-moderation';
 
 export const dynamic = 'force-dynamic';
 
 export default async function AdminPropertiesPage() {
-  const supabase = createServerSupabaseClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const { user, isAdmin } = await resolveFounderOrAdminSession();
 
-  const isAdmin = user ? await checkIsPlatformAdmin(user.id) : false;
   if (!user || !isAdmin) {
     redirect('/admin/dashboard');
   }

@@ -1,8 +1,6 @@
 import React from 'react';
-import { redirect } from 'next/navigation';
-import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { checkIsPlatformAdmin } from '@/lib/auth';
+import { resolveFounderOrAdminSession } from '@/lib/auth';
 import { AdminNav } from '@/components/admin-nav';
 import { ProductModerationClient } from '@/components/admin/product-moderation-client';
 import { ShieldAlert } from 'lucide-react';
@@ -10,10 +8,7 @@ import { ShieldAlert } from 'lucide-react';
 export const dynamic = 'force-dynamic';
 
 export default async function AdminProductsPage() {
-  const supabase = createServerSupabaseClient();
-  const { data: { user } } = await supabase.auth.getUser();
-
-  const isAdmin = user ? await checkIsPlatformAdmin(user.id) : false;
+  const { user, isAdmin } = await resolveFounderOrAdminSession();
 
   if (!user || !isAdmin) {
     return (
