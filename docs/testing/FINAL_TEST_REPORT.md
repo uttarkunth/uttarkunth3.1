@@ -1,6 +1,8 @@
 # UTTARKUNTH 3.1 — FINAL TEST & VERIFICATION REPORT
 
 **Project:** Uttarkunth 3.1 (Master Consolidated Release Candidate)  
+**Repository:** `uttarkunth/uttarkunth3.1`  
+**Working Branch:** `uttarkunthmain2`  
 **Workspace:** `C:\Users\Rahul Negi\antigravity\imported_project`  
 **Execution Date:** 2026-11-05
 
@@ -70,9 +72,51 @@
 
 ---
 
-## 3. Unverified Live Production Assumptions & Pending Owner Actions
+## 3. Remote Branch Commit Sequence on `uttarkunthmain2`
+
+The following clean commits have been pushed and verified on branch `uttarkunthmain2` in repository `uttarkunth/uttarkunth3.1`:
+
+- `8623a35` — `README_BRANCH.md`
+- `2af9952` — `docs/CHATGPT_MASTER_REFERENCE.md`
+- `0717d76` — `README.md`, `DEPLOYMENT.md`
+- `d3daac5` — `docs/audit/CODEBASE_COMPARISON.md`, `docs/security/SECURITY_REMEDIATION.md`
+- `236541f` — `docs/database/MIGRATION_REVIEW.md`
+- `56b3614` — `docs/testing/FINAL_TEST_REPORT.md`
+- `6b5335b` — `supabase/migrations/...`
+- `53686ac` — `lib/auth.ts`, `lib/supabase/admin.ts`, `lib/supabase/server.ts`, `lib/supabase/client.ts`
+- `e007084` — `middleware.ts`, `lib/roles.ts`, `lib/destinations.server.ts`
+- `b1be4a3` — `tests/phase2-staff-seller-governance.test.ts`
+- `95aaae8` — `lib/staff-rbac-shared.ts`
+- `b5b9c32` — `lib/staff-rbac.ts`
+- `8831d91` — `supabase/migrations/20261104120000_phase2_staff_governance_and_seller_verification_pending_approval.sql`
+- `3ee16cd` — `app/api/staff/documents/route.ts`, `app/api/staff/mfa-recovery/route.ts`
+- `f5ac1b0` — `app/api/staff/onboard/route.ts`
+- `08fcf00` — `app/api/admin/staff/route.ts`
+- `e7cdd4e` — `app/staff/page.tsx`, `app/admin/staff/page.tsx`, `app/staff/login/page.tsx`
+- `0567080` — `app/staff/onboard/page.tsx`
+- `b96c7a9` — `components/admin/staff-governance-client.tsx`
+- `8343194` — `lib/seller-verification.ts`
+- `086c38a` — `app/api/products/documents/route.ts`, `app/api/products/seller-desk/route.ts`
+- `91c1ee6` — `app/api/products/apply/route.ts`, `components/seller-desk-governance-panel.tsx`
+- `5cd05e5` — `app/account/products/seller/page.tsx`, `components/seller-application-form.tsx`
+- `6e4d9a4` — `components/admin/product-moderation-client.tsx`, `lib/validations.ts`
+- `7dc0776` — `app/register/page.tsx`, `app/signup/page.tsx`, `app/api/account/profile/route.ts`
+- `b645222` — `app/account/profile/page.tsx`, `components/profile-form.tsx`
+- `1501dcd` — `app/host/properties/new/page.tsx`, `app/api/host/apply/route.ts`, `app/stays/partner/page.tsx`, `components/host/bookings-manager.tsx`
+- `cc16213` — `lib/destinations.ts`, `next.config.mjs`, `package.json`, `scripts/cloudflare-build.mjs`, `scripts/postinstall.mjs`
+- `9ef84e3` — `components/filmmaker-takedown-button.tsx`, `components/productions-moderation-client.tsx`, `app/api/production/proposals/route.ts`, `app/account/productions/page.tsx`
+- `0015ba7` — `components/admin-nav.tsx`, `app/admin/layout.tsx`, `app/admin/dashboard/page.tsx`
+- `f5a94ac` — `app/admin/properties/page.tsx`, `app/admin/products/page.tsx`, `app/admin/productions/page.tsx`, `app/admin/community/page.tsx`
+- `0fac6db` — `app/admin/audit/page.tsx`, `app/admin/bookings/page.tsx`, `app/admin/users/page.tsx`, `app/admin/reviews/page.tsx`, `app/admin/settings/page.tsx`
+- `5c0892a` — `DEPLOYMENT.md`
+- `ce117b5` — `README.md`, `docs/CHATGPT_MASTER_REFERENCE.md`
+- `ac58f3e` — `docs/database/MIGRATION_REVIEW.md`, `docs/security/SECURITY_REMEDIATION.md`
+
+---
+
+## 4. Unverified Live Production Assumptions & Pending Owner Actions
 
 1. **Pending Supabase Migrations Not Yet Executed Against Live Production (`xyplgugxpmlnjsvlosdg`)**:
-   - In accordance with Section 2.2 ("Do NOT apply database migrations to live Supabase without approval"), `supabase/migrations/20261104120000_phase2_staff_governance_and_seller_verification_pending_approval.sql` and the earlier Phase 2 pending migrations have been reconciled and staged locally, not executed against live production.
+   - In accordance with Section 2.2 ("Do NOT apply database migrations to live Supabase without approval"), `supabase/migrations/20261104120000_phase2_staff_governance_and_seller_verification_pending_approval.sql` and the earlier Phase 2 pending migrations have been reconciled and staged locally and committed to `uttarkunthmain2`, but **not** executed against live production.
 2. **Cloudflare DNS & Zero Trust Access Policy (`team.uttarkunth.com`)**:
    - Documented in `DEPLOYMENT.md` for owner configuration in the Cloudflare Dashboard; not pushed or deployed automatically.
