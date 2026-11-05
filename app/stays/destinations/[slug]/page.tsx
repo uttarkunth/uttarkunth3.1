@@ -7,7 +7,7 @@ import {
   filterPropertiesForDestination,
   getNearbyPropertiesForDestination,
   getActiveDestinations,
-} from '@/lib/destinations';
+} from '@/lib/destinations.server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { EXISTING_PROPERTIES, BRAND } from '@/lib/constants';
 import { formatINR } from '@/lib/utils';
