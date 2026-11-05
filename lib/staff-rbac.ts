@@ -17,13 +17,10 @@ export type StaffRoleCode = StaffRoleSlug;
 
 export type StaffDepartment =
   | 'founder_office'
-  | 'operations'
-  | 'stays_curation'
-  | 'marketplace_compliance'
+  | 'stays'
+  | 'products'
   | 'productions'
-  | 'community'
-  | 'customer_support'
-  | 'finance_legal';
+  | 'community';
 
 export type StaffEmploymentCategory =
   | 'full_time_employee'
@@ -288,7 +285,7 @@ export const STAFF_ROLE_DEFINITIONS: Record<StaffRoleSlug, StaffRoleDefinition> 
     slug: 'operations_admin',
     code: 'operations_admin',
     title: 'Operations Administrator',
-    department: 'operations',
+    department: 'founder_office',
     description:
       'Coordinates cross-pillar operations, property host assignments, and booking supervision without unilateral staff hiring authority.',
     permissions: ['property.review', 'property.assign_host', 'support.manage_tickets'],
@@ -300,7 +297,7 @@ export const STAFF_ROLE_DEFINITIONS: Record<StaffRoleSlug, StaffRoleDefinition> 
     slug: 'property_reviewer',
     code: 'property_reviewer',
     title: 'Property Reviewer',
-    department: 'stays_curation',
+    department: 'stays',
     description:
       'Reviews homestay listings and staged property changes. Cannot assign primary hosts, approve sellers, or appoint administrators.',
     permissions: ['property.review'],
@@ -312,7 +309,7 @@ export const STAFF_ROLE_DEFINITIONS: Record<StaffRoleSlug, StaffRoleDefinition> 
     slug: 'marketplace_reviewer',
     code: 'marketplace_reviewer',
     title: 'Marketplace & Seller Reviewer',
-    department: 'marketplace_compliance',
+    department: 'products',
     description:
       'Reviews artisan/seller brand applications, verifies business documents, and moderates product submissions.',
     permissions: ['seller.approve', 'product.approve', 'seller.verify_documents'],
@@ -347,7 +344,7 @@ export const STAFF_ROLE_DEFINITIONS: Record<StaffRoleSlug, StaffRoleDefinition> 
     slug: 'support_executive',
     code: 'support_executive',
     title: 'Customer Support Executive',
-    department: 'customer_support',
+    department: 'founder_office',
     description:
       'Assists guests and hosts with booking inquiries. Strictly prohibited from accessing private seller licences or HR documents.',
     permissions: ['support.manage_tickets'],
@@ -359,7 +356,7 @@ export const STAFF_ROLE_DEFINITIONS: Record<StaffRoleSlug, StaffRoleDefinition> 
     slug: 'finance_compliance_reviewer',
     code: 'finance_compliance_reviewer',
     title: 'Finance & Compliance Reviewer',
-    department: 'finance_legal',
+    department: 'founder_office',
     description:
       'Reviews bilateral commercial agreements, verifies GSTIN/tax compliance records, and audits regulatory licences.',
     permissions: [
@@ -402,7 +399,7 @@ export const FOUR_OPERATIONAL_DEPARTMENTS = [
     title: 'Stays Department',
     description:
       'Homestay applications, property moderation, room units, host & co-host assignments, bilateral host agreements, and stay booking governance.',
-    legacyDepartmentCodes: ['stays_curation', 'operations', 'customer_support'],
+    legacyDepartmentCodes: ['stays_curation'],
     deskRoute: '/admin/properties',
   },
   {
@@ -1278,7 +1275,7 @@ export async function requireStaffPermission(
       user_id: staffRow.user_id,
       staff_id: staffRow.staff_id || null,
       role_slug: (staffRow.role_slug || staffRow.role_code || 'property_reviewer') as StaffRoleSlug,
-      department: (staffRow.department || 'operations') as StaffDepartment,
+      department: (staffRow.department || 'founder_office') as StaffDepartment,
       status: (staffRow.status || 'pending_founder_approval') as StaffAccountStatus,
       founder_approved_at: staffRow.founder_approved_at || staffRow.approved_at || null,
       founder_approved_by: staffRow.founder_approved_by || staffRow.approved_by || null,
