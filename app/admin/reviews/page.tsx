@@ -47,7 +47,7 @@ export default async function AdminReviewsPage() {
             <div className="text-xs text-charcoal leading-relaxed space-y-1">
               <strong className="text-forest text-sm block">Strict Review Integrity Policy:</strong>
               <p>
-                Uttarkunth Stays maintains 100% genuine feedback. Reviews can only be submitted after a confirmed booking's check-out date has passed.
+                Uttarkunth Stays maintains 100% genuine feedback. Reviews can only be submitted after a confirmed booking&apos;s check-out date has passed.
               </p>
               <p className="text-charcoal-muted">
                 No mock reviews or inflated ratings are displayed anywhere on the platform.
