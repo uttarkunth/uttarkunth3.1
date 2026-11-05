@@ -62,9 +62,9 @@ CREATE POLICY "profiles_self_update"
   WITH CHECK (auth.uid() = id);
 
 -- Safe public view exposing only non-sensitive member display fields (never email, phone, or address)
--- Owned by postgres with security_invoker = false so public pages can resolve display names without granting SELECT on public.profiles to anon
+-- Uses security_invoker = true so Supabase Security Advisor (0010_security_definer_view) never flags it
 CREATE OR REPLACE VIEW public.public_member_profiles
-WITH (security_invoker = false) AS
+WITH (security_invoker = true) AS
 SELECT
   id,
   full_name,
@@ -81,7 +81,7 @@ SELECT
 FROM public.profiles;
 
 REVOKE ALL ON public.public_member_profiles FROM PUBLIC;
-GRANT SELECT ON public.public_member_profiles TO anon, authenticated, service_role;
+GRANT SELECT ON public.public_member_profiles TO authenticated, service_role;
 
 -- -----------------------------------------------------------------------------
 -- 1. INTERNAL STAFF ROLES, PERMISSIONS & PROFILES (Reconciled Contract)
@@ -110,17 +110,17 @@ CREATE TABLE IF NOT EXISTS public.staff_role_permissions (
   PRIMARY KEY (role_slug, permission_key)
 );
 
--- Seed 8 Authoritative Staff Roles
+-- Seed 8 Authoritative Staff Roles (Canonical 4 Operational Departments: stays, products, productions, community + Centralized Administrative Department: founder_office)
 INSERT INTO public.staff_roles (role_slug, role_code, title, department, description, allowed_modules)
 VALUES
-  ('founder', 'founder', 'Founder / Superadmin', 'founder_office', 'Full platform governance, staff hiring & termination, permission assignment, dual approvals, and full ecosystem oversight.', ARRAY['/admin/dashboard','/admin/staff','/admin/properties','/admin/products','/admin/productions','/admin/community','/admin/users','/admin/settings','/admin/bookings','/admin/audit']),
-  ('operations_admin', 'operations_admin', 'Operations Administrator', 'operations', 'Coordinates cross-pillar operations, property host assignments, and booking supervision without unilateral staff hiring authority.', ARRAY['/admin/dashboard','/admin/properties','/admin/users','/admin/bookings']),
-  ('property_reviewer', 'property_reviewer', 'Property & Host Reviewer', 'stays_curation', 'Reviews and moderates homestay listings, staged property changes, and host assignments.', ARRAY['/admin/dashboard','/admin/properties','/admin/users']),
-  ('marketplace_reviewer', 'marketplace_reviewer', 'Marketplace & Seller Reviewer', 'marketplace_compliance', 'Reviews artisan and seller applications, verifies Indian GSTIN checksums, reviews category licences, and moderates product submissions.', ARRAY['/admin/dashboard','/admin/products']),
-  ('productions_editor', 'productions_editor', 'Productions & Collaborations Editor', 'productions', 'Moderates independent filmmaker profiles and documentary proposals for Uttarkunth Productions.', ARRAY['/admin/dashboard','/admin/productions']),
-  ('community_manager', 'community_manager', 'Community & Fellowships Manager', 'community', 'Moderates oral history community stories, Living University fellowship applications, and mountain initiatives.', ARRAY['/admin/dashboard','/admin/community']),
-  ('support_executive', 'support_executive', 'Support Executive', 'customer_support', 'Handles member assistance and booking inquiries. Strictly prohibited from accessing private HR or seller verification documents.', ARRAY['/admin/dashboard','/admin/bookings']),
-  ('finance_compliance_reviewer', 'finance_compliance_reviewer', 'Finance, Legal & Compliance Reviewer', 'finance_legal', 'Reviews bilateral commercial agreements, audits seller compliance documents, and inspects immutable audit trails.', ARRAY['/admin/dashboard','/admin/settings','/admin/products','/admin/audit'])
+  ('founder', 'founder', 'Founder & Chief Executive', 'founder_office', 'Full platform governance, staff hiring & termination, permission assignment, dual approvals, and full ecosystem oversight.', ARRAY['/admin/dashboard','/admin/staff','/admin/properties','/admin/products','/admin/productions','/admin/community','/admin/users','/admin/settings','/admin/bookings','/admin/audit']),
+  ('operations_admin', 'operations_admin', 'Operations Administrator', 'founder_office', 'Shared Founder-managed platform operations function: coordinates cross-pillar operations, property host assignments, and booking supervision without unilateral staff hiring authority.', ARRAY['/admin/dashboard','/admin/properties','/admin/users','/admin/bookings']),
+  ('property_reviewer', 'property_reviewer', 'Property & Host Reviewer', 'stays', 'Reviews and moderates homestay listings, staged property changes, and host assignments in the Stays department.', ARRAY['/admin/dashboard','/admin/properties','/admin/users']),
+  ('marketplace_reviewer', 'marketplace_reviewer', 'Marketplace & Seller Reviewer', 'products', 'Reviews artisan and seller applications, verifies Indian GSTIN checksums, reviews category licences, and moderates product submissions in the Products department.', ARRAY['/admin/dashboard','/admin/products']),
+  ('productions_editor', 'productions_editor', 'Productions & Collaborations Editor', 'productions', 'Moderates independent filmmaker profiles and documentary proposals in the Productions department.', ARRAY['/admin/dashboard','/admin/productions']),
+  ('community_manager', 'community_manager', 'Community & Fellowships Manager', 'community', 'Moderates oral history community stories, Living University fellowship applications, and mountain initiatives in the Community department.', ARRAY['/admin/dashboard','/admin/community']),
+  ('support_executive', 'support_executive', 'Support Executive', 'founder_office', 'Shared Founder-managed Customer Support function delegated via support.manage_tickets. Strictly prohibited from accessing private HR or seller verification documents.', ARRAY['/admin/dashboard','/admin/bookings']),
+  ('finance_compliance_reviewer', 'finance_compliance_reviewer', 'Finance, Legal & Compliance Reviewer', 'founder_office', 'Shared Founder-managed Finance, Legal & Compliance function: reviews bilateral commercial agreements, audits seller compliance documents, and inspects immutable audit trails.', ARRAY['/admin/dashboard','/admin/settings','/admin/products','/admin/audit'])
 ON CONFLICT (role_slug) DO UPDATE
 SET role_code = EXCLUDED.role_code,
     title = EXCLUDED.title,
@@ -729,6 +729,8 @@ CREATE TABLE IF NOT EXISTS public.staff_audit_log (
   action text NOT NULL,
   target_type text NOT NULL,
   target_id text,
+  target_user_id uuid REFERENCES auth.users(id),
+  target_staff_id text,
   result text NOT NULL DEFAULT 'success',
   reason text,
   before_state jsonb,
@@ -903,7 +905,7 @@ SET title = EXCLUDED.title,
 -- 3. NON-RECURSIVE SECURITY DEFINER HELPERS & RESTRICTED FOUNDER PROVISIONING
 -- -----------------------------------------------------------------------------
 
--- Helper 1: Returns true if user is active staff
+-- Helper 1: Returns true if user is active staff (Founder holds onboarding agreement exemption; employees require agreements_completed)
 CREATE OR REPLACE FUNCTION public.is_active_staff_for_user(p_user_id uuid)
 RETURNS boolean
 LANGUAGE sql
@@ -920,6 +922,11 @@ AS $$
       AND sp.founder_approved_at IS NOT NULL
       AND sp.staff_id IS NOT NULL
       AND sp.session_revoked_at IS NULL
+      AND (
+        sp.role_slug = 'founder'
+        OR COALESCE(sp.agreements_completed, false) = true
+        OR COALESCE(sp.all_agreements_accepted, false) = true
+      )
   );
 $$;
 
@@ -942,6 +949,11 @@ AS $$
       AND sp.session_revoked_at IS NULL
       AND (
         sp.role_slug = 'founder'
+        OR COALESCE(sp.agreements_completed, false) = true
+        OR COALESCE(sp.all_agreements_accepted, false) = true
+      )
+      AND (
+        sp.role_slug = 'founder'
         OR p_perm = ANY(sp.custom_permissions)
         OR EXISTS (
           SELECT 1
@@ -954,7 +966,7 @@ AS $$
           FROM public.staff_permission_assignments spa
           WHERE (spa.staff_profile_id = sp.id OR spa.user_id = p_user_id)
             AND spa.permission_key = p_perm
-            AND spa.grant_type = 'allow'
+            AND spa.grant_type IN ('allow', 'grant')
             AND spa.is_active = true
             AND spa.revoked_at IS NULL
         )
@@ -966,10 +978,21 @@ $$;
 -- Restricted Founder Account Provisioning Procedure
 -- Requirements:
 -- 1. Must be executed by the trusted database owner or service_role in Supabase SQL Editor.
--- 2. Strictly verifies that p_user_id exists in auth.users.
--- 3. Strictly verifies that p_official_email matches the registered auth user's email.
--- 4. Never fabricates MFA, signed agreements, verified mobile, or identity documents.
--- 5. Does NOT reference platform_admins.notes (column does not exist in production).
+-- 2. Strictly verifies that p_user_id exists in auth.users and email_confirmed_at IS NOT NULL.
+-- 3. Strictly verifies that p_official_email matches the registered auth user's email (uttarkunth@gmail.com).
+-- 4. Prevents duplicate Founder accounts across staff_profiles and platform_admins.
+-- 5. Never fabricates MFA, signed agreements, privacy notice acceptance, verified mobile, or identity documents.
+-- 6. Does NOT reference platform_admins.notes (column does not exist in production).
+-- Confirmed Production Founder Identity:
+--   Email: uttarkunth@gmail.com
+--   Auth UUID: 28ba1250-9e0c-4daf-9348-0484175646ba
+--   Designation: Founder & Chief Executive
+--   Department: founder_office
+--   Role: founder
+--   Staff ID: UK-STAFF-2026-0001
+ALTER TABLE public.platform_admins
+  DROP CONSTRAINT IF EXISTS platform_admins_role_check;
+
 CREATE OR REPLACE FUNCTION public.provision_founder_account(
   p_user_id uuid,
   p_official_email text,
@@ -984,6 +1007,8 @@ AS $$
 DECLARE
   v_auth_user auth.users%ROWTYPE;
   v_normalized_email text;
+  v_existing_founder_uid uuid;
+  v_has_verified_totp boolean := false;
   v_row public.staff_profiles;
 BEGIN
   -- 1. Strictly verify the user exists in auth.users
@@ -993,6 +1018,12 @@ BEGIN
 
   IF NOT FOUND THEN
     RAISE EXCEPTION 'Security Violation: User UUID % does not exist in auth.users.', p_user_id;
+  END IF;
+
+  -- 1b. Strictly verify the account email is confirmed in Supabase Auth
+  IF v_auth_user.email_confirmed_at IS NULL THEN
+    RAISE EXCEPTION 'Security Violation: Auth account % (%) has not confirmed its email address.',
+      p_user_id, v_auth_user.email;
   END IF;
 
   -- 2. Strictly verify the submitted email matches registered Auth email
@@ -1006,7 +1037,30 @@ BEGIN
     RAISE EXCEPTION 'Validation Error: Full legal name is required for Founder account provisioning.';
   END IF;
 
-  -- 3. Upsert Founder staff profile with honest, non-fabricated state
+  -- 2b. Prevent duplicate Founder accounts (only one UUID may hold UK-STAFF-2026-0001 / founder role)
+  SELECT sp.user_id INTO v_existing_founder_uid
+  FROM public.staff_profiles sp
+  WHERE (sp.role_slug = 'founder' OR sp.staff_id = 'UK-STAFF-2026-0001')
+    AND sp.user_id <> p_user_id
+  LIMIT 1;
+
+  IF v_existing_founder_uid IS NOT NULL THEN
+    RAISE EXCEPTION 'Security Violation: A Founder account already exists for user_id %. Duplicate Founder provisioning is forbidden.',
+      v_existing_founder_uid;
+  END IF;
+
+  -- 2c. Check whether an actual verified TOTP factor exists in auth.mfa_factors (never fabricate MFA status)
+  SELECT EXISTS (
+    SELECT 1
+    FROM auth.mfa_factors mf
+    WHERE mf.user_id = p_user_id
+      AND mf.factor_type = 'totp'
+      AND mf.status = 'verified'
+  ) INTO v_has_verified_totp;
+
+  -- 3. Upsert Founder staff profile anchored to p_user_id with honest, non-fabricated state
+  -- (privacy_notice_accepted, all_agreements_accepted, and agreements_completed remain false unless explicitly signed;
+  --  Founder holds a constitutional onboarding exemption in RBAC rather than fabricated consent records)
   INSERT INTO public.staff_profiles (
     user_id,
     staff_id,
@@ -1032,6 +1086,8 @@ BEGIN
     founder_approved,
     founder_approved_by,
     founder_approved_at,
+    approved_by,
+    approved_at,
     status
   )
   VALUES (
@@ -1042,7 +1098,7 @@ BEGIN
     v_normalized_email,
     v_normalized_email,
     CASE WHEN p_contact_phone IS NOT NULL AND trim(p_contact_phone) <> '' THEN trim(p_contact_phone) ELSE NULL END,
-    'Founder & Chief Architect',
+    'Founder & Chief Executive',
     'founder_office',
     'founder',
     'founder',
@@ -1051,26 +1107,32 @@ BEGIN
     'Full platform governance, staff hiring, security architecture, and ecosystem oversight.',
     NULL,
     NULL,
-    true,
-    true,
-    true,
-    true,
+    false,
+    false,
     false,
     true,
+    v_has_verified_totp,
+    true,
+    p_user_id,
+    now(),
     p_user_id,
     now(),
     'active'
   )
   ON CONFLICT (user_id) DO UPDATE
-  SET role_slug = 'founder',
+  SET designation = 'Founder & Chief Executive',
+      department = 'founder_office',
+      role_slug = 'founder',
       role_code = 'founder',
+      official_email = EXCLUDED.official_email,
+      personal_email = EXCLUDED.personal_email,
       status = 'active',
-      all_agreements_accepted = true,
-      agreements_completed = true,
-      onboarding_completed = true,
+      mfa_enrolled = v_has_verified_totp,
       founder_approved = true,
       founder_approved_by = p_user_id,
       founder_approved_at = COALESCE(public.staff_profiles.founder_approved_at, now()),
+      approved_by = p_user_id,
+      approved_at = COALESCE(public.staff_profiles.approved_at, now()),
       updated_at = now()
   RETURNING * INTO v_row;
 
@@ -1081,9 +1143,133 @@ BEGIN
   SET role = 'founder',
       email = EXCLUDED.email;
 
+  -- 5. Record immutable audit entry in staff_audit_log
+  INSERT INTO public.staff_audit_log (
+    actor_user_id,
+    actor_staff_id,
+    actor_role,
+    action,
+    target_type,
+    target_id,
+    target_user_id,
+    target_staff_id,
+    result,
+    reason,
+    after_state
+  )
+  VALUES (
+    p_user_id,
+    'UK-STAFF-2026-0001',
+    'founder',
+    'founder_account_provisioned',
+    'staff_profile',
+    v_row.id::text,
+    p_user_id,
+    'UK-STAFF-2026-0001',
+    'allowed',
+    'One-time verified Founder account provisioning anchored to Supabase Auth UUID.',
+    jsonb_build_object(
+      'user_id', p_user_id,
+      'official_email', v_normalized_email,
+      'staff_id', 'UK-STAFF-2026-0001',
+      'designation', 'Founder & Chief Executive',
+      'department', 'founder_office',
+      'role_slug', 'founder',
+      'mfa_enrolled', v_has_verified_totp,
+      'privacy_notice_accepted', false,
+      'agreements_completed', false
+    )
+  );
+
   RETURN v_row;
 END;
 $$;
+
+-- Synchronize informational email fields when a user (including Founder/Staff) confirms a new email in Supabase Auth.
+-- Security invariant: Permissions remain strictly anchored to user_id (UUID). Changing email never resets permissions
+-- or allows another user to claim Founder/Staff status using the old email address.
+CREATE OR REPLACE FUNCTION public.sync_auth_user_email_change()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, auth, pg_temp
+AS $$
+DECLARE
+  v_new_email text;
+  v_old_email text;
+  v_staff public.staff_profiles%ROWTYPE;
+BEGIN
+  v_new_email := lower(trim(COALESCE(NEW.email, '')));
+  v_old_email := lower(trim(COALESCE(OLD.email, '')));
+
+  IF v_new_email = '' OR v_new_email = v_old_email THEN
+    RETURN NEW;
+  END IF;
+
+  -- 1. Synchronize public.profiles informational email
+  UPDATE public.profiles
+  SET email = v_new_email,
+      updated_at = now()
+  WHERE id = NEW.id;
+
+  -- 2. Synchronize public.platform_admins informational email (anchored by user_id)
+  UPDATE public.platform_admins
+  SET email = v_new_email
+  WHERE user_id = NEW.id;
+
+  -- 3. Synchronize public.staff_profiles informational email (anchored by user_id) and audit
+  SELECT * INTO v_staff
+  FROM public.staff_profiles
+  WHERE user_id = NEW.id;
+
+  IF FOUND THEN
+    UPDATE public.staff_profiles
+    SET official_email = v_new_email,
+        personal_email = v_new_email,
+        updated_at = now()
+    WHERE user_id = NEW.id;
+
+    INSERT INTO public.staff_audit_log (
+      actor_user_id,
+      actor_staff_id,
+      actor_role,
+      action,
+      target_type,
+      target_id,
+      target_user_id,
+      target_staff_id,
+      result,
+      reason,
+      before_state,
+      after_state
+    )
+    VALUES (
+      NEW.id,
+      v_staff.staff_id,
+      v_staff.role_slug,
+      'staff_auth_email_changed',
+      'staff_profile',
+      v_staff.id::text,
+      NEW.id,
+      v_staff.staff_id,
+      'allowed',
+      'Supabase Auth confirmed email change synchronized by UUID.',
+      jsonb_build_object('email', v_old_email),
+      jsonb_build_object('email', v_new_email)
+    );
+  END IF;
+
+  RETURN NEW;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.sync_auth_user_email_change() FROM PUBLIC, anon, authenticated;
+
+DROP TRIGGER IF EXISTS trg_sync_auth_user_email_change ON auth.users;
+CREATE TRIGGER trg_sync_auth_user_email_change
+  AFTER UPDATE OF email ON auth.users
+  FOR EACH ROW
+  EXECUTE FUNCTION public.sync_auth_user_email_change();
 
 -- Restrict execution privileges on provision_founder_account:
 REVOKE ALL ON FUNCTION public.provision_founder_account(uuid, text, text, text) FROM PUBLIC;

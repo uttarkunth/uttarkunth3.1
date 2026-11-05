@@ -42,8 +42,8 @@ AS $$
   END;
 $$;
 
-REVOKE ALL ON FUNCTION public.is_property_host(uuid, uuid) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION public.is_property_host(uuid, uuid) TO anon, authenticated, service_role;
+REVOKE ALL ON FUNCTION public.is_property_host(uuid, uuid) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.is_property_host(uuid, uuid) TO authenticated, service_role;
 
 -- ============================================================================
 -- 2. TOTP MFA ASSURANCE LEVEL (AAL2) HELPER FUNCTION
@@ -52,13 +52,13 @@ CREATE OR REPLACE FUNCTION public.current_session_is_aal2()
 RETURNS boolean
 LANGUAGE sql
 STABLE
-SECURITY DEFINER
+SECURITY INVOKER
 SET search_path = public
 AS $$
   SELECT COALESCE(auth.jwt()->>'aal', '') = 'aal2';
 $$;
 
-REVOKE ALL ON FUNCTION public.current_session_is_aal2() FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.current_session_is_aal2() FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.current_session_is_aal2() TO authenticated, service_role;
 
 -- ============================================================================
@@ -141,13 +141,15 @@ BEGIN
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION public.is_platform_admin() TO PUBLIC, anon, authenticated, service_role;
+REVOKE ALL ON FUNCTION public.is_platform_admin() FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.is_platform_admin() TO authenticated, service_role;
 
 -- ============================================================================
--- 4. FIX PUBLIC SELECT & HOST POLICIES ON properties AND room_units
--- Dynamically removes any legacy policy on properties or room_units that
--- directly queries public.property_hosts (which caused 42501 for anon users)
--- and replaces them with SECURITY DEFINER is_property_host() policies.
+-- 4. FIX PUBLIC SELECT & HOST POLICIES ON properties, room_units & room_availability_blocks
+-- Dynamically removes any legacy policy (including RESTRICTIVE policy
+-- "Restrict direct property table reads") that directly queries
+-- public.property_hosts (which caused 42501 for anon users) and replaces
+-- them with SECURITY DEFINER is_property_host() policies.
 -- ============================================================================
 DO $$
 DECLARE
@@ -157,7 +159,7 @@ BEGIN
     SELECT schemaname, tablename, policyname
     FROM pg_policies
     WHERE schemaname = 'public'
-      AND tablename IN ('properties', 'room_units')
+      AND tablename IN ('properties', 'room_units', 'room_availability_blocks')
       AND (
         COALESCE(qual, '') ILIKE '%property_hosts%'
         OR COALESCE(with_check, '') ILIKE '%property_hosts%'
@@ -168,6 +170,7 @@ BEGIN
 END;
 $$;
 
+DROP POLICY IF EXISTS "Restrict direct property table reads" ON public.properties;
 DROP POLICY IF EXISTS "Public can view approved published properties" ON public.properties;
 CREATE POLICY "Public can view approved published properties"
   ON public.properties
@@ -175,6 +178,7 @@ CREATE POLICY "Public can view approved published properties"
   TO anon, authenticated
   USING (published = true AND moderation_status = 'approved');
 
+DROP POLICY IF EXISTS "Hosts manage their own properties" ON public.properties;
 DROP POLICY IF EXISTS "Hosts can view own or assigned properties" ON public.properties;
 DROP POLICY IF EXISTS "Hosts and co-hosts manage their properties" ON public.properties;
 CREATE POLICY "Hosts and co-hosts manage their properties"
@@ -192,13 +196,15 @@ CREATE POLICY "Hosts and co-hosts manage their properties"
     OR public.is_platform_admin()
   );
 
+DROP POLICY IF EXISTS "Public can view active rooms for approved published properties" ON public.room_units;
 DROP POLICY IF EXISTS "Public can view room units of published properties" ON public.room_units;
 CREATE POLICY "Public can view room units of published properties"
   ON public.room_units
   FOR SELECT
   TO anon, authenticated
   USING (
-    EXISTS (
+    active = true
+    AND EXISTS (
       SELECT 1
       FROM public.properties p
       WHERE p.id = room_units.property_id
@@ -207,6 +213,7 @@ CREATE POLICY "Public can view room units of published properties"
     )
   );
 
+DROP POLICY IF EXISTS "Hosts manage room units for their own properties" ON public.room_units;
 DROP POLICY IF EXISTS "Hosts can view room units of own properties" ON public.room_units;
 DROP POLICY IF EXISTS "Hosts and co-hosts manage room units for their properties" ON public.room_units;
 CREATE POLICY "Hosts and co-hosts manage room units for their properties"
@@ -220,6 +227,21 @@ CREATE POLICY "Hosts and co-hosts manage room units for their properties"
   WITH CHECK (
     public.is_property_host(property_id, auth.uid())
     OR public.is_platform_admin()
+  );
+
+DROP POLICY IF EXISTS "Authorized hosts and admins can view availability blocks" ON public.room_availability_blocks;
+CREATE POLICY "Authorized hosts and admins can view availability blocks"
+  ON public.room_availability_blocks
+  FOR SELECT
+  TO authenticated
+  USING (
+    public.is_platform_admin()
+    OR EXISTS (
+      SELECT 1
+      FROM public.room_units r
+      WHERE r.id = room_availability_blocks.room_unit_id
+        AND public.is_property_host(r.property_id, auth.uid())
+    )
   );
 
 -- Ensure anon and authenticated have table-level SELECT on properties and room_units
@@ -441,6 +463,9 @@ DECLARE
     'properties',
     'room_units',
     'stay_bookings',
+    'bookings',
+    'booking_requests',
+    'booking_rate_limits',
     'room_availability_blocks',
     'host_agreements',
     'property_hosts',
@@ -495,6 +520,206 @@ BEGIN
         v_tbl
       );
     END IF;
+  END LOOP;
+END;
+$$;
+
+-- ============================================================================
+-- 7B. SUPABASE SECURITY ADVISOR REMEDIATION (SECTIONS G.1, G.2, G.3)
+-- 1. Separate public/anon read policies from authenticated owner/admin policies
+--    so anon never requires EXECUTE on is_platform_admin() or is_property_host().
+-- 2. Move btree_gist extension out of public schema into extensions schema.
+-- 3. Switch public.public_room_availability & public.public_member_profiles
+--    to security_invoker = true (eliminating 0010_security_definer_view ERROR)
+--    and provide server-only get_public_room_availability(uuid) function.
+-- 4. Revoke EXECUTE from PUBLIC, anon, authenticated on all non-RLS-helper
+--    SECURITY DEFINER RPCs and trigger functions.
+-- 5. Lock down server-only tables (admin_audit_log, booking_rate_limits,
+--    booking_requests, bookings, platform_admins, rate_limits).
+-- ============================================================================
+
+-- Separate public vs authenticated policies so anon never calls is_platform_admin()
+DROP POLICY IF EXISTS "Destinations can be modified by platform admins" ON public.destinations;
+CREATE POLICY "Destinations can be modified by platform admins"
+  ON public.destinations
+  FOR ALL
+  TO authenticated
+  USING (public.is_platform_admin())
+  WITH CHECK (public.is_platform_admin());
+
+DROP POLICY IF EXISTS "products_select_public_approved_or_owner_or_admin" ON public.products;
+DROP POLICY IF EXISTS "Public can view approved products" ON public.products;
+CREATE POLICY "Public can view approved products"
+  ON public.products
+  FOR SELECT
+  TO anon, authenticated
+  USING (moderation_status = 'approved');
+
+DROP POLICY IF EXISTS "Sellers and staff can view own or all products" ON public.products;
+CREATE POLICY "Sellers and staff can view own or all products"
+  ON public.products
+  FOR SELECT
+  TO authenticated
+  USING (seller_id = auth.uid() OR public.is_platform_admin());
+
+DROP POLICY IF EXISTS "filmmaker_select_own_or_admin" ON public.filmmaker_profiles;
+CREATE POLICY "filmmaker_select_own_or_admin"
+  ON public.filmmaker_profiles
+  FOR SELECT
+  TO authenticated
+  USING (user_id = auth.uid() OR public.is_platform_admin());
+
+DROP POLICY IF EXISTS "proposals_select_own_or_admin" ON public.production_proposals;
+CREATE POLICY "proposals_select_own_or_admin"
+  ON public.production_proposals
+  FOR SELECT
+  TO authenticated
+  USING (user_id = auth.uid() OR public.is_platform_admin());
+
+DROP POLICY IF EXISTS "participations_select_own_or_admin" ON public.community_participations;
+CREATE POLICY "participations_select_own_or_admin"
+  ON public.community_participations
+  FOR SELECT
+  TO authenticated
+  USING (user_id = auth.uid() OR public.is_platform_admin());
+
+DROP POLICY IF EXISTS "stories_select_published_or_author" ON public.community_stories;
+DROP POLICY IF EXISTS "Public can view published community stories" ON public.community_stories;
+CREATE POLICY "Public can view published community stories"
+  ON public.community_stories
+  FOR SELECT
+  TO anon, authenticated
+  USING (status = 'published');
+
+DROP POLICY IF EXISTS "Authors and staff can view own or all community stories" ON public.community_stories;
+CREATE POLICY "Authors and staff can view own or all community stories"
+  ON public.community_stories
+  FOR SELECT
+  TO authenticated
+  USING (user_id = auth.uid() OR public.is_platform_admin());
+
+-- Move btree_gist extension from public to extensions schema (0014_extension_in_public)
+CREATE SCHEMA IF NOT EXISTS extensions;
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1
+    FROM pg_extension e
+    JOIN pg_namespace n ON n.oid = e.extnamespace
+    WHERE e.extname = 'btree_gist'
+      AND n.nspname = 'public'
+  ) THEN
+    ALTER EXTENSION btree_gist SET SCHEMA extensions;
+  END IF;
+END;
+$$;
+
+-- Switch public.public_room_availability to security_invoker = true (0010_security_definer_view)
+ALTER VIEW IF EXISTS public.public_room_availability SET (security_invoker = true);
+ALTER VIEW IF EXISTS public.public_member_profiles SET (security_invoker = true);
+
+-- Controlled server-only availability lookup returning ONLY sanitized room_unit_id and date boundaries
+CREATE OR REPLACE FUNCTION public.get_public_room_availability(p_property_id uuid DEFAULT NULL)
+RETURNS TABLE (
+  room_unit_id uuid,
+  blocked_from date,
+  blocked_until date
+)
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT
+    b.room_unit_id,
+    b.blocked_from,
+    b.blocked_until
+  FROM public.room_availability_blocks b
+  JOIN public.room_units r ON r.id = b.room_unit_id
+  JOIN public.properties p ON p.id = r.property_id
+  WHERE r.active = true
+    AND p.published = true
+    AND p.moderation_status = 'approved'
+    AND (p_property_id IS NULL OR p.id = p_property_id);
+$$;
+
+REVOKE ALL ON FUNCTION public.get_public_room_availability(uuid) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.get_public_room_availability(uuid) TO service_role;
+
+-- Revoke direct client access to server-only rate-limit, audit, and legacy booking tables
+DO $$
+DECLARE
+  v_srv_tbl text;
+  v_srv_tables text[] := ARRAY[
+    'admin_audit_log',
+    'booking_rate_limits',
+    'booking_requests',
+    'bookings',
+    'platform_admins',
+    'rate_limits'
+  ];
+BEGIN
+  FOREACH v_srv_tbl IN ARRAY v_srv_tables LOOP
+    IF EXISTS (
+      SELECT 1
+      FROM information_schema.tables
+      WHERE table_schema = 'public'
+        AND table_name = v_srv_tbl
+        AND table_type = 'BASE TABLE'
+    ) THEN
+      EXECUTE format('REVOKE ALL ON TABLE public.%I FROM PUBLIC, anon, authenticated;', v_srv_tbl);
+      EXECUTE format('GRANT ALL ON TABLE public.%I TO service_role;', v_srv_tbl);
+    END IF;
+  END LOOP;
+END;
+$$;
+
+-- Revoke EXECUTE from PUBLIC, anon, authenticated on all non-RLS-helper SECURITY DEFINER and internal functions
+DO $$
+DECLARE
+  r record;
+BEGIN
+  FOR r IN
+    SELECT p.oid::regprocedure AS func_sig
+    FROM pg_proc p
+    JOIN pg_namespace n ON n.oid = p.pronamespace
+    WHERE n.nspname = 'public'
+      AND p.proname IN (
+        'admin_review_property_changes',
+        'calculate_host_agreement_digest',
+        'cancel_guest_booking',
+        'enforce_host_agreement_draft_on_insert',
+        'enforce_host_agreement_immutability',
+        'enforce_legal_terms_documents_immutability',
+        'enforce_product_moderation_lifecycle',
+        'enforce_property_moderation_guard',
+        'enforce_property_ownership_and_moderation',
+        'enforce_seller_status_immutability',
+        'enforce_filmmaker_status_immutability',
+        'prevent_accepted_agreement_deletion',
+        'prevent_audit_log_mutation',
+        'prevent_host_agreements_truncate',
+        'prevent_legal_terms_documents_truncate',
+        'protect_confirmed_booking_snapshots',
+        'generate_uk_staff_id',
+        'sync_staff_invitation_cols',
+        'sync_staff_profile_cols',
+        'sync_staff_permission_cols',
+        'sync_staff_doc_size',
+        'sync_staff_agreement_cols',
+        'sync_dual_approval_cols',
+        'sync_seller_doc_size',
+        'sync_auth_user_email_change',
+        'prevent_staff_id_mutation',
+        'prevent_staff_audit_log_mutation',
+        'provision_founder_account',
+        'has_staff_permission_for_user',
+        'is_active_staff_for_user'
+      )
+  LOOP
+    EXECUTE format('ALTER FUNCTION %s SET search_path = public;', r.func_sig);
+    EXECUTE format('REVOKE ALL ON FUNCTION %s FROM PUBLIC, anon, authenticated;', r.func_sig);
+    EXECUTE format('GRANT EXECUTE ON FUNCTION %s TO postgres, supabase_admin, service_role;', r.func_sig);
   END LOOP;
 END;
 $$;
@@ -582,4 +807,3 @@ CREATE POLICY "Private pillar docs restricted to owner or Staff AAL2"
   );
 
 COMMIT;
-
