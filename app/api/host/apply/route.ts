@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { HostApplySchema } from '@/lib/validations';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,62 +25,53 @@ export async function POST(req: NextRequest) {
 
     if (authErr || !user) {
       return NextResponse.json(
-        { ok: false, error: 'Please sign in to your Uttarkunth Member account to submit a homestay application.' },
+        {
+          ok: false,
+          error:
+            'Please sign in to your Uttarkunth Member account to submit a homestay application.',
+        },
         { status: 401 }
       );
     }
 
     const body = await req.json();
-    const name = String(body.name || '').trim();
-    const propertyType = String(body.property_type || 'homestay').trim();
-    const village = String(body.village || '').trim();
-    const district = String(body.district || '').trim();
-    const state = String(body.state || 'Himachal Pradesh').trim();
-    const address = String(body.address || '').trim();
-    const description = String(body.description || '').trim();
-    const hostPhone = String(body.host_phone || '').trim();
-    const amenities = Array.isArray(body.amenities)
-      ? body.amenities.map((a: any) => String(a).trim()).filter(Boolean)
-      : [];
-
-    const initialRoomName = String(body.initial_room_name || 'Mountain View Room').trim();
-    const initialRoomGuests = Math.max(1, Math.min(16, Number(body.initial_room_guests || 2)));
-    const initialRoomPrice = Math.max(500, Number(body.initial_room_price || 2000));
-    const initialRoomDesc = String(body.initial_room_description || '').trim();
-
-    if (!name || name.length < 3 || !village || !district || description.length < 20) {
+    const validation = HostApplySchema.safeParse(body);
+    if (!validation.success) {
       return NextResponse.json(
         {
           ok: false,
           error:
+            validation.error.errors[0]?.message ||
             'Property name, village, district, and an authentic property description (min 20 characters) are required.',
+          details: validation.error.flatten(),
         },
         { status: 400 }
       );
     }
 
+    const data = validation.data;
     const adminClient = createAdminClient();
-    const slug = slugifyProperty(name, village);
+    const slug = slugifyProperty(data.name, data.village);
 
     const { data: createdProperty, error: propErr } = await adminClient
       .from('properties')
       .insert({
-        name,
+        name: data.name,
         slug,
-        property_type: propertyType,
-        village,
-        district,
-        state,
-        address: address || `${village}, ${district}, ${state}`,
-        description,
-        amenities,
+        property_type: data.property_type,
+        village: data.village,
+        district: data.district,
+        state: data.state,
+        address: data.address || `${data.village}, ${data.district}, ${data.state}`,
+        description: data.description,
+        amenities: data.amenities,
         photos: [],
         booking_mode: 'request',
         host_id: user.id,
         published: false,
         moderation_status: 'pending',
-        moderation_notes: hostPhone
-          ? `Host application submitted by ${user.email} (Contact: ${hostPhone}). Pending Property Reviewer verification.`
+        moderation_notes: data.host_phone
+          ? `Host application submitted by ${user.email} (Contact: ${data.host_phone}). Pending Property Reviewer verification.`
           : `Host application submitted by ${user.email}. Pending Property Reviewer verification.`,
       })
       .select()
@@ -92,15 +84,24 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (initialRoomName) {
-      await adminClient.from('room_units').insert({
-        property_id: createdProperty.id,
-        room_name: initialRoomName,
-        max_guests: initialRoomGuests,
-        base_price: initialRoomPrice,
-        description: initialRoomDesc || null,
-        active: true,
-      });
+    // Insert initial room into room_units and inspect error for honest failure handling
+    const { error: roomErr } = await adminClient.from('room_units').insert({
+      property_id: createdProperty.id,
+      room_name: data.initial_room_name,
+      max_guests: data.initial_room_guests,
+      base_price: data.initial_room_price,
+      description: data.initial_room_description || null,
+      active: true,
+    });
+
+    if (roomErr) {
+      // Rollback draft property insertion if room unit creation fails to prevent orphaned listings
+      console.error('Room creation failed, rolling back draft property:', roomErr);
+      await adminClient.from('properties').delete().eq('id', createdProperty.id);
+      return NextResponse.json(
+        { ok: false, error: `Failed to configure initial room unit: ${roomErr.message}` },
+        { status: 500 }
+      );
     }
 
     return NextResponse.json({

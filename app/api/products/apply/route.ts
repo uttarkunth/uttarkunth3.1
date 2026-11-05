@@ -165,8 +165,20 @@ export async function POST(req: NextRequest) {
       };
     });
 
-    // Validate private document upload metadata (reject public URLs, invalid MIME, >10MB)
+    // Validate private document upload metadata (reject cross-tenant paths, public URLs, invalid MIME, >10MB)
     for (const doc of normalizedDocs) {
+      const allowedPrefix1 = `seller-verification/${user.id}/`;
+      const allowedPrefix2 = `sellers/${user.id}/`;
+      if (!doc.storage_path.startsWith(allowedPrefix1) && !doc.storage_path.startsWith(allowedPrefix2)) {
+        return NextResponse.json(
+          {
+            ok: false,
+            error: `Cross-tenant storage path injection rejected: Document storage path '${doc.storage_path}' must be scoped to your seller user identity.`,
+          },
+          { status: 403 }
+        );
+      }
+
       const docCheck = validatePrivateDocumentUpload({
         fileName: doc.document_title,
         mimeType: doc.mime_type,

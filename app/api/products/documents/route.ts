@@ -4,6 +4,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import {
   canAccessSellerVerificationDocument,
   validatePrivateDocumentUpload,
+  validateFileMagicBytes,
   SELLER_DOCUMENT_LABELS,
   type SellerDocumentType,
 } from '@/lib/seller-verification';
@@ -70,6 +71,14 @@ export async function POST(req: NextRequest) {
 
     const adminClient = createAdminClient();
     const arrayBuffer = await file.arrayBuffer();
+
+    const magicCheck = validateFileMagicBytes(new Uint8Array(arrayBuffer), file.type);
+    if (!magicCheck.valid) {
+      return NextResponse.json(
+        { ok: false, error: magicCheck.error },
+        { status: 400 }
+      );
+    }
 
     const { error: uploadError } = await adminClient.storage
       .from('seller-verification-docs')

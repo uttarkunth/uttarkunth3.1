@@ -6,7 +6,10 @@ import {
   validateStaffInvitation,
   recordStaffAuditLog,
 } from '@/lib/staff-rbac';
-import { validateUploadedDocumentMeta } from '@/lib/seller-verification';
+import {
+  validateUploadedDocumentMeta,
+  validateFileMagicBytes,
+} from '@/lib/seller-verification';
 
 export const dynamic = 'force-dynamic';
 
@@ -127,6 +130,11 @@ export async function POST(req: NextRequest) {
     const safeExt = (file.name.split('.').pop() || 'pdf').replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
     const storagePath = `staff-onboarding/${inv.id}/${documentType}-${Date.now()}.${safeExt}`;
     const arrayBuffer = await file.arrayBuffer();
+
+    const magicCheck = validateFileMagicBytes(new Uint8Array(arrayBuffer), file.type);
+    if (!magicCheck.valid) {
+      return NextResponse.json({ ok: false, error: magicCheck.error }, { status: 400 });
+    }
 
     const { error: uploadErr } = await adminClient.storage
       .from('staff-hr-docs')

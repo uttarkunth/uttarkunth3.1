@@ -152,7 +152,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: false, error: invValidation.reason }, { status: 403 });
     }
 
-    // 2. Normalize and verify all 8 required staff agreements
+    // 2. Strict Server-Side Verification of all 8 mandatory Uttarkunth staff agreements
     const rawAgreements: any[] = Array.isArray(body.accepted_agreements)
       ? body.accepted_agreements
       : Array.isArray(body.agreements)
@@ -160,35 +160,61 @@ export async function POST(req: NextRequest) {
       : [];
 
     const nowIso = new Date().toISOString();
-    const normalizedAcceptances = rawAgreements
-      .filter((a) => a.accepted !== false)
-      .map((a) => {
-        const agType = (a.agreement_type || a.agreement_code) as StaffAgreementType;
-        const canonical = REQUIRED_STAFF_AGREEMENTS.find((r) => r.type === agType);
-        const docHash =
-          a.document_hash && String(a.document_hash).length === 64
-            ? String(a.document_hash)
-            : canonical
-            ? computeDocumentHash(canonical.canonicalContent)
-            : '';
-        return {
-          agreement_type: agType,
-          agreement_code: agType,
-          agreement_version: a.agreement_version || a.version || '2026.2',
-          version: a.version || a.agreement_version || '2026.2',
-          document_hash: docHash,
-          accepted_at: nowIso,
-          signed_document_ref: a.signed_document_ref || `SIGNED-${agType.toUpperCase()}`,
-          approval_status: 'accepted' as const,
-        };
-      });
+    const missingAgreements: string[] = [];
+    const normalizedAcceptances: Array<{
+      agreement_type: StaffAgreementType;
+      agreement_code: StaffAgreementType;
+      agreement_version: string;
+      version: string;
+      document_hash: string;
+      accepted_at: string;
+      signed_document_ref: string;
+      approval_status: 'accepted';
+    }> = [];
 
-    const agreementVerification = verifyAllStaffAgreementsCompleted(normalizedAcceptances);
-    if (!agreementVerification.completed) {
+    for (const reqAgr of REQUIRED_STAFF_AGREEMENTS) {
+      const submitted = rawAgreements.find(
+        (a: any) =>
+          ((a.agreement_type || a.agreement_code) === reqAgr.type ||
+            (a.agreement_type || a.agreement_code) === reqAgr.code) &&
+          a.accepted !== false
+      );
+
+      if (!submitted) {
+        missingAgreements.push(reqAgr.type);
+        continue;
+      }
+
+      // Compute canonical SHA-256 hash strictly from server canonical content
+      const canonicalHash = computeDocumentHash(reqAgr.canonicalContent.trim());
+      if (submitted.document_hash && submitted.document_hash !== canonicalHash) {
+        return NextResponse.json(
+          {
+            ok: false,
+            error: `Integrity Violation: document_hash mismatch for agreement '${reqAgr.type}'. Expected canonical digest ${canonicalHash}.`,
+          },
+          { status: 400 }
+        );
+      }
+
+      normalizedAcceptances.push({
+        agreement_type: reqAgr.type,
+        agreement_code: reqAgr.code,
+        agreement_version: submitted.agreement_version || submitted.version || reqAgr.version,
+        version: submitted.version || submitted.agreement_version || reqAgr.version,
+        document_hash: canonicalHash,
+        accepted_at: nowIso,
+        signed_document_ref:
+          submitted.signed_document_ref || `SIGNED-${reqAgr.type.toUpperCase()}-2026`,
+        approval_status: 'accepted',
+      });
+    }
+
+    if (missingAgreements.length > 0 || normalizedAcceptances.length < 8) {
       return NextResponse.json(
         {
           ok: false,
-          error: `All 8 mandatory Uttarkunth staff agreements must be completed. Missing: ${agreementVerification.missingAgreements.join(', ')}`,
+          error: `All 8 mandatory Uttarkunth staff agreements must be completed. Missing: ${missingAgreements.join(', ')}`,
         },
         { status: 400 }
       );
@@ -263,15 +289,18 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 4. Consume single-use invitation atomically
+    // 4. Consume single-use invitation atomically using reconciled canonical columns
     const { data: consumedInvite, error: consumeErr } = await (
       adminClient.from('staff_invitations' as any) as any
     )
       .update({
         used_at: nowIso,
+        accepted_at: nowIso,
+        accepted_by: candidateUserId,
         status: 'accepted',
       })
       .eq('id', invitationRow.id)
+      .eq('status', 'pending')
       .is('used_at', null)
       .select()
       .maybeSingle();
@@ -348,7 +377,9 @@ export async function POST(req: NextRequest) {
     const userAgent = req.headers.get('user-agent') || null;
 
     for (const acc of normalizedAcceptances) {
-      await (adminClient.from('staff_agreement_acceptances' as any) as any).upsert(
+      const { error: accErr } = await (
+        adminClient.from('staff_agreement_acceptances' as any) as any
+      ).upsert(
         {
           staff_profile_id: createdProfile.id,
           staff_user_id: candidateUserId,
@@ -359,31 +390,59 @@ export async function POST(req: NextRequest) {
           version: acc.version,
           document_hash: acc.document_hash,
           accepted_at: acc.accepted_at,
+          accepted_ip: ipHeader,
           ip_address: ipHeader,
           user_agent: userAgent,
           signed_document_ref: acc.signed_document_ref,
           approval_status: 'accepted',
         },
-        { onConflict: 'staff_user_id,agreement_type,agreement_version' }
+        { onConflict: 'user_id,agreement_code' }
       );
+
+      if (accErr) {
+        console.error('Failed to record staff agreement acceptance:', accErr);
+        return NextResponse.json(
+          {
+            ok: false,
+            error: `Failed to record agreement acceptance for '${acc.agreement_type}': ${accErr.message}`,
+          },
+          { status: 500 }
+        );
+      }
     }
 
-    // 7. Persist uploaded HR documents metadata (if provided)
+    // 7. Persist uploaded HR documents metadata with storage path isolation
     const hrDocuments = Array.isArray(body.hr_documents) ? body.hr_documents : [];
     for (const doc of hrDocuments) {
       if (doc && doc.storage_path) {
-        try {
-          await (adminClient.from('staff_documents' as any) as any).insert({
-            staff_profile_id: createdProfile.id,
-            user_id: candidateUserId,
-            document_type: doc.document_type || 'passport',
-            storage_bucket: 'staff-hr-docs',
-            storage_path: doc.storage_path,
-            mime_type: doc.mime_type || 'application/pdf',
-            file_size_bytes: doc.file_size_bytes || null,
-          });
-        } catch {
-          // Ignore duplicate document rows
+        if (
+          !doc.storage_path.startsWith(`staff-onboarding/${invitationRow.id}/`) &&
+          !doc.storage_path.startsWith(`staff-hr/${candidateUserId}/`)
+        ) {
+          return NextResponse.json(
+            {
+              ok: false,
+              error: `Cross-tenant storage path rejected: HR document storage path '${doc.storage_path}' must be scoped to your onboarding application.`,
+            },
+            { status: 403 }
+          );
+        }
+
+        const { error: docErr } = await (
+          adminClient.from('staff_documents' as any) as any
+        ).insert({
+          staff_profile_id: createdProfile.id,
+          user_id: candidateUserId,
+          document_type: doc.document_type || 'passport',
+          storage_bucket: 'staff-hr-docs',
+          storage_path: doc.storage_path,
+          mime_type: doc.mime_type || 'application/pdf',
+          file_size_bytes: doc.file_size_bytes || doc.size_bytes || null,
+          size_bytes: doc.size_bytes || doc.file_size_bytes || null,
+        });
+
+        if (docErr) {
+          console.error('Failed to record staff document:', docErr);
         }
       }
     }

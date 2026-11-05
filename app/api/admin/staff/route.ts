@@ -420,19 +420,21 @@ export async function POST(req: NextRequest) {
         const roleDef = STAFF_ROLE_DEFINITIONS[roleSlug];
         if (roleDef && updatedCandidate.id) {
           for (const perm of roleDef.permissions) {
-            try {
-              await (adminClient.from('staff_permission_assignments' as any) as any).upsert(
-                {
-                  staff_profile_id: updatedCandidate.id,
-                  user_id: candidate.user_id,
-                  permission_code: perm,
-                  granted_by: auth.user.id,
-                  revoked_at: null,
-                },
-                { onConflict: 'staff_profile_id,permission_code' }
-              );
-            } catch {
-              // Ignore if table constraint differs
+            const { error: permErr } = await (
+              adminClient.from('staff_permission_assignments' as any) as any
+            ).upsert(
+              {
+                staff_profile_id: updatedCandidate.id,
+                user_id: candidate.user_id,
+                permission_key: perm,
+                permission_code: perm,
+                granted_by: auth.user.id,
+                revoked_at: null,
+              },
+              { onConflict: 'staff_profile_id,permission_key' }
+            );
+            if (permErr) {
+              console.error('Failed to seed default staff permission assignment:', permErr);
             }
           }
         }
@@ -591,19 +593,25 @@ export async function POST(req: NextRequest) {
           ])
         );
         for (const perm of effectiveSet) {
-          await (adminClient.from('staff_permission_assignments' as any) as any).upsert(
+          const { error: syncErr } = await (
+            adminClient.from('staff_permission_assignments' as any) as any
+          ).upsert(
             {
               staff_profile_id: updatedProfile.id,
               user_id: updatedProfile.user_id,
+              permission_key: perm,
               permission_code: perm,
               granted_by: auth.user.id,
               revoked_at: null,
             },
-            { onConflict: 'staff_profile_id,permission_code' }
+            { onConflict: 'staff_profile_id,permission_key' }
           );
+          if (syncErr) {
+            console.error('Failed to sync updated staff permission:', syncErr);
+          }
         }
-      } catch {
-        // Optional sync if table constraints differ
+      } catch (syncErr: any) {
+        console.error('Permission assignment sync error:', syncErr);
       }
 
       await recordStaffAuditLog({
@@ -863,9 +871,11 @@ export async function POST(req: NextRequest) {
           status: nextStatus,
           approved_by: auth.user.id,
           approved_by_user_id: auth.user.id,
+          second_approver_id: auth.user.id,
           approved_at: nowIso,
           decided_at: nowIso,
           reviewer_notes: notes || null,
+          decision_notes: notes || null,
         })
         .eq('id', dual_approval_id)
         .select()

@@ -235,12 +235,27 @@ export async function POST(req: NextRequest) {
       const resolvedRefNumber = document_reference_number || reference_number || null;
       const resolvedExpiry = expiry_date || expires_at || null;
 
+      const allowedPrefix1 = `seller-verification/${user.id}/`;
+      const allowedPrefix2 = `sellers/${user.id}/`;
+      if (
+        !String(storage_path || '').startsWith(allowedPrefix1) &&
+        !String(storage_path || '').startsWith(allowedPrefix2)
+      ) {
+        return NextResponse.json(
+          {
+            ok: false,
+            error: `Cross-tenant storage path injection rejected: Document storage path '${storage_path}' must be scoped to your seller user identity.`,
+          },
+          { status: 403 }
+        );
+      }
+
       const validation = validatePrivateDocumentUpload({
         fileName: document_title || storage_path || '',
         mimeType: mime_type || '',
         sizeBytes: resolvedSizeBytes,
         storageBucket: 'seller-verification-docs',
-        storagePath,
+        storagePath: storage_path,
         isPublicUrl:
           String(storage_path || '').startsWith('http://') ||
           String(storage_path || '').startsWith('https://'),
