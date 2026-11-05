@@ -15,35 +15,33 @@ ALTER TABLE public.property_hosts
   ADD COLUMN IF NOT EXISTS status text NOT NULL DEFAULT 'active'
   CHECK (status IN ('active', 'revoked', 'inactive'));
 
-CREATE OR REPLACE FUNCTION public.is_property_host(
-  p_property_id uuid,
-  p_user_id uuid DEFAULT auth.uid()
-)
+CREATE OR REPLACE FUNCTION public.is_property_host(p_property_id uuid)
 RETURNS boolean
 LANGUAGE sql
 STABLE
 SECURITY DEFINER
 SET search_path = public
-AS $$
+AS $
   SELECT CASE
-    WHEN p_property_id IS NULL OR p_user_id IS NULL THEN false
+    WHEN p_property_id IS NULL OR auth.uid() IS NULL THEN false
     ELSE EXISTS (
       SELECT 1
       FROM public.properties p
       WHERE p.id = p_property_id
-        AND p.host_id = p_user_id
+        AND p.host_id = auth.uid()
     ) OR EXISTS (
       SELECT 1
       FROM public.property_hosts ph
       WHERE ph.property_id = p_property_id
-        AND ph.user_id = p_user_id
+        AND ph.user_id = auth.uid()
         AND COALESCE(ph.status, 'active') = 'active'
     )
   END;
-$$;
+$;
 
-REVOKE ALL ON FUNCTION public.is_property_host(uuid, uuid) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION public.is_property_host(uuid, uuid) TO anon, authenticated, service_role;
+-- Identity is always derived from auth.uid(); callers cannot probe another user's host access.
+REVOKE ALL ON FUNCTION public.is_property_host(uuid) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.is_property_host(uuid) TO authenticated, service_role;
 
 -- ============================================================================
 -- 2. TOTP MFA ASSURANCE LEVEL (AAL2) HELPER FUNCTION
@@ -72,54 +70,28 @@ ALTER TABLE public.platform_admins
 REVOKE ALL ON TABLE public.platform_admins FROM PUBLIC, anon, authenticated;
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.platform_admins TO service_role;
 
+-- staff_profiles is the sole administrative identity registry once Phase 2 is installed.
+-- Legacy platform_admins rows must never bypass staff approval, consent, or agreement checks.
 CREATE OR REPLACE FUNCTION public.is_platform_admin_for_user(p_user_id uuid)
 RETURNS boolean
-LANGUAGE plpgsql
+LANGUAGE sql
 STABLE
 SECURITY DEFINER
 SET search_path = public
-AS $$
-DECLARE
-  v_has_staff_table boolean;
-BEGIN
-  IF p_user_id IS NULL THEN
-    RETURN false;
-  END IF;
-
-  SELECT EXISTS (
+AS $
+  SELECT p_user_id IS NOT NULL AND EXISTS (
     SELECT 1
-    FROM information_schema.tables
-    WHERE table_schema = 'public'
-      AND table_name = 'staff_profiles'
-  ) INTO v_has_staff_table;
-
-  IF v_has_staff_table THEN
-    IF EXISTS (
-      SELECT 1
-      FROM public.staff_profiles sp
-      WHERE sp.user_id = p_user_id
-        AND sp.status = 'active'
-        AND sp.session_revoked_at IS NULL
-        AND sp.founder_approved_at IS NOT NULL
-        AND sp.founder_approved_by IS NOT NULL
-        AND sp.staff_id IS NOT NULL
-        AND (
-          sp.role_slug = 'founder'
-          OR COALESCE(sp.agreements_completed, false) = true
-          OR COALESCE(sp.all_agreements_accepted, false) = true
-        )
-    ) THEN
-      RETURN true;
-    END IF;
-  END IF;
-
-  RETURN EXISTS (
-    SELECT 1
-    FROM public.platform_admins pa
-    WHERE pa.user_id = p_user_id
+    FROM public.staff_profiles sp
+    WHERE sp.user_id = p_user_id
+      AND sp.status = 'active'
+      AND sp.session_revoked_at IS NULL
+      AND sp.founder_approved_at IS NOT NULL
+      AND sp.founder_approved_by IS NOT NULL
+      AND sp.staff_id IS NOT NULL
+      AND COALESCE(sp.agreements_completed, false) = true
+      AND COALESCE(sp.all_agreements_accepted, false) = true
   );
-END;
-$$;
+$;
 
 REVOKE ALL ON FUNCTION public.is_platform_admin_for_user(uuid) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.is_platform_admin_for_user(uuid) TO service_role;
@@ -141,7 +113,38 @@ BEGIN
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION public.is_platform_admin() TO PUBLIC, anon, authenticated, service_role;
+REVOKE ALL ON FUNCTION public.is_platform_admin() FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.is_platform_admin() TO authenticated, service_role;
+
+-- Sensitive private-document review is Founder-only in the initial release.
+-- Employee access is intentionally owner-only until pillar-specific document permissions
+-- are implemented and tested. This helper derives identity from auth.uid() to prevent probing.
+CREATE OR REPLACE FUNCTION public.is_active_founder()
+RETURNS boolean
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $
+  SELECT auth.uid() IS NOT NULL AND EXISTS (
+    SELECT 1
+    FROM public.staff_profiles sp
+    WHERE sp.user_id = auth.uid()
+      AND sp.role_slug = 'founder'
+      AND sp.status = 'active'
+      AND sp.session_revoked_at IS NULL
+      AND sp.founder_approved_at IS NOT NULL
+      AND sp.founder_approved_by IS NOT NULL
+      AND sp.staff_id = 'UK-STAFF-2026-0001'
+      AND COALESCE(sp.agreements_completed, false) = true
+      AND COALESCE(sp.all_agreements_accepted, false) = true
+  );
+$;
+
+REVOKE ALL ON FUNCTION public.is_active_founder() FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.is_active_founder() TO authenticated, service_role;
+
+
 
 -- ============================================================================
 -- 4. FIX PUBLIC SELECT & HOST POLICIES ON properties, room_units & room_availability_blocks
@@ -186,12 +189,12 @@ CREATE POLICY "Hosts and co-hosts manage their properties"
   TO authenticated
   USING (
     host_id = auth.uid()
-    OR public.is_property_host(id, auth.uid())
+    OR public.is_property_host(id)
     OR public.is_platform_admin()
   )
   WITH CHECK (
     host_id = auth.uid()
-    OR public.is_property_host(id, auth.uid())
+    OR public.is_property_host(id)
     OR public.is_platform_admin()
   );
 
@@ -220,11 +223,11 @@ CREATE POLICY "Hosts and co-hosts manage room units for their properties"
   FOR ALL
   TO authenticated
   USING (
-    public.is_property_host(property_id, auth.uid())
+    public.is_property_host(property_id)
     OR public.is_platform_admin()
   )
   WITH CHECK (
-    public.is_property_host(property_id, auth.uid())
+    public.is_property_host(property_id)
     OR public.is_platform_admin()
   );
 
@@ -239,7 +242,7 @@ CREATE POLICY "Authorized hosts and admins can view availability blocks"
       SELECT 1
       FROM public.room_units r
       WHERE r.id = room_availability_blocks.room_unit_id
-        AND public.is_property_host(r.property_id, auth.uid())
+        AND public.is_property_host(r.property_id)
     )
   );
 
@@ -446,8 +449,8 @@ CREATE POLICY "Staff can moderate reviews"
   ON public.reviews
   FOR ALL
   TO authenticated
-  USING (public.is_platform_admin() AND public.current_session_is_aal2())
-  WITH CHECK (public.is_platform_admin() AND public.current_session_is_aal2());
+  USING (public.is_active_founder() AND public.current_session_is_aal2())
+  WITH CHECK (public.is_active_founder() AND public.current_session_is_aal2());
 
 -- ============================================================================
 -- 7. ENABLE & FORCE ROW LEVEL SECURITY ACROSS ALL SENSITIVE TABLES
@@ -555,7 +558,7 @@ CREATE POLICY "Sellers can access own verification docs"
     AND (
       (storage.foldername(name))[1] = auth.uid()::text
       OR (storage.foldername(name))[2] = auth.uid()::text
-      OR (public.is_platform_admin() AND public.current_session_is_aal2())
+      OR (public.is_active_founder() AND public.current_session_is_aal2())
     )
   );
 
@@ -583,7 +586,7 @@ CREATE POLICY "Staff HR docs restricted to owner or Founder AAL2"
     AND (
       (storage.foldername(name))[1] = auth.uid()::text
       OR (storage.foldername(name))[2] = auth.uid()::text
-      OR (public.is_platform_admin() AND public.current_session_is_aal2())
+      OR (public.is_active_founder() AND public.current_session_is_aal2())
     )
   );
 
@@ -598,7 +601,7 @@ CREATE POLICY "Private pillar docs restricted to owner or Staff AAL2"
     AND (
       (storage.foldername(name))[1] = auth.uid()::text
       OR (storage.foldername(name))[2] = auth.uid()::text
-      OR (public.is_platform_admin() AND public.current_session_is_aal2())
+      OR (public.is_active_founder() AND public.current_session_is_aal2())
     )
   );
 
