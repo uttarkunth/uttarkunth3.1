@@ -5,6 +5,7 @@
 **Website:** [https://uttarkunth.com](https://uttarkunth.com)  
 **Staff Portal Hostname:** `team.uttarkunth.com` (routes to `/staff/login` and `/admin/*`)  
 **Repository:** `uttarkunth/uttarkunth3.1`  
+**Working Branch:** `uttarkunthmain2`  
 **Stack:** Next.js 14 App Router (`14.2.35`), TypeScript (`5.7.3`), Tailwind CSS (`3.4.17`), Supabase Auth / PostgreSQL / Private Storage, OpenNext for Cloudflare (`@opennextjs/cloudflare`), Cloudflare Workers.
 
 ---
@@ -52,10 +53,10 @@ npx tsc --noEmit
 # 4. Run Next.js ESLint checks
 npm run lint
 
-# 5. Run the automated test suite (11 test files, including 26 Phase 2 security & governance scenarios)
+# 5. Run the automated test suite (127 tests across 11 test suites)
 npm test
 
-# 6. Build the production Next.js application
+# 6. Build the production Next.js application (77 static/dynamic routes compiled)
 npm run build
 
 # 7. Build the Cloudflare Worker bundle (.open-next/worker.js and .open-next/assets)
@@ -79,10 +80,31 @@ ALLOWED_ORIGINS=https://uttarkunth.com,https://team.uttarkunth.com,http://localh
 
 ---
 
-## 5. Architecture & Audit Documentation
+## 5. Security & Founder Governance Summary
 
+1. **Founder Provisioning Lockdown:**
+   - In `supabase/migrations/20261104120000_phase2_staff_governance_and_seller_verification_pending_approval.sql`, `public.provision_founder_account` is locked down with `REVOKE ALL ON FUNCTION public.provision_founder_account FROM PUBLIC, anon, authenticated;` and `GRANT EXECUTE ON FUNCTION public.provision_founder_account TO service_role;`.
+   - The procedure strictly checks `auth.users` to confirm that the supplied UUID exists and that the submitted email matches the registered email on file.
+   - It cannot be called anonymously or publicly via PostgREST RPC.
+   - Verified via SQL:
+     ```sql
+     SELECT
+       has_function_privilege('anon', 'public.provision_founder_account(uuid, text, text, text)', 'EXECUTE') AS anon_can_exec,
+       has_function_privilege('authenticated', 'public.provision_founder_account(uuid, text, text, text)', 'EXECUTE') AS auth_can_exec,
+       has_function_privilege('service_role', 'public.provision_founder_account(uuid, text, text, text)', 'EXECUTE') AS service_role_can_exec;
+     ```
+2. **Canonical Contract Reconciled:**
+   - Standardized on `role_slug`, `permission_key`, `founder_approved_at`, and `founder_approved_by` across the SQL migration, TypeScript interfaces, and API routes.
+3. **Pending Approval Isolation:**
+   - All migrations and Cloudflare Worker deployments are held in pending-approval status. No live production database modifications are executed automatically.
+
+---
+
+## 6. Architecture & Audit Documentation
+
+- [`docs/CHATGPT_MASTER_REFERENCE.md`](docs/CHATGPT_MASTER_REFERENCE.md) — Comprehensive technical reference for LLM and architectural review.
 - [`docs/audit/CODEBASE_COMPARISON.md`](docs/audit/CODEBASE_COMPARISON.md) — Complete SHA-256 inventory and file-by-file comparison between Project A (AI Studio) and Project B (Antigravity).
-- [`docs/security/SECURITY_REMEDIATION.md`](docs/security/SECURITY_REMEDIATION.md) — Detailed report of all 12 security vulnerabilities remediated and their automated verification tests.
+- [`docs/security/SECURITY_REMEDIATION.md`](docs/security/SECURITY_REMEDIATION.md) — Detailed report of all 13 security vulnerabilities remediated and their automated verification tests.
 - [`docs/database/MIGRATION_REVIEW.md`](docs/database/MIGRATION_REVIEW.md) — Database schema, RLS policies, private storage buckets (`staff-hr-docs`, `seller-verification-docs`), non-recursive `SECURITY DEFINER` helpers, and ordered migration plan.
 - [`docs/testing/FINAL_TEST_REPORT.md`](docs/testing/FINAL_TEST_REPORT.md) — Complete verification and test execution report.
 - [`DEPLOYMENT.md`](DEPLOYMENT.md) — Step-by-step Cloudflare Workers, `team.uttarkunth.com`, Cloudflare Access, and Supabase configuration guide.
