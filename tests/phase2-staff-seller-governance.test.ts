@@ -1189,11 +1189,13 @@ describe('TASK 9 — 12 Strict Verification Scenarios', () => {
     );
 
     assert.match(roleRoute, /row\.staff_id === 'UK-STAFF-2026-0001'/);
+    assert.match(roleRoute, /row\.founder_approved_at/);
     assert.match(roleRoute, /row\.founder_approved_by === user\.id/);
     assert.match(roleRoute, /founderCount === 1/);
     assert.match(roleRoute, /canCompleteFounderSetup/);
     assert.match(founderSetupRoute, /profile\.role_slug === 'founder'/);
     assert.match(founderSetupRoute, /profile\.staff_id === 'UK-STAFF-2026-0001'/);
+    assert.match(founderSetupRoute, /profile\.founder_approved_at/);
     assert.match(founderSetupRoute, /context\.user\.id/);
     assert.match(founderSetupRoute, /submitted\.accepted !== true/);
     assert.match(founderSetupRoute, /body\?\.privacy_notice_accepted !== true/);
