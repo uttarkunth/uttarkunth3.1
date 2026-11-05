@@ -48,6 +48,7 @@ async function resolveFounderSetupContext() {
     profile.staff_id === 'UK-STAFF-2026-0001' &&
     profile.status === 'active' &&
     profile.founder_approved === true &&
+    Boolean(profile.founder_approved_at) &&
     profile.founder_approved_by === user.id &&
     !profile.session_revoked_at;
 
