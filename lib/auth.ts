@@ -1,5 +1,5 @@
 import { createAdminClient } from './supabase/admin.ts';
-import { STAFF_ROLE_DEFINITIONS, type StaffRoleSlug } from './staff-rbac';
+import { STAFF_ROLE_DEFINITIONS, type StaffRoleSlug } from './staff-rbac.ts';
 
 /**
  * Authoritative platform administrator & active staff verification.
