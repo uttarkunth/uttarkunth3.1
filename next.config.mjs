@@ -22,7 +22,12 @@ try {
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: 'standalone',
+  cleanDistDir: false,
   reactStrictMode: true,
+  experimental: {
+    workerThreads: false,
+    cpus: 1,
+  },
   images: {
     unoptimized: true,
     remotePatterns: [

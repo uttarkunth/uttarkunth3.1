@@ -5,22 +5,35 @@ import { execSync } from 'node:child_process';
 const rootDir = process.cwd();
 const workerPath = path.join(rootDir, '.open-next', 'worker.js');
 
-if (fs.existsSync(workerPath)) {
-  console.log('[cloudflare-build] .open-next/worker.js already exists; skipping duplicate OpenNext build.');
+if (process.env.SKIP_OPENNEXT_REBUILD === 'true' && fs.existsSync(workerPath)) {
+  console.log(
+    '[cloudflare-build] SKIP_OPENNEXT_REBUILD=true and .open-next/worker.js exists; reusing existing worker bundle.'
+  );
   process.exit(0);
 }
 
 const standaloneServerPath = path.join(rootDir, '.next', 'standalone', 'server.js');
-const skipNextFlag = fs.existsSync(standaloneServerPath) ? ' --skipNextBuild' : '';
+const shouldRunNextBuild =
+  process.env.FORCE_NEXT_BUILD === 'true' || !fs.existsSync(standaloneServerPath);
 
-console.log(
-  `[cloudflare-build] Building OpenNext Cloudflare worker${
-    skipNextFlag ? ' (reusing existing .next/standalone output)' : ''
-  }...`
+if (shouldRunNextBuild) {
+  console.log('[cloudflare-build] Running next build...');
+  execSync('npx next build', {
+    stdio: 'inherit',
+    cwd: rootDir,
+    env: process.env,
+  });
+} else {
+  console.log('[cloudflare-build] Using freshly built .next/standalone output...');
+}
+
+console.log('[cloudflare-build] Building fresh OpenNext Cloudflare worker bundle...');
+
+execSync(
+  'npx opennextjs-cloudflare build --dangerouslyUseUnsupportedNextVersion --skipNextBuild',
+  {
+    stdio: 'inherit',
+    cwd: rootDir,
+    env: process.env,
+  }
 );
-
-execSync(`npx opennextjs-cloudflare build --dangerouslyUseUnsupportedNextVersion${skipNextFlag}`, {
-  stdio: 'inherit',
-  cwd: rootDir,
-  env: process.env,
-});
