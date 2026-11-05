@@ -4,7 +4,8 @@ import { redirect } from 'next/navigation';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { AUTHENTIC_PRODUCTIONS } from '@/lib/constants';
-import { Film, Play, Sparkles, Video, ArrowRight, Clapperboard, CheckCircle2, Clock, AlertTriangle } from 'lucide-react';
+import { FilmmakerTakedownButton } from '@/components/filmmaker-takedown-button';
+import { Film, Play, Sparkles, Video, ArrowRight, Clapperboard, CheckCircle2, Clock, AlertTriangle, BarChart3 } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 
@@ -50,6 +51,20 @@ export default async function AccountProductionsPage() {
           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-amber-100 text-amber-800 text-[11px] font-bold rounded-full">
             <AlertTriangle className="w-3 h-3" />
             Revisions Requested
+          </span>
+        );
+      case 'takedown_requested':
+        return (
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-amber-100 text-amber-900 text-[11px] font-bold rounded-full">
+            <AlertTriangle className="w-3 h-3" />
+            Takedown Requested
+          </span>
+        );
+      case 'archived':
+      case 'removed':
+        return (
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-charcoal/10 text-charcoal text-[11px] font-bold rounded-full">
+            Archived / Removed
           </span>
         );
       case 'rejected':
@@ -160,14 +175,34 @@ export default async function AccountProductionsPage() {
                 {prop.admin_notes && (
                   <div className="p-3 bg-white rounded-xl border border-forest/15 text-[11px] text-forest space-y-1">
                     <span className="font-semibold block text-ukorange">Production Editorial Note:</span>
-                    <p className="text-charcoal-muted">{prop.admin_notes}</p>
+                    <p className="text-charcoal-muted whitespace-pre-line">{prop.admin_notes}</p>
                   </div>
                 )}
+
+                <FilmmakerTakedownButton
+                  proposalId={prop.id}
+                  currentStatus={prop.status}
+                />
               </div>
             ))}
           </div>
         </div>
       )}
+
+      {/* Honest Streaming Telemetry Status (No Fabricated Metrics) */}
+      <div className="p-5 bg-ivory-warm rounded-3xl border border-forest/15 flex items-start gap-3 text-xs">
+        <div className="w-9 h-9 rounded-xl bg-forest/10 text-forest flex items-center justify-center shrink-0">
+          <BarChart3 className="w-4 h-4 text-ukorange" />
+        </div>
+        <div className="space-y-1">
+          <span className="font-bold text-forest block">
+            Audience &amp; Streaming Telemetry: Analytics not connected
+          </span>
+          <p className="text-charcoal-muted leading-relaxed">
+            Uttarkunth does not display simulated view counts, synthetic watch hours, or estimated streaming payouts. Real-time audience telemetry will appear here only when connected to verified streaming analytics.
+          </p>
+        </div>
+      </div>
 
       {/* Productions Catalog & Streaming Access */}
       <div className="space-y-6">

@@ -53,6 +53,70 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
+
+    // Support filmmaker-initiated takedown/removal request
+    if (body?.action === 'request_takedown') {
+      const proposalId = String(body.proposal_id || '').trim();
+      const takedownReason = String(body.reason || 'Filmmaker requested takedown/archival.').trim();
+
+      if (!proposalId) {
+        return NextResponse.json(
+          { ok: false, error: 'Missing proposal_id for takedown request.' },
+          { status: 400 }
+        );
+      }
+
+      const adminClient = createAdminClient();
+      const { data: existing, error: fetchErr } = await adminClient
+        .from('production_proposals')
+        .select('*')
+        .eq('id', proposalId)
+        .maybeSingle();
+
+      if (fetchErr || !existing) {
+        return NextResponse.json(
+          { ok: false, error: 'Film proposal not found.' },
+          { status: 404 }
+        );
+      }
+
+      if (existing.user_id !== user.id) {
+        return NextResponse.json(
+          { ok: false, error: 'Forbidden: You can only request takedown for your own film proposals.' },
+          { status: 403 }
+        );
+      }
+
+      const combinedNotes = existing.admin_notes
+        ? `${existing.admin_notes}\n[TAKEDOWN REQUESTED BY FILMMAKER]: ${takedownReason}`
+        : `[TAKEDOWN REQUESTED BY FILMMAKER]: ${takedownReason}`;
+
+      const { data: updated, error: updateErr } = await adminClient
+        .from('production_proposals')
+        .update({
+          status: 'takedown_requested',
+          admin_notes: combinedNotes,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', proposalId)
+        .eq('user_id', user.id)
+        .select()
+        .single();
+
+      if (updateErr) {
+        return NextResponse.json(
+          { ok: false, error: updateErr.message },
+          { status: 500 }
+        );
+      }
+
+      return NextResponse.json({
+        ok: true,
+        proposal: updated,
+        message: 'Takedown request submitted to the Productions Editorial Desk.',
+      });
+    }
+
     const parsed = ProductionProposalSchema.safeParse(body);
 
     if (!parsed.success) {

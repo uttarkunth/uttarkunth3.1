@@ -50,18 +50,24 @@ export function ProductionsModerationClient({ initialProposals, initialProfiles 
         throw new Error(data.error || 'Failed to update proposal');
       }
 
+      const resolvedStatus =
+        action === 'approve' || action === 'reject_takedown'
+          ? 'approved'
+          : action === 'reject'
+          ? 'rejected'
+          : action === 'approve_takedown' || action === 'archive'
+          ? 'archived'
+          : action === 'remove'
+          ? 'removed'
+          : 'revision_requested';
+
       setProposals((prev) =>
         prev.map((p) =>
           p.id === proposalId
             ? {
                 ...p,
-                status:
-                  action === 'approve'
-                    ? 'approved'
-                    : action === 'reject'
-                    ? 'rejected'
-                    : 'revision_requested',
-                admin_notes: adminNotes,
+                status: resolvedStatus,
+                admin_notes: adminNotes || p.admin_notes,
               }
             : p
         )
@@ -70,13 +76,8 @@ export function ProductionsModerationClient({ initialProposals, initialProfiles 
       if (selectedProposal?.id === proposalId) {
         setSelectedProposal((prev: any) => ({
           ...prev,
-          status:
-            action === 'approve'
-              ? 'approved'
-              : action === 'reject'
-              ? 'rejected'
-              : 'revision_requested',
-          admin_notes: adminNotes,
+          status: resolvedStatus,
+          admin_notes: adminNotes || prev?.admin_notes,
         }));
       }
 
@@ -136,6 +137,20 @@ export function ProductionsModerationClient({ initialProposals, initialProfiles 
           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-amber-100 text-amber-800 text-[11px] font-bold rounded-full">
             <AlertTriangle className="w-3 h-3" />
             Revision
+          </span>
+        );
+      case 'takedown_requested':
+        return (
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-amber-100 text-amber-900 text-[11px] font-bold rounded-full">
+            <AlertTriangle className="w-3 h-3" />
+            Takedown Requested
+          </span>
+        );
+      case 'archived':
+      case 'removed':
+        return (
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-charcoal/10 text-charcoal text-[11px] font-bold rounded-full">
+            Archived
           </span>
         );
       case 'rejected':
@@ -361,7 +376,20 @@ export function ProductionsModerationClient({ initialProposals, initialProfiles 
                       <XCircle className="w-3.5 h-3.5" />
                       <span>Decline</span>
                     </button>
+
+                    <button
+                      type="button"
+                      disabled={actionLoading}
+                      onClick={() => handleProposalAction(selectedProposal.id, 'approve_takedown')}
+                      className="inline-flex items-center gap-1.5 px-4 py-2 bg-charcoal hover:bg-black text-white text-xs font-semibold rounded-xl shadow-xs transition-colors disabled:opacity-50"
+                    >
+                      <span>Approve Takedown / Archive</span>
+                    </button>
                   </div>
+
+                  <p className="text-[11px] text-charcoal-muted pt-1">
+                    Streaming Telemetry Status: <strong>Analytics not connected</strong> (no fabricated view counts or revenue metrics).
+                  </p>
                 </div>
               </div>
             ) : (
