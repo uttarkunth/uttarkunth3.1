@@ -655,6 +655,8 @@ CREATE POLICY "Public read access for property-photos"
   USING (bucket_id = 'property-photos');
 
 -- Owner-scoped read & upload for seller-verification-docs (supports both <uid>/file and seller-verification/<uid>/file)
+-- Private documents are owner-readable or available to the relevant, explicitly
+-- permissioned pillar reviewers. The helper enforces complete consent and AAL2.
 DROP POLICY IF EXISTS "Sellers can access own verification docs" ON storage.objects;
 CREATE POLICY "Sellers can access own verification docs"
   ON storage.objects
@@ -665,24 +667,11 @@ CREATE POLICY "Sellers can access own verification docs"
     AND (
       (storage.foldername(name))[1] = auth.uid()::text
       OR (storage.foldername(name))[2] = auth.uid()::text
-      OR (public.is_active_founder() AND public.current_session_is_aal2())
+      OR public.has_staff_permission_for_user(auth.uid(), 'seller.verify_documents')
+      OR public.has_staff_permission_for_user(auth.uid(), 'finance.review_agreements')
     )
   );
 
-DROP POLICY IF EXISTS "Sellers can upload own verification docs" ON storage.objects;
-CREATE POLICY "Sellers can upload own verification docs"
-  ON storage.objects
-  FOR INSERT
-  TO authenticated
-  WITH CHECK (
-    bucket_id = 'seller-verification-docs'
-    AND (
-      (storage.foldername(name))[1] = auth.uid()::text
-      OR (storage.foldername(name))[2] = auth.uid()::text
-    )
-  );
-
--- Staff HR docs restricted strictly to owner or Founder/Authorized Staff AAL2
 DROP POLICY IF EXISTS "Staff HR docs restricted to owner or Founder AAL2" ON storage.objects;
 CREATE POLICY "Staff HR docs restricted to owner or Founder AAL2"
   ON storage.objects
@@ -693,23 +682,44 @@ CREATE POLICY "Staff HR docs restricted to owner or Founder AAL2"
     AND (
       (storage.foldername(name))[1] = auth.uid()::text
       OR (storage.foldername(name))[2] = auth.uid()::text
-      OR (public.is_active_founder() AND public.current_session_is_aal2())
+      OR public.has_staff_permission_for_user(auth.uid(), 'staff.hr_docs.view')
+      OR public.has_staff_permission_for_user(auth.uid(), 'staff.hire_approve')
     )
   );
 
--- Private host, production, and community document buckets restricted to owner or AAL2 Staff
 DROP POLICY IF EXISTS "Private pillar docs restricted to owner or Staff AAL2" ON storage.objects;
 CREATE POLICY "Private pillar docs restricted to owner or Staff AAL2"
   ON storage.objects
   FOR SELECT
   TO authenticated
   USING (
-    bucket_id IN ('host-verification-docs', 'production-private-docs', 'community-private-docs')
-    AND (
-      (storage.foldername(name))[1] = auth.uid()::text
-      OR (storage.foldername(name))[2] = auth.uid()::text
-      OR (public.is_active_founder() AND public.current_session_is_aal2())
+    (
+      bucket_id = 'host-verification-docs'
+      AND (
+        (storage.foldername(name))[1] = auth.uid()::text
+        OR (storage.foldername(name))[2] = auth.uid()::text
+        OR public.has_staff_permission_for_user(auth.uid(), 'stays.hosts.verify')
+      )
+    )
+    OR (
+      bucket_id = 'production-private-docs'
+      AND (
+        (storage.foldername(name))[1] = auth.uid()::text
+        OR (storage.foldername(name))[2] = auth.uid()::text
+        OR public.has_staff_permission_for_user(auth.uid(), 'productions.review_proposal')
+        OR public.has_staff_permission_for_user(auth.uid(), 'productions.approve_profile')
+      )
+    )
+    OR (
+      bucket_id = 'community-private-docs'
+      AND (
+        (storage.foldername(name))[1] = auth.uid()::text
+        OR (storage.foldername(name))[2] = auth.uid()::text
+        OR public.has_staff_permission_for_user(auth.uid(), 'community.moderate')
+        OR public.has_staff_permission_for_user(auth.uid(), 'community.applications.review')
+      )
     )
   );
 
 COMMIT;
+
