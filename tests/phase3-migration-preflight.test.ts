@@ -203,30 +203,47 @@ describe('Phase A & B — Database Migration Preflight & Contract Verification',
     assert.equal(validFounderResult.normalizedNewEmail, 'founder@uttarkunth.com');
   });
 
-  it('Phase 3 host checker derives identity from auth.uid and cannot inspect arbitrary user IDs', () => {
-    assert.match(phase3Sql, /CREATE OR REPLACE FUNCTION public\\.is_property_host\\(p_property_id uuid\\)/);
-    assert.match(phase3Sql, /public\\.is_property_host\\(id\\)/);
-    assert.doesNotMatch(phase3Sql, /p_user_id uuid DEFAULT auth\\.uid\\(\\)/);
-    assert.match(phase3Sql, /REVOKE ALL ON FUNCTION public\\.is_property_host\\(uuid\\) FROM PUBLIC, anon/);
+  it('Phase 3 host helper ignores caller-supplied identity and uses the signed-in user', () => {
+    const start = phase3Sql.indexOf('CREATE OR REPLACE FUNCTION public.is_property_host');
+    const end = phase3Sql.indexOf('REVOKE ALL ON FUNCTION public.is_property_host', start);
+    assert.ok(start >= 0 && end > start);
+    const helper = phase3Sql.slice(start, end);
+    assert.ok(helper.includes('p_user_id uuid DEFAULT auth.uid()'));
+    assert.ok(helper.includes('ph.user_id = auth.uid()'));
+    assert.ok(!helper.includes('ph.user_id = p_user_id'));
+    assert.ok(phase3Sql.includes('REVOKE ALL ON FUNCTION public.is_property_host(uuid, uuid) FROM PUBLIC, anon'));
   });
 
-  it('Phase 3 admin access always requires accepted staff agreements, including Founder', () => {
+  it('Phase 3 admin access requires completed consent and onboarding with no legacy admin fallback', () => {
     const fnStart = phase3Sql.indexOf('CREATE OR REPLACE FUNCTION public.is_platform_admin_for_user');
     const fnEnd = phase3Sql.indexOf('REVOKE ALL ON FUNCTION public.is_platform_admin_for_user', fnStart);
     assert.ok(fnStart >= 0 && fnEnd > fnStart);
     const adminFunction = phase3Sql.slice(fnStart, fnEnd);
-    assert.match(adminFunction, /COALESCE\\(sp\\.agreements_completed, false\\) = true/);
-    assert.match(adminFunction, /COALESCE\\(sp\\.all_agreements_accepted, false\\) = true/);
-    assert.doesNotMatch(adminFunction, /sp\\.role_slug = 'founder'\\s+OR/);
-    assert.doesNotMatch(adminFunction, /FROM public\\.platform_admins pa/);
+    for (const required of [
+      'sp.founder_approved = true',
+      'sp.privacy_notice_accepted = true',
+      'sp.agreements_completed',
+      'sp.all_agreements_accepted',
+      'sp.onboarding_completed',
+    ]) assert.ok(adminFunction.includes(required), 'Missing gate: ' + required);
+    assert.ok(!adminFunction.includes("sp.role_slug = 'founder' OR"));
+    assert.ok(!adminFunction.includes('FROM public.platform_admins'));
+    assert.ok(phase3Sql.includes('AND public.current_session_is_aal2()'));
   });
 
-  it('Phase 3 private verification and HR documents are owner-or-Founder-AAL2 only', () => {
-    assert.match(phase3Sql, /CREATE OR REPLACE FUNCTION public\\.is_active_founder\\(\\)/);
-    assert.match(phase3Sql, /sp\\.staff_id = 'UK-STAFF-2026-0001'/);
-    assert.match(phase3Sql, /REVOKE ALL ON FUNCTION public\\.is_active_founder\\(\\) FROM PUBLIC, anon/);
-    assert.match(phase3Sql, /public\\.is_active_founder\\(\\) AND public\\.current_session_is_aal2\\(\\)/);
-    assert.doesNotMatch(phase3Sql, /public\\.is_platform_admin\\(\\) AND public\\.current_session_is_aal2\\(\\)/);
+  it('Phase 3 private documents use an invoker Founder helper and require Founder AAL2', () => {
+    const start = phase3Sql.indexOf('CREATE OR REPLACE FUNCTION public.is_active_founder()');
+    const end = phase3Sql.indexOf('REVOKE ALL ON FUNCTION public.is_active_founder()', start);
+    assert.ok(start >= 0 && end > start);
+    const founderHelper = phase3Sql.slice(start, end);
+    assert.ok(founderHelper.includes('SECURITY INVOKER'));
+    assert.ok(founderHelper.includes("sp.staff_id = 'UK-STAFF-2026-0001'"));
+    assert.ok(founderHelper.includes('sp.privacy_notice_accepted = true'));
+    assert.ok(phase3Sql.includes('REVOKE ALL ON FUNCTION public.is_active_founder() FROM PUBLIC, anon'));
+    assert.equal(
+      phase3Sql.split('public.is_active_founder() AND public.current_session_is_aal2()').length - 1,
+      3
+    );
+    assert.ok(!phase3Sql.includes('public.is_platform_admin() AND public.current_session_is_aal2()'));
   });
-
 });
