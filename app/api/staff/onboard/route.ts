@@ -218,8 +218,9 @@ export async function POST(req: NextRequest) {
         version: reqAgr.version,
         document_hash: canonicalHash,
         accepted_at: nowIso,
-        signed_document_ref:
-          submitted.signed_document_ref || `SIGNED-${reqAgr.type.toUpperCase()}-2026`,
+        // Acceptance is evidenced by the explicit checkbox, server timestamp, IP, and user agent;
+        // do not invent a signed-document reference when no signed file was uploaded.
+        signed_document_ref: submitted.signed_document_ref || null,
         approval_status: 'accepted',
       });
     }
