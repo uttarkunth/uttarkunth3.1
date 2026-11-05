@@ -1,19 +1,15 @@
 import React from 'react';
 import { redirect } from 'next/navigation';
 import { AdminNav } from '@/components/admin-nav';
-import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { checkIsPlatformAdmin } from '@/lib/auth';
+import { resolveFounderOrAdminSession } from '@/lib/auth';
 import { HostAssignmentsManager } from '@/components/admin/host-assignments';
-import { Shield } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 
 export default async function AdminUsersPage() {
-  const supabase = createServerSupabaseClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const { user, isAdmin } = await resolveFounderOrAdminSession();
 
-  const isAdmin = user ? await checkIsPlatformAdmin(user.id) : false;
   if (!user || !isAdmin) {
     redirect('/admin/dashboard');
   }
@@ -35,7 +31,7 @@ export default async function AdminUsersPage() {
   try {
     const { data: authData } = await adminClient.auth.admin.listUsers();
     if (authData?.users) {
-      knownUsers = authData.users.map((u) => ({
+      knownUsers = authData.users.map((u: any) => ({
         id: u.id,
         email: u.email || 'Unknown Email',
         fullName: u.user_metadata?.full_name || u.user_metadata?.name || undefined,
