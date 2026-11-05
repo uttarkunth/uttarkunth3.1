@@ -2,33 +2,63 @@ import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 import type { Database } from '@/lib/supabase/types';
 
-export async function middleware(request: NextRequest) {
-  let response = NextResponse.next({
-    request: {
-      headers: request.headers,
-    },
-  });
+function applySecurityHeaders(res: NextResponse, portalKind: 'founder' | 'staff' | 'public'): NextResponse {
+  res.headers.set('X-Content-Type-Options', 'nosniff');
+  res.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.headers.set('X-Frame-Options', 'SAMEORIGIN');
+  res.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=(self)');
+  res.headers.set('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload');
+  res.headers.set('X-Uttarkunth-Portal', portalKind);
+  return res;
+}
 
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const hostHeader = (
     request.headers.get('x-forwarded-host') ||
     request.headers.get('host') ||
     ''
   ).toLowerCase();
+
+  const isFounderSubdomain =
+    hostHeader.startsWith('admin.uttarkunth.com') || hostHeader.startsWith('admin.');
   const isStaffSubdomain =
     hostHeader.startsWith('team.uttarkunth.com') || hostHeader.startsWith('team.');
 
-  // 1. Optional Cloudflare Access perimeter gate on team.uttarkunth.com
+  const portalKind: 'founder' | 'staff' | 'public' = isFounderSubdomain
+    ? 'founder'
+    : isStaffSubdomain
+      ? 'staff'
+      : 'public';
+
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set('x-uttarkunth-portal', portalKind);
+
+  let response = NextResponse.next({
+    request: {
+      headers: requestHeaders,
+    },
+  });
+
+  // 1. Optional Cloudflare Access perimeter gate on admin.uttarkunth.com and team.uttarkunth.com
   // Note: Cloudflare Access never replaces application-level staff authentication, RBAC, or AAL2 MFA checks.
-  if (isStaffSubdomain && process.env.ENFORCE_CLOUDFLARE_ACCESS === 'true') {
+  if (
+    (isFounderSubdomain || isStaffSubdomain) &&
+    process.env.ENFORCE_CLOUDFLARE_ACCESS === 'true'
+  ) {
     const cfAccessJwt = request.headers.get('cf-access-jwt-assertion');
     if (!cfAccessJwt) {
-      return new NextResponse(
-        JSON.stringify({
-          ok: false,
-          error: 'Cloudflare Access verification required for team.uttarkunth.com.',
-        }),
-        { status: 403, headers: { 'content-type': 'application/json' } }
+      return applySecurityHeaders(
+        new NextResponse(
+          JSON.stringify({
+            ok: false,
+            error: `Cloudflare Access verification required for ${
+              isFounderSubdomain ? 'admin.uttarkunth.com' : 'team.uttarkunth.com'
+            }.`,
+          }),
+          { status: 403, headers: { 'content-type': 'application/json' } }
+        ),
+        portalKind
       );
     }
   }
@@ -42,11 +72,13 @@ export async function middleware(request: NextRequest) {
   ) {
     const redirectUrl = new URL('/staff/login', request.url);
     redirectUrl.searchParams.set('error', 'open_registration_prohibited');
-    return NextResponse.redirect(redirectUrl);
+    return applySecurityHeaders(NextResponse.redirect(redirectUrl), portalKind);
   }
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const supabaseAnonKey =
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 
   let user: { id: string; email?: string } | null = null;
 
@@ -60,19 +92,19 @@ export async function middleware(request: NextRequest) {
           request.cookies.set({ name, value, ...options });
           response = NextResponse.next({
             request: {
-              headers: request.headers,
+              headers: requestHeaders,
             },
           });
           response.cookies.set({ name, value, ...options });
         },
         remove(name: string, options: CookieOptions) {
-          request.cookies.set({ name, value, '', ...options });
+          request.cookies.set({ name, value: '', ...options });
           response = NextResponse.next({
             request: {
-              headers: request.headers,
+              headers: requestHeaders,
             },
           });
-          response.cookies.set({ name, value, '', ...options });
+          response.cookies.set({ name, value: '', ...options });
         },
       },
     });
@@ -81,19 +113,106 @@ export async function middleware(request: NextRequest) {
     user = data?.user || null;
   }
 
-  // 3. Dedicated staff hostname root routing (team.uttarkunth.com -> /admin/dashboard or /staff/login)
-  if (isStaffSubdomain && pathname === '/') {
-    const targetPath = user ? '/admin/dashboard' : '/staff/login';
-    return NextResponse.redirect(new URL(targetPath, request.url));
+  // 3. Dedicated portal hostname root & boundary routing
+  // A. Founder Command Centre (admin.uttarkunth.com) -> Founder Only
+  if (isFounderSubdomain) {
+    if (pathname === '/') {
+      const targetPath = user
+        ? '/admin/dashboard'
+        : '/staff/login?portal=founder&next=/admin/dashboard';
+      return applySecurityHeaders(
+        NextResponse.redirect(new URL(targetPath, request.url)),
+        portalKind
+      );
+    }
+
+    // Block public member routes on admin.uttarkunth.com
+    if (
+      pathname === '/signup' ||
+      pathname === '/login' ||
+      pathname.startsWith('/account') ||
+      pathname.startsWith('/host') ||
+      pathname.startsWith('/guest') ||
+      pathname.startsWith('/trips')
+    ) {
+      const targetPath = user
+        ? '/admin/dashboard'
+        : '/staff/login?portal=founder&next=/admin/dashboard';
+      return applySecurityHeaders(
+        NextResponse.redirect(new URL(targetPath, request.url)),
+        portalKind
+      );
+    }
+  }
+
+  // B. Staff Portal (team.uttarkunth.com) -> Approved Staff & Founder
+  if (isStaffSubdomain) {
+    if (pathname === '/') {
+      const targetPath = user ? '/staff' : '/staff/login?portal=staff&next=/staff';
+      return applySecurityHeaders(
+        NextResponse.redirect(new URL(targetPath, request.url)),
+        portalKind
+      );
+    }
+
+    // Block public member routes on team.uttarkunth.com
+    if (
+      pathname === '/signup' ||
+      pathname === '/login' ||
+      pathname.startsWith('/account') ||
+      pathname.startsWith('/host') ||
+      pathname.startsWith('/guest') ||
+      pathname.startsWith('/trips')
+    ) {
+      const targetPath = user ? '/staff' : '/staff/login?portal=staff&next=/staff';
+      return applySecurityHeaders(
+        NextResponse.redirect(new URL(targetPath, request.url)),
+        portalKind
+      );
+    }
+
+    // Block Founder-only governance routes on team.uttarkunth.com
+    if (pathname === '/admin/staff' || pathname === '/admin/dashboard') {
+      const targetPath = user ? '/staff' : '/staff/login?portal=staff&next=/staff';
+      return applySecurityHeaders(
+        NextResponse.redirect(new URL(targetPath, request.url)),
+        portalKind
+      );
+    }
+  }
+
+  // C. Public Production Website (uttarkunth.com / www.uttarkunth.com) -> Strictly block /admin and /staff paths
+  const hostWithoutPort = hostHeader.split(':')[0];
+  const isPublicProductionDomain =
+    hostWithoutPort === 'uttarkunth.com' || hostWithoutPort === 'www.uttarkunth.com';
+  if (
+    isPublicProductionDomain &&
+    (pathname.startsWith('/admin') || pathname.startsWith('/staff'))
+  ) {
+    return applySecurityHeaders(
+      NextResponse.redirect(new URL('/', request.url)),
+      portalKind
+    );
   }
 
   // 4. Strictly protect private routes — fail closed when unauthenticated.
-  // Separate staff portal (/admin) from public member routes (/account, /host, /guest, /trips).
+  // Separate staff/founder portals (/admin, /staff) from public member routes (/account, /host, /guest, /trips).
+  const isProtectedStaffRoute =
+    pathname.startsWith('/admin') ||
+    (pathname.startsWith('/staff') &&
+      !pathname.startsWith('/staff/login') &&
+      !pathname.startsWith('/staff/onboard'));
+
   if (!user) {
-    if (pathname.startsWith('/admin')) {
+    if (isProtectedStaffRoute) {
       const redirectUrl = new URL('/staff/login', request.url);
       redirectUrl.searchParams.set('next', pathname);
-      return NextResponse.redirect(redirectUrl);
+      if (isFounderSubdomain) {
+        redirectUrl.searchParams.set('portal', 'founder');
+      } else if (isStaffSubdomain) {
+        redirectUrl.searchParams.set('portal', 'staff');
+      }
+      return applySecurityHeaders(NextResponse.redirect(redirectUrl), portalKind);
     }
 
     if (
@@ -104,11 +223,11 @@ export async function middleware(request: NextRequest) {
     ) {
       const redirectUrl = new URL('/login', request.url);
       redirectUrl.searchParams.set('next', pathname);
-      return NextResponse.redirect(redirectUrl);
+      return applySecurityHeaders(NextResponse.redirect(redirectUrl), portalKind);
     }
   }
 
-  return response;
+  return applySecurityHeaders(response, portalKind);
 }
 
 export const config = {
