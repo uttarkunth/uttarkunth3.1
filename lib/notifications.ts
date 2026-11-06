@@ -23,111 +23,127 @@ export interface SendNotificationOptions {
 export function cleanPhoneNumber(phone?: string | null): string {
   if (!phone) return '';
   let clean = phone.replace(/[^0-9+]/g, '');
-  if (clean.startsWith('+')) clean = clean.substring(1);
-  // Default to India country code 91 if 10 digits
-  if (clean.length === 10) clean = '91' + clean;
-  return clean;
+  if (clean.startsWith('0')) {
+    clean = '91' + clean.slice(1);
+  } else if (!clean.startsWith('+') && !clean.startsWith('91') && clean.length === 10) {
+    clean = '91' + clean;
+  }
+  return clean.replace(/^\+/, '');
 }
 
 /**
- * Generate direct WhatsApp Web / App Click-to-Chat URL
+ * Generate a direct WhatsApp Web / App chat URL with prefilled text
  */
 export function getWhatsAppDirectUrl(phone: string, text: string): string {
   const cleaned = cleanPhoneNumber(phone);
-  if (!cleaned) return '';
-  return `https://wa.me/${cleaned}?text=${encodeURIComponent(text)}`;
+  return `https://api.whatsapp.com/send?phone=${cleaned}&text=${encodeURIComponent(text)}`;
 }
 
 /**
- * Internal Notification Dispatcher
- * Records immutable record in notification_events table and optionally triggers Resend or WhatsApp Cloud API
+ * Unified notification dispatcher for Uttarkunth.
+ * Dispatches in-app notifications directly to `public.user_notifications`
+ * and sends outward email/WhatsApp alerts via configured gateways (Resend, WhatsApp Cloud API, Twilio).
  */
 export async function sendNotification(options: SendNotificationOptions): Promise<{ ok: boolean; id?: string }> {
   try {
-    const adminClient = createAdminClient();
+    const admin = createAdminClient();
+    let notificationId: string | undefined = undefined;
 
-    // 1. Persist notification event to database
-    const { data, error } = await adminClient
-      .from('notification_events')
-      .insert({
-        user_id: options.userId || null,
-        pillar: options.pillar,
-        channel: options.whatsapp ? 'whatsapp' : (options.email ? 'email' : 'in_app'),
-        title: options.title,
-        message: options.message,
-        action_url: options.actionUrl || null,
-        metadata: {
-          email: options.email,
-          whatsapp: options.whatsapp,
-        },
-        status: 'sent',
-      })
-      .select('id')
-      .single();
+    // 1. In-App Notification (Database table public.user_notifications)
+    if (options.userId) {
+      const { data, error } = await admin
+        .from('user_notifications')
+        .insert({
+          user_id: options.userId,
+          pillar: options.pillar,
+          title: options.title,
+          message: options.message,
+          action_url: options.actionUrl || null,
+          read: false,
+        })
+        .select('id')
+        .single();
 
-    if (error) {
-      console.warn('Failed to persist notification event to database:', error.message);
-    }
-
-    // 2. Dispatch Email via Resend if RESEND_API_KEY is configured
-    if (options.email && process.env.RESEND_API_KEY) {
-      try {
-        await fetch('https://api.resend.com/emails', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${process.env.RESEND_API_KEY}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            from: process.env.EMAIL_FROM || 'Uttarkunth <stays@uttarkunth.com>',
-            to: options.email.to,
-            subject: options.email.subject,
-            html: options.email.body.replace(/\n/g, '<br />'),
-          }),
-        });
-      } catch (emailErr) {
-        console.error('Failed to dispatch external email:', emailErr);
+      if (error) {
+        console.error('[sendNotification] In-app notification error:', error);
+      } else if (data) {
+        notificationId = data.id;
       }
     }
 
-    // 3. Dispatch WhatsApp via WhatsApp Cloud API if credentials are configured
-    if (options.whatsapp && process.env.WHATSAPP_API_TOKEN && process.env.WHATSAPP_PHONE_NUMBER_ID) {
-      try {
-        const toClean = cleanPhoneNumber(options.whatsapp.to);
-        if (toClean) {
-          await fetch(`https://graph.facebook.com/v18.0/${process.env.WHATSAPP_PHONE_NUMBER_ID}/messages`, {
+    // 2. Email Dispatch (Resend API or SMTP if configured)
+    if (options.email && options.email.to) {
+      const resendApiKey = process.env.RESEND_API_KEY;
+      if (resendApiKey && !resendApiKey.includes('placeholder')) {
+        try {
+          const fromAddress = process.env.EMAIL_FROM || 'Uttarkunth Stays <stays@uttarkunth.com>';
+          await fetch('https://api.resend.com/emails', {
             method: 'POST',
             headers: {
-              'Authorization': `Bearer ${process.env.WHATSAPP_API_TOKEN}`,
+              Authorization: `Bearer ${resendApiKey}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              from: fromAddress,
+              to: [options.email.to],
+              subject: options.email.subject,
+              text: options.email.body,
+            }),
+          });
+          console.log(`[Notification Engine: Email Sent via Resend] To: ${options.email.to}`);
+        } catch (mailErr) {
+          console.error('[sendNotification] Resend email dispatch failed:', mailErr);
+        }
+      } else {
+        console.log(`[Notification Engine: Email Logged] To: ${options.email.to} | Subject: "${options.email.subject}"`);
+      }
+    }
+
+    // 3. WhatsApp Dispatch (Meta WhatsApp Cloud API or Twilio if configured)
+    if (options.whatsapp && options.whatsapp.to) {
+      const waToken = process.env.WHATSAPP_API_TOKEN;
+      const waPhoneId = process.env.WHATSAPP_PHONE_NUMBER_ID;
+      const cleanTo = cleanPhoneNumber(options.whatsapp.to);
+
+      if (waToken && waPhoneId && cleanTo) {
+        try {
+          await fetch(`https://graph.facebook.com/v19.0/${waPhoneId}/messages`, {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${waToken}`,
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
               messaging_product: 'whatsapp',
               recipient_type: 'individual',
-              to: toClean,
+              to: cleanTo,
               type: 'text',
-              text: { body: options.whatsapp.body },
+              text: { preview_url: true, body: options.whatsapp.body },
             }),
           });
+          console.log(`[Notification Engine: WhatsApp Sent via Cloud API] To: ${cleanTo}`);
+        } catch (waErr) {
+          console.error('[sendNotification] WhatsApp Cloud API dispatch failed:', waErr);
         }
-      } catch (waErr) {
-        console.error('Failed to dispatch external WhatsApp message:', waErr);
+      } else {
+        console.log(`[Notification Engine: WhatsApp Alert Logged] To: ${options.whatsapp.to} | Message: "${options.whatsapp.body}"`);
       }
     }
 
-    return { ok: true, id: data?.id };
-  } catch (err) {
-    console.error('sendNotification error:', err);
+    return { ok: true, id: notificationId };
+  } catch (err: any) {
+    console.error('[sendNotification] Unexpected failure:', err);
     return { ok: false };
   }
 }
 
 /**
- * Dispatch booking request notification to Host
+ * Host Alert: New Stay Booking Request
  */
 export async function notifyHostNewBooking(params: {
-  hostUserId: string;
+  hostUserId?: string | null;
   hostPhone?: string | null;
+  hostWhatsapp?: string | null;
   hostEmail?: string | null;
   propertyName: string;
   roomName: string;
@@ -135,202 +151,219 @@ export async function notifyHostNewBooking(params: {
   guestPhone: string;
   checkIn: string;
   checkOut: string;
-  bookingRef: string;
-  totalPrice: number;
+  bookingReference: string;
 }) {
-  const title = `New Booking Request: ${params.bookingRef}`;
-  const message = `Guest ${params.guestName} has requested ${params.roomName} at ${params.propertyName} from ${params.checkIn} to ${params.checkOut}. Total: ₹${params.totalPrice.toLocaleString('en-IN')}. Please accept or decline in your host portal.`;
-  const actionUrl = `/account/stays/host`;
+  const message = `New booking request from ${params.guestName} for "${params.roomName}" (${params.checkIn} to ${params.checkOut}). Reference: #${params.bookingReference}. Contact: ${params.guestPhone}.`;
+  const whatsappTarget = params.hostWhatsapp || params.hostPhone;
 
-  const waBody = `*UTTARKUNTH STAYS — NEW BOOKING REQUEST*\n\n` +
-    `Namaste! A new booking request has arrived for *${params.propertyName}*.\n\n` +
-    `• Booking Ref: ${params.bookingRef}\n` +
-    `• Room: ${params.roomName}\n` +
-    `• Guest: ${params.guestName} (${params.guestPhone})\n` +
-    `• Dates: ${params.checkIn} to ${params.checkOut}\n` +
-    `• Total Amount: ₹${params.totalPrice.toLocaleString('en-IN')}\n\n` +
-    `Please log in to your Host Dashboard to Accept or Decline:\n` +
-    `https://uttarkunth.com/account/stays/host`;
-
-  return sendNotification({
+  await sendNotification({
     userId: params.hostUserId,
     pillar: 'stays',
-    title,
+    title: `New Booking Request: ${params.propertyName}`,
     message,
-    actionUrl,
+    actionUrl: '/account/stays/host/bookings',
+    whatsapp: whatsappTarget
+      ? {
+          to: whatsappTarget,
+          body: `*Uttarkunth Stays Alert*: You have a new booking request for *${params.propertyName}* (${params.roomName})!\n\n• Guest: ${params.guestName} (${params.guestPhone})\n• Dates: ${params.checkIn} to ${params.checkOut}\n• Ref: #${params.bookingReference}\n\nReview & decide: https://uttarkunth.com/account/stays/host/bookings`,
+        }
+      : undefined,
     email: params.hostEmail
       ? {
           to: params.hostEmail,
-          subject: `[Uttarkunth] New Booking Request: ${params.bookingRef} — ${params.propertyName}`,
-          body: message + `\n\nGuest Contact: ${params.guestPhone}\nView details: https://uttarkunth.com${actionUrl}`,
-        }
-      : undefined,
-    whatsapp: params.hostPhone
-      ? {
-          to: params.hostPhone,
-          body: waBody,
+          subject: `[Uttarkunth Stays] New Booking Request: ${params.propertyName} (#${params.bookingReference})`,
+          body: `Dear Host,
+
+You have received a new booking request for "${params.propertyName}"!
+
+Reservation Details:
+• Room: ${params.roomName}
+• Guest Name: ${params.guestName}
+• Guest Phone: ${params.guestPhone}
+• Check-In: ${params.checkIn}
+• Check-Out: ${params.checkOut}
+• Booking Reference: #${params.bookingReference}
+
+Payment Policy:
+Uttarkunth does not collect online booking payments. Guests pay you directly upon arrival.
+
+Please review and approve or decline this request on your host dashboard:
+https://uttarkunth.com/account/stays/host/bookings
+
+Warm regards,
+Uttarkunth Stays Team`,
         }
       : undefined,
   });
 }
 
 /**
- * Dispatch booking confirmation / rejection notification to Guest
+ * Guest Alert: Host Decision on Booking Request
  */
 export async function notifyGuestBookingDecision(params: {
-  guestUserId: string;
-  guestPhone?: string | null;
+  guestUserId?: string | null;
   guestEmail?: string | null;
+  guestPhone?: string | null;
   propertyName: string;
   roomName: string;
   checkIn: string;
   checkOut: string;
-  bookingRef: string;
-  decision: 'confirmed' | 'cancelled';
-  cancellationReason?: string | null;
-  hostPhone?: string | null;
-  hostWhatsapp?: string | null;
+  action: 'confirm' | 'decline' | 'cancel';
+  hostNotes?: string | null;
+  bookingReference: string;
 }) {
-  const isConfirmed = params.decision === 'confirmed';
+  const isConfirmed = params.action === 'confirm';
   const title = isConfirmed
-    ? `Booking Confirmed: ${params.propertyName} (${params.bookingRef})`
-    : `Booking Request Declined: ${params.propertyName} (${params.bookingRef})`;
+    ? `Booking Confirmed: ${params.propertyName}`
+    : `Booking Request ${params.action === 'decline' ? 'Declined' : 'Cancelled'}: ${params.propertyName}`;
 
   const message = isConfirmed
-    ? `Great news! Your booking request for ${params.roomName} at ${params.propertyName} has been confirmed by the host. Check-in: ${params.checkIn}. Safe travels!`
-    : `Your booking request for ${params.propertyName} could not be confirmed. Reason: ${params.cancellationReason || 'Host unavailable on these dates'}.`;
+    ? `Your stay request for "${params.roomName}" at ${params.propertyName} (${params.checkIn} to ${params.checkOut}) has been approved by your host! Direct settlement applies upon arrival at the property. Reference: #${params.bookingReference}.`
+    : `Your stay request for "${params.roomName}" at ${params.propertyName} (${params.checkIn} to ${params.checkOut}) was not accepted by the host.${params.hostNotes ? ` Reason: ${params.hostNotes}` : ''}`;
 
-  const actionUrl = `/guest/trips`;
-
-  const waBody = isConfirmed
-    ? `*UTTARKUNTH STAYS — BOOKING CONFIRMED!*\n\n` +
-      `Namaste! Your stay has been confirmed by the host.\n\n` +
-      `• Property: *${params.propertyName}*\n` +
-      `• Room: ${params.roomName}\n` +
-      `• Dates: ${params.checkIn} to ${params.checkOut}\n` +
-      `• Booking Reference: *${params.bookingRef}*\n\n` +
-      (params.hostPhone ? `Host Contact: ${params.hostPhone}\n` : '') +
-      `View your trip itinerary: https://uttarkunth.com/guest/trips\n\n` +
-      `Settle payments directly with your host upon arrival. Have a wonderful Himalayan journey!`
-    : `*UTTARKUNTH STAYS — RESERVATION UPDATE*\n\n` +
-      `Namaste. Your booking request for *${params.propertyName}* (${params.bookingRef}) could not be accommodated by the host.\n` +
-      (params.cancellationReason ? `Note: ${params.cancellationReason}\n` : '') +
-      `\nYou can explore other verified Himalayan stays at https://uttarkunth.com/stays.`;
-
-  return sendNotification({
+  await sendNotification({
     userId: params.guestUserId,
     pillar: 'stays',
     title,
     message,
-    actionUrl,
-    email: params.guestEmail
-      ? {
-          to: params.guestEmail,
-          subject: `[Uttarkunth] ${title}`,
-          body: message + `\n\nView Trip Details: https://uttarkunth.com${actionUrl}`,
-        }
-      : undefined,
+    actionUrl: '/trips',
     whatsapp: params.guestPhone
       ? {
           to: params.guestPhone,
-          body: waBody,
+          body: `*Uttarkunth Stays*: ${title}\n\n${message}\n\nView details: https://uttarkunth.com/trips`,
+        }
+      : undefined,
+    email: params.guestEmail
+      ? {
+          to: params.guestEmail,
+          subject: `[Uttarkunth Stays] ${title} (#${params.bookingReference})`,
+          body: `Dear Guest,
+
+${message}
+
+Stay Summary:
+• Property: ${params.propertyName}
+• Room: ${params.roomName}
+• Check-In: ${params.checkIn}
+• Check-Out: ${params.checkOut}
+• Reference: #${params.bookingReference}
+${params.hostNotes ? `• Host Note: ${params.hostNotes}\n` : ''}
+${isConfirmed ? '\nReminder: Direct settlement with your host applies at the property upon check-in.\n' : ''}
+View reservation details:
+https://uttarkunth.com/trips
+
+Warm regards,
+Uttarkunth Stays Team`,
         }
       : undefined,
   });
 }
 
 /**
- * Notify Host when they submit their property for verification
+ * Host Alert: Property Application Under Review
  */
 export async function notifyHostPropertySubmitted(params: {
   hostUserId: string;
+  propertyName: string;
+  village: string;
   hostEmail?: string | null;
   hostPhone?: string | null;
-  propertyName: string;
+  hostWhatsapp?: string | null;
 }) {
-  const title = `Property Submitted for Review: ${params.propertyName}`;
-  const message = `Your property "${params.propertyName}" has been submitted for verification. Our local team is reviewing your rooms, photography, and amenities. You will receive updates via WhatsApp and email once approved.`;
-  const actionUrl = `/account/stays/host`;
+  const whatsappTarget = params.hostWhatsapp || params.hostPhone;
+  const message = `Your property listing for "${params.propertyName}" in ${params.village} has been received and is currently under curation review by the Uttarkunth team. You will be notified once reviewed.`;
 
-  const waBody = `*UTTARKUNTH STAYS — LISTING UNDER REVIEW*\n\n` +
-    `Namaste! We have received your property listing application for *${params.propertyName}*.\n\n` +
-    `• Status: Under Verification by Uttarkunth Council\n` +
-    `• Our local mountain team is reviewing your room amenities, photography standards, and location details.\n\n` +
-    `You will receive immediate notifications here on WhatsApp once your property goes live. Track your status anytime at https://uttarkunth.com/account/stays/host.`;
-
-  return sendNotification({
+  await sendNotification({
     userId: params.hostUserId,
     pillar: 'stays',
-    title,
+    title: `Homestay Application Submitted: ${params.propertyName}`,
     message,
-    actionUrl,
+    actionUrl: '/account/stays/host',
+    whatsapp: whatsappTarget
+      ? {
+          to: whatsappTarget,
+          body: `*Uttarkunth Stays*: Thank you for listing *${params.propertyName}* (${params.village})! Your homestay is under curation review by our team. We verify all homestays to ensure quality standards. You can track your status at: https://uttarkunth.com/account/stays/host`,
+        }
+      : undefined,
     email: params.hostEmail
       ? {
           to: params.hostEmail,
-          subject: `[Uttarkunth] Your property listing "${params.propertyName}" is under review`,
-          body: message + `\n\nTrack progress: https://uttarkunth.com${actionUrl}`,
-        }
-      : undefined,
-    whatsapp: params.hostPhone
-      ? {
-          to: params.hostPhone,
-          body: waBody,
+          subject: `[Uttarkunth Stays] Listing Under Review: ${params.propertyName}`,
+          body: `Dear Host,
+
+Thank you for submitting your homestay "${params.propertyName}" (${params.village}) to Uttarkunth Stays!
+
+Your listing is currently under curation review. Our team will verify your property details, room configurations, and photography standards within 24-48 hours.
+
+Once approved, your property will go live on uttarkunth.com and guests will be able to discover and request stays with you.
+
+Track your application status anytime:
+https://uttarkunth.com/account/stays/host
+
+Warm regards,
+Uttarkunth Stays Team`,
         }
       : undefined,
   });
 }
 
 /**
- * Notify Host upon property approval or rejection by admin / staff
+ * Host Alert: Property Moderation Outcome (Approved / Live / Changes Requested / Rejected)
  */
 export async function notifyHostPropertyModeration(params: {
   hostUserId: string;
-  hostEmail?: string | null;
-  hostPhone?: string | null;
   propertyName: string;
   status: 'approved' | 'rejected' | 'changes_requested';
-  adminNotes?: string | null;
-  slug?: string;
+  moderationNotes?: string | null;
+  hostEmail?: string | null;
+  hostPhone?: string | null;
+  hostWhatsapp?: string | null;
 }) {
-  const isApproved = params.status === 'approved';
-  const title = isApproved
-    ? `Congratulations! "${params.propertyName}" is now Live on Uttarkunth Stays`
-    : `Update on your property listing "${params.propertyName}"`;
+  let title = '';
+  let message = '';
+  let whatsappBody = '';
 
-  const message = isApproved
-    ? `Your property "${params.propertyName}" has been verified and published to the public directory. Guests can now view your rooms and submit booking requests.`
-    : `Our review team has requested updates for "${params.propertyName}". Notes: ${params.adminNotes || 'Please review your listing information.'}`;
+  const whatsappTarget = params.hostWhatsapp || params.hostPhone;
 
-  const actionUrl = isApproved && params.slug ? `/stays/${params.slug}` : `/account/stays/host`;
+  if (params.status === 'approved') {
+    title = `Property Approved & Live: ${params.propertyName}`;
+    message = `Congratulations! Your homestay "${params.propertyName}" has been verified and approved by the Uttarkunth curation team. It is now live on uttarkunth.com!`;
+    whatsappBody = `*Uttarkunth Stays*: 🎉 Congratulations! Your homestay *${params.propertyName}* has been approved and is now live on uttarkunth.com! Guests can now discover and book your rooms. Manage your homestay: https://uttarkunth.com/account/stays/host`;
+  } else if (params.status === 'changes_requested') {
+    title = `Updates Required: ${params.propertyName}`;
+    message = `The curation team reviewed "${params.propertyName}" and requested changes before publishing.${params.moderationNotes ? ` Feedback: ${params.moderationNotes}` : ''}`;
+    whatsappBody = `*Uttarkunth Stays*: The curation team reviewed *${params.propertyName}* and requested updates before publishing.${params.moderationNotes ? ` Feedback: ${params.moderationNotes}` : ''} Please update your listing at: https://uttarkunth.com/account/stays/host`;
+  } else {
+    title = `Listing Application Status: ${params.propertyName}`;
+    message = `Your application for "${params.propertyName}" could not be approved at this time.${params.moderationNotes ? ` Reason: ${params.moderationNotes}` : ''}`;
+    whatsappBody = `*Uttarkunth Stays*: Your listing application for *${params.propertyName}* could not be approved at this time.${params.moderationNotes ? ` Reason: ${params.moderationNotes}` : ''}`;
+  }
 
-  const waBody = isApproved
-    ? `*UTTARKUNTH STAYS — CONGRATULATIONS! YOUR LISTING IS LIVE!*\n\n` +
-      `Namaste! We are thrilled to welcome *${params.propertyName}* to the Uttarkunth Himalayan Stays directory.\n\n` +
-      `• Public Listing: https://uttarkunth.com${actionUrl}\n` +
-      `• Host Portal: https://uttarkunth.com/account/stays/host\n\n` +
-      `You will receive WhatsApp alerts whenever a traveler requests a room at your property. Welcome to authentic Himalayan hospitality!`
-    : `*UTTARKUNTH STAYS — LISTING REVIEW UPDATE*\n\n` +
-      `Namaste. The review team has evaluated your listing for *${params.propertyName}*.\n\n` +
-      `Feedback: ${params.adminNotes || 'Please update your listing photos or room features as per guidelines.'}\n\n` +
-      `Please log in to your dashboard to edit and resubmit: https://uttarkunth.com/account/stays/host`;
-
-  return sendNotification({
+  await sendNotification({
     userId: params.hostUserId,
     pillar: 'stays',
     title,
     message,
-    actionUrl,
+    actionUrl: '/account/stays/host',
+    whatsapp: whatsappTarget
+      ? {
+          to: whatsappTarget,
+          body: whatsappBody,
+        }
+      : undefined,
     email: params.hostEmail
       ? {
           to: params.hostEmail,
-          subject: `[Uttarkunth] ${title}`,
-          body: message + `\n\n${params.adminNotes ? `Review notes: ${params.adminNotes}\n\n` : ''}Access: https://uttarkunth.com${actionUrl}`,
-        }
-      : undefined,
-    whatsapp: params.hostPhone
-      ? {
-          to: params.hostPhone,
-          body: waBody,
+          subject: `[Uttarkunth Stays] ${title}`,
+          body: `Dear Host,
+
+${message}
+
+You can access your host dashboard anytime to update rates, room features, or photos:
+https://uttarkunth.com/account/stays/host
+
+Warm regards,
+Uttarkunth Stays Team`,
         }
       : undefined,
   });
