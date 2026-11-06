@@ -3,6 +3,7 @@ import './globals.css';
 import { Header } from '@/components/header';
 import { Footer } from '@/components/footer';
 import { BRAND } from '@/lib/constants';
+import { BrandIntroSplash } from '@/components/brand-intro-splash';
 
 export const metadata: Metadata = {
   title: `${BRAND.name} — Authentic Himalayan Homestays & Retreats`,
@@ -35,6 +36,7 @@ export default function RootLayout({
             __html: `try{document.querySelectorAll('[fdprocessedid]').forEach(function(el){el.removeAttribute('fdprocessedid')})}catch(e){}`,
           }}
         />
+        <BrandIntroSplash />
         <Header />
         <main className="flex-1">
           {children}
