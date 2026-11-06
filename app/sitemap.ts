@@ -3,7 +3,7 @@ import { BRAND, AUTHENTIC_PRODUCTIONS, COMMUNITY_INITIATIVES } from '@/lib/const
 import { CURATED_DESTINATIONS } from '@/lib/destinations';
 import { createPublicServerSupabaseClient } from '@/lib/supabase/server';
 
-const SITE_URL = BRAND.officialDomain.replace(/\\/$/, '');
+const SITE_URL = BRAND.officialDomain;
 
 const sitemapEntry = (
   path: string,
