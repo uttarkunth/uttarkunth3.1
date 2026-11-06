@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
+import { createServerSupabaseClient } from './server';
 
 export function createAdminClient() {
   if (typeof window !== 'undefined') {
@@ -9,13 +10,26 @@ export function createAdminClient() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-  if (!supabaseUrl || !serviceRoleKey) {
+  const hasValidServiceRoleKey =
+    Boolean(serviceRoleKey) &&
+    !serviceRoleKey!.includes('your_') &&
+    !serviceRoleKey!.includes('placeholder') &&
+    serviceRoleKey!.length > 40;
+
+  if (!supabaseUrl) {
     throw new Error(
       'Server Configuration Error: NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required for createAdminClient(). Never fall back to the public anon key.'
     );
   }
 
-  return createClient<Database>(supabaseUrl, serviceRoleKey, {
+  if (!hasValidServiceRoleKey) {
+    // When SUPABASE_SERVICE_ROLE_KEY is unset or still holds the .env.example placeholder,
+    // use the current authenticated request session so PostgreSQL FORCE ROW LEVEL SECURITY
+    // enforces Founder/Staff permissions via auth.uid().
+    return createServerSupabaseClient();
+  }
+
+  return createClient<Database>(supabaseUrl, serviceRoleKey!, {
     auth: {
       autoRefreshToken: false,
       persistSession: false,

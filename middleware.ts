@@ -83,34 +83,38 @@ export async function middleware(request: NextRequest) {
   let user: { id: string; email?: string } | null = null;
 
   if (supabaseUrl && supabaseAnonKey) {
-    const supabase = createServerClient<Database>(supabaseUrl, supabaseAnonKey, {
-      cookies: {
-        get(name: string) {
-          return request.cookies.get(name)?.value;
+    try {
+      const supabase = createServerClient<Database>(supabaseUrl, supabaseAnonKey, {
+        cookies: {
+          get(name: string) {
+            return request.cookies.get(name)?.value;
+          },
+          set(name: string, value: string, options: CookieOptions) {
+            request.cookies.set({ name, value, ...options });
+            response = NextResponse.next({
+              request: {
+                headers: requestHeaders,
+              },
+            });
+            response.cookies.set({ name, value, ...options });
+          },
+          remove(name: string, options: CookieOptions) {
+            request.cookies.set({ name, value: '', ...options });
+            response = NextResponse.next({
+              request: {
+                headers: requestHeaders,
+              },
+            });
+            response.cookies.set({ name, value: '', ...options });
+          },
         },
-        set(name: string, value: string, options: CookieOptions) {
-          request.cookies.set({ name, value, ...options });
-          response = NextResponse.next({
-            request: {
-              headers: requestHeaders,
-            },
-          });
-          response.cookies.set({ name, value, ...options });
-        },
-        remove(name: string, options: CookieOptions) {
-          request.cookies.set({ name, value: '', ...options });
-          response = NextResponse.next({
-            request: {
-              headers: requestHeaders,
-            },
-          });
-          response.cookies.set({ name, value: '', ...options });
-        },
-      },
-    });
+      });
 
-    const { data } = await supabase.auth.getUser();
-    user = data?.user || null;
+      const { data } = await supabase.auth.getUser();
+      user = data?.user || null;
+    } catch {
+      user = null;
+    }
   }
 
   // 3. Dedicated portal hostname root & boundary routing
