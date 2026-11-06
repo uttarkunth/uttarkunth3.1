@@ -45,6 +45,7 @@ export const HostRoomSchema = z.object({
   bed_type: z.string().trim().optional().default("King / Double Bed"),
   features: z.array(z.string()).optional().default([]),
   photos: z.array(z.string()).optional().default([]),
+  washroom_photos: z.array(z.string()).optional().default([]),
   active: z.boolean().default(true),
 });
 
@@ -57,9 +58,12 @@ export const PropertyFormSchema = z.object({
   village: z.string().trim().min(2, "Village is required"),
   district: z.string().trim().min(2, "District is required").default("Kullu"),
   state: z.string().trim().min(2).default("Himachal Pradesh"),
+  latitude: z.coerce.number().optional().nullable(),
+  longitude: z.coerce.number().optional().nullable(),
+  cover_photo: z.string().optional().nullable(),
   property_type: z.enum(["homestay", "hotel", "resort", "villa", "guesthouse", "cottage", "other"]),
   amenities: z.array(z.string()).default([]),
-  photos: z.array(z.string().url()).default([]),
+  photos: z.array(z.string()).default([]),
   contact_phone: z.string().trim().max(20).optional().or(z.literal('')),
   contact_whatsapp: z.string().trim().max(20).optional().or(z.literal('')),
   contact_email: z.string().trim().email().optional().or(z.literal('')),
@@ -80,6 +84,9 @@ export const HostApplySchema = z.object({
   district: z.string().trim().min(2, 'District is required'),
   state: z.string().trim().min(2).default('Himachal Pradesh'),
   address: z.string().trim().optional(),
+  latitude: z.coerce.number().optional().nullable(),
+  longitude: z.coerce.number().optional().nullable(),
+  cover_photo: z.string().optional().nullable(),
   description: z
     .string()
     .trim()
