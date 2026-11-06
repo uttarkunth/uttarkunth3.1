@@ -1,4 +1,5 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
+import { createClient } from '@supabase/supabase-js';
 import { cookies, headers } from 'next/headers';
 import type { Database } from './types';
 
@@ -72,7 +73,7 @@ export function createServerSupabaseClient() {
   });
 }
 
-export function createPublicServerSupabaseClient() {
+export function createPublicServerSupabaseClient(): ReturnType<typeof createClient<Database>> {
   if (typeof window !== 'undefined') {
     throw new Error('Security Violation: lib/supabase/server.ts cannot be executed in client code.');
   }
@@ -88,13 +89,10 @@ export function createPublicServerSupabaseClient() {
     );
   }
 
-  return createServerClient<Database>(supabaseUrl, supabaseAnonKey, {
-    cookies: {
-      get() {
-        return undefined;
-      },
-      set() {},
-      remove() {},
+  return createClient<Database>(supabaseUrl, supabaseAnonKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
     },
   });
 }

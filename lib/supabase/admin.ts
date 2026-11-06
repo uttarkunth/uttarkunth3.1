@@ -2,7 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 import { createServerSupabaseClient } from './server';
 
-export function createAdminClient() {
+export function createAdminClient(): ReturnType<typeof createClient<Database>> {
   if (typeof window !== 'undefined') {
     throw new Error('Security Violation: lib/supabase/admin.ts cannot be executed in client code.');
   }
@@ -26,7 +26,7 @@ export function createAdminClient() {
     // When SUPABASE_SERVICE_ROLE_KEY is unset or still holds the .env.example placeholder,
     // use the current authenticated request session so PostgreSQL FORCE ROW LEVEL SECURITY
     // enforces Founder/Staff permissions via auth.uid().
-    return createServerSupabaseClient();
+    return createServerSupabaseClient() as unknown as ReturnType<typeof createClient<Database>>;
   }
 
   return createClient<Database>(supabaseUrl, serviceRoleKey!, {
