@@ -9,7 +9,7 @@ import {
   getActiveDestinations,
 } from '@/lib/destinations.server';
 import { createPublicServerSupabaseClient } from '@/lib/supabase/server';
-import { EXISTING_PROPERTIES, BRAND } from '@/lib/constants';
+import { BRAND } from '@/lib/constants';
 import { formatINR } from '@/lib/utils';
 import {
   MapPin,
@@ -43,7 +43,7 @@ async function getPropertiesForDestination(slug: string) {
       .eq('published', true)
       .eq('moderation_status', 'approved');
 
-    const source = (error || !properties || properties.length === 0) ? EXISTING_PROPERTIES : properties;
+    const source = (error || !properties) ? [] : properties;
     const directMatching = filterPropertiesForDestination(source, destination);
     const nearbyMatching = getNearbyPropertiesForDestination(source, destination);
 
@@ -71,12 +71,10 @@ async function getPropertiesForDestination(slug: string) {
       nearbyProperties: attachRooms(nearbyMatching),
     };
   } catch {
-    const directMatching = filterPropertiesForDestination(EXISTING_PROPERTIES, destination);
-    const nearbyMatching = getNearbyPropertiesForDestination(EXISTING_PROPERTIES, destination);
     return {
       destination,
-      properties: directMatching,
-      nearbyProperties: nearbyMatching,
+      properties: [],
+      nearbyProperties: [],
     };
   }
 }

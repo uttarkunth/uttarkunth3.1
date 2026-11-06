@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import {
   Search,
@@ -14,7 +14,6 @@ import {
   X,
 } from 'lucide-react';
 import {
-  EXISTING_PROPERTIES,
   PRODUCT_CATEGORIES,
   AUTHENTIC_PRODUCTIONS,
   COMMUNITY_INITIATIVES,
@@ -33,21 +32,33 @@ interface SearchItem {
 export function SiteWideSearch({ initialQuery = '' }: { initialQuery?: string }) {
   const [query, setQuery] = useState(initialQuery);
   const [selectedPillar, setSelectedPillar] = useState<'all' | 'stays' | 'products' | 'productions' | 'community'>('all');
+  const [liveProperties, setLiveProperties] = useState<any[]>([]);
 
-  // Build searchable index from official curated constants
+  useEffect(() => {
+    fetch('/api/properties')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.ok && Array.isArray(data.properties)) {
+          setLiveProperties(data.properties);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  // Build searchable index from official curated constants and live properties
   const searchableIndex: SearchItem[] = useMemo(() => {
     const items: SearchItem[] = [];
 
-    // Stays
-    EXISTING_PROPERTIES.forEach((prop) => {
+    // Stays from live database
+    liveProperties.forEach((prop) => {
       items.push({
         id: `stay-${prop.id}`,
         pillar: 'stays',
         title: prop.name,
-        subtitle: `${prop.village}, ${prop.district}, ${prop.state}`,
-        description: prop.description,
+        subtitle: `${prop.village || ''}, ${prop.district || ''}, ${prop.state || ''}`,
+        description: prop.description || '',
         url: `/stays/${prop.slug}`,
-        meta: `₹${prop.rooms[0]?.base_price || 900}/night • Direct Host Settlement`,
+        meta: `₹${prop.rooms?.[0]?.base_price || 900}/night • Direct Host Settlement`,
       });
     });
 
@@ -113,7 +124,7 @@ export function SiteWideSearch({ initialQuery = '' }: { initialQuery?: string })
     });
 
     return items;
-  }, []);
+  }, [liveProperties]);
 
   // Filtered results
   const filteredResults = useMemo(() => {

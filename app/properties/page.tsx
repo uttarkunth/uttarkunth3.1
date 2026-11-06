@@ -2,7 +2,7 @@ import React from 'react';
 import { SearchBar } from '@/components/search-bar';
 import { PropertyCard } from '@/components/property-card';
 import { createPublicServerSupabaseClient } from '@/lib/supabase/server';
-import { EXISTING_PROPERTIES, PROPERTY_TYPES, AMENITIES_LIST } from '@/lib/constants';
+import { PROPERTY_TYPES, AMENITIES_LIST } from '@/lib/constants';
 import { Filter, SlidersHorizontal, Mountain, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 
@@ -41,17 +41,7 @@ async function fetchFilteredProperties(params: PropertiesPageProps['searchParams
 
     const { data: properties, error } = await query;
 
-    let list = properties && properties.length > 0 ? properties : EXISTING_PROPERTIES;
-
-    // Apply destination filter to fallback list if DB query was bypassed
-    if (params.destination && list === EXISTING_PROPERTIES) {
-      const dest = params.destination.toLowerCase();
-      list = list.filter(p =>
-        p.village?.toLowerCase().includes(dest) ||
-        p.district?.toLowerCase().includes(dest) ||
-        p.name.toLowerCase().includes(dest)
-      );
-    }
+    let list = properties || [];
 
     // Attach rooms
     const propIds = list.map(p => p.id);
@@ -106,7 +96,7 @@ async function fetchFilteredProperties(params: PropertiesPageProps['searchParams
 
     return filtered;
   } catch {
-    return EXISTING_PROPERTIES;
+    return [];
   }
 }
 

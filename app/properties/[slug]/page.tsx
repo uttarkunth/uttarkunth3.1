@@ -3,7 +3,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { createPublicServerSupabaseClient } from '@/lib/supabase/server';
-import { EXISTING_PROPERTIES, BRAND } from '@/lib/constants';
+import { BRAND } from '@/lib/constants';
 import { BookingWidget } from '@/components/booking-widget';
 import { RoomAvailabilityCalendar } from '@/components/stays/room-availability-calendar';
 import { MapPin, Users, CheckCircle2, ShieldCheck, Clock, Home, Sparkles, ChevronLeft, Wifi, Coffee, Utensils, Car } from 'lucide-react';
@@ -46,8 +46,7 @@ async function getPropertyBySlug(slug: string) {
       .single();
 
     if (error || !property) {
-      const fallback = EXISTING_PROPERTIES.find(p => p.slug === slug);
-      return fallback || null;
+      return null;
     }
 
     const { data: rooms } = await supabase
@@ -62,8 +61,7 @@ async function getPropertyBySlug(slug: string) {
       rooms: rooms || []
     };
   } catch {
-    const fallback = EXISTING_PROPERTIES.find(p => p.slug === slug);
-    return fallback || null;
+    return null;
   }
 }
 
@@ -80,7 +78,7 @@ async function getRelatedStays(currentId: string) {
 
     return properties || [];
   } catch {
-    return EXISTING_PROPERTIES.filter(p => p.id !== currentId);
+    return [];
   }
 }
 

@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { EXISTING_PROPERTIES } from '@/lib/constants';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,18 +16,17 @@ export async function GET() {
       .order('name', { ascending: true });
 
     if (propError || !properties || properties.length === 0) {
-      // Fallback to verified existing properties if database query fails or returns empty
       return NextResponse.json({
         ok: true,
-        count: EXISTING_PROPERTIES.length,
-        properties: EXISTING_PROPERTIES,
-        source: 'static_fallback'
+        count: 0,
+        properties: [],
+        source: 'live_supabase'
       });
     }
 
     // Fetch active room units for these properties
     const propertyIds = properties.map(p => p.id);
-    const { data: rooms, error: roomError } = await supabase
+    const { data: rooms } = await supabase
       .from('room_units')
       .select('id, property_id, room_name, description, max_guests, base_price, active')
       .in('property_id', propertyIds)
@@ -47,10 +45,10 @@ export async function GET() {
     });
   } catch (err: any) {
     return NextResponse.json({
-      ok: true,
-      count: EXISTING_PROPERTIES.length,
-      properties: EXISTING_PROPERTIES,
-      warning: err.message
-    });
+      ok: false,
+      count: 0,
+      properties: [],
+      error: err.message
+    }, { status: 500 });
   }
 }

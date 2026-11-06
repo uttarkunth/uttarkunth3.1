@@ -2,7 +2,7 @@ import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { SearchBar } from '@/components/search-bar';
-import { EXISTING_PROPERTIES, BRAND } from '@/lib/constants';
+import { BRAND } from '@/lib/constants';
 import { getActiveDestinations, filterPropertiesForDestination, CURATED_DESTINATIONS, Destination } from '@/lib/destinations.server';
 import { createPublicServerSupabaseClient } from '@/lib/supabase/server';
 import { formatINR } from '@/lib/utils';
@@ -40,19 +40,22 @@ async function getStaysData() {
       .eq('published', true)
       .eq('moderation_status', 'approved');
 
-    const source = (error || !properties || properties.length === 0) ? EXISTING_PROPERTIES : properties;
+    const source = (error || !properties) ? [] : properties;
 
-    const propertyIds = source.map((p) => p.id);
-    const { data: rooms } = await supabase
-      .from('room_units')
-      .select('id, property_id, room_name, description, max_guests, base_price, active')
-      .in('property_id', propertyIds)
-      .eq('active', true);
+    let propertiesWithRooms: any[] = [];
+    if (source.length > 0) {
+      const propertyIds = source.map((p) => p.id);
+      const { data: rooms } = await supabase
+        .from('room_units')
+        .select('id, property_id, room_name, description, max_guests, base_price, active')
+        .in('property_id', propertyIds)
+        .eq('active', true);
 
-    const propertiesWithRooms = source.map((p) => ({
-      ...p,
-      rooms: rooms ? rooms.filter((r) => r.property_id === p.id) : [],
-    }));
+      propertiesWithRooms = source.map((p) => ({
+        ...p,
+        rooms: rooms ? rooms.filter((r) => r.property_id === p.id) : [],
+      }));
+    }
 
     // Calculate real qualifying counts per destination
     const destinationsWithCounts = destinations.map((d) => ({
@@ -67,11 +70,11 @@ async function getStaysData() {
   } catch {
     const destinationsWithCounts = destinations.map((d) => ({
       ...d,
-      propertyCount: filterPropertiesForDestination(EXISTING_PROPERTIES, d).length,
+      propertyCount: 0,
     }));
 
     return {
-      properties: EXISTING_PROPERTIES,
+      properties: [],
       destinations: destinationsWithCounts,
     };
   }
@@ -175,90 +178,108 @@ export default async function StaysPage({ searchParams }: StaysPageProps) {
           </span>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {filteredProperties.map((property: any) => {
-            const coverPhoto = property.photos?.[0];
-            const startingPrice = property.rooms?.[0]?.base_price || 900;
-            const locationText = `${property.village || 'Jari'}, ${property.district || 'Kullu'}`;
-            const amenities = property.amenities || [];
+        {filteredProperties.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {filteredProperties.map((property: any) => {
+              const coverPhoto = property.photos?.[0];
+              const startingPrice = property.rooms?.[0]?.base_price || 900;
+              const locationText = `${property.village || 'Jari'}, ${property.district || 'Kullu'}`;
+              const amenities = property.amenities || [];
 
-            return (
-              <div
-                key={property.id}
-                className="bg-white rounded-3xl border border-forest/15 overflow-hidden shadow-soft hover:shadow-lifted transition-all flex flex-col group"
-              >
-                <div className="relative aspect-[16/10] w-full bg-forest-dark overflow-hidden">
-                  {coverPhoto ? (
-                    <Image
-                      src={coverPhoto}
-                      alt={property.name}
-                      fill
-                      className="object-cover group-hover:scale-105 transition-transform duration-700"
-                    />
-                  ) : (
-                    /* Neutral branded missing-image presentation */
-                    <div className="absolute inset-0 bg-canvas flex flex-col items-center justify-center p-6 text-center text-forest border-b border-forest/10">
-                      <Building2 className="w-12 h-12 text-forest/40 mb-2" />
-                      <span className="font-serif text-lg font-bold">{property.name}</span>
-                      <span className="text-[11px] text-charcoal-muted uppercase tracking-wider mt-1">
-                        Approved Himalayan Homestay
-                      </span>
-                    </div>
-                  )}
-
-                  <div className="absolute top-4 left-4 bg-forest/90 text-ivory text-xs font-semibold px-3 py-1 rounded-full backdrop-blur-sm">
-                    {property.property_type || 'Homestay'}
-                  </div>
-                  <div className="absolute bottom-3 right-3 bg-black/70 text-ivory text-xs font-bold px-3 py-1 rounded-full backdrop-blur-sm">
-                    {formatINR(startingPrice)} <span className="font-normal text-[11px]">/ night</span>
-                  </div>
-                </div>
-
-                <div className="p-6 flex flex-col flex-1 justify-between space-y-4">
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-1.5 text-xs text-ukorange font-semibold">
-                      <MapPin className="w-3.5 h-3.5" />
-                      <span>{locationText}</span>
-                    </div>
-                    <h3 className="font-serif text-2xl font-bold text-forest group-hover:text-ukorange transition-colors">
-                      {property.name}
-                    </h3>
-                    <p className="text-xs text-charcoal-muted line-clamp-2 leading-relaxed">
-                      {property.description}
-                    </p>
-
-                    {/* Verified Amenities Pills */}
-                    {amenities.length > 0 && (
-                      <div className="flex flex-wrap gap-1.5 pt-2">
-                        {amenities.slice(0, 3).map((amenity: string) => (
-                          <span
-                            key={amenity}
-                            className="text-[10px] bg-canvas text-charcoal px-2 py-0.5 rounded-md font-medium border border-forest/10"
-                          >
-                            {amenity}
-                          </span>
-                        ))}
+              return (
+                <div
+                  key={property.id}
+                  className="bg-white rounded-3xl border border-forest/15 overflow-hidden shadow-soft hover:shadow-lifted transition-all flex flex-col group"
+                >
+                  <div className="relative aspect-[16/10] w-full bg-forest-dark overflow-hidden">
+                    {coverPhoto ? (
+                      <Image
+                        src={coverPhoto}
+                        alt={property.name}
+                        fill
+                        className="object-cover group-hover:scale-105 transition-transform duration-700"
+                      />
+                    ) : (
+                      /* Neutral branded missing-image presentation */
+                      <div className="absolute inset-0 bg-canvas flex flex-col items-center justify-center p-6 text-center text-forest border-b border-forest/10">
+                        <Building2 className="w-12 h-12 text-forest/40 mb-2" />
+                        <span className="font-serif text-lg font-bold">{property.name}</span>
+                        <span className="text-[11px] text-charcoal-muted uppercase tracking-wider mt-1">
+                          Approved Himalayan Homestay
+                        </span>
                       </div>
                     )}
+
+                    <div className="absolute top-4 left-4 bg-forest/90 text-ivory text-xs font-semibold px-3 py-1 rounded-full backdrop-blur-sm">
+                      {property.property_type || 'Homestay'}
+                    </div>
+                    <div className="absolute bottom-3 right-3 bg-black/70 text-ivory text-xs font-bold px-3 py-1 rounded-full backdrop-blur-sm">
+                      {formatINR(startingPrice)} <span className="font-normal text-[11px]">/ night</span>
+                    </div>
                   </div>
 
-                  <div className="pt-3 border-t border-forest/10 flex items-center justify-between">
-                    <span className="text-[11px] font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full">
-                      Request-Based Booking
-                    </span>
-                    <Link
-                      href={`/stays/${property.slug}`}
-                      className="inline-flex items-center gap-1 text-xs font-bold text-forest hover:text-ukorange transition-colors"
-                    >
-                      <span>View &amp; Request</span>
-                      <ArrowRight className="w-3.5 h-3.5" />
-                    </Link>
+                  <div className="p-6 flex flex-col flex-1 justify-between space-y-4">
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-1.5 text-xs text-ukorange font-semibold">
+                        <MapPin className="w-3.5 h-3.5" />
+                        <span>{locationText}</span>
+                      </div>
+                      <h3 className="font-serif text-2xl font-bold text-forest group-hover:text-ukorange transition-colors">
+                        {property.name}
+                      </h3>
+                      <p className="text-xs text-charcoal-muted line-clamp-2 leading-relaxed">
+                        {property.description}
+                      </p>
+
+                      {/* Verified Amenities Pills */}
+                      {amenities.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 pt-2">
+                          {amenities.slice(0, 3).map((amenity: string) => (
+                            <span
+                              key={amenity}
+                              className="text-[10px] bg-canvas text-charcoal px-2 py-0.5 rounded-md font-medium border border-forest/10"
+                            >
+                              {amenity}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="pt-3 border-t border-forest/10 flex items-center justify-between">
+                      <span className="text-[11px] font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full">
+                        Request-Based Booking
+                      </span>
+                      <Link
+                        href={`/stays/${property.slug}`}
+                        className="inline-flex items-center gap-1 text-xs font-bold text-forest hover:text-ukorange transition-colors"
+                      >
+                        <span>View &amp; Request</span>
+                        <ArrowRight className="w-3.5 h-3.5" />
+                      </Link>
+                    </div>
                   </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="text-center py-16 px-6 rounded-3xl bg-forest/5 border border-forest/10 space-y-4">
+            <Home className="w-10 h-10 text-forest/40 mx-auto" />
+            <h3 className="font-serif text-2xl font-bold text-forest">No Verified Mountain Stays Currently Listed</h3>
+            <p className="text-xs text-charcoal-muted max-w-md mx-auto leading-relaxed">
+              All previous test listings have been cleared. New homestays appear here in real-time once curated and approved.
+            </p>
+            <div className="pt-2">
+              <Link
+                href="/host/properties/new"
+                className="inline-flex items-center gap-2 text-xs font-semibold px-5 py-2.5 bg-forest text-ivory rounded-full hover:bg-forest/90 transition-colors shadow-soft"
+              >
+                List Your Homestay →
+              </Link>
+            </div>
+          </div>
+        )}
       </section>
 
       {/* 4. EXPLORE POPULAR DESTINATIONS DIRECTORY (Destination-First Discovery) */}
@@ -322,7 +343,7 @@ export default async function StaysPage({ searchParams }: StaysPageProps) {
         <div className="space-y-6 pt-4">
           <div className="flex items-center gap-3 border-b border-forest/15 pb-3">
             <span className="text-xs uppercase font-bold tracking-widest text-forest">Region</span>
-            <h3 className="font-serif text-2xl font-bold text-forest">Jammu &amp; Kashmir</h3>
+            <h3 className="font-serif text-2xl font-bold text-forest">Jammon &amp; Kashmir</h3>
             <span className="text-xs text-charcoal-muted">({jkDestinations.length} Destinations)</span>
           </div>
 

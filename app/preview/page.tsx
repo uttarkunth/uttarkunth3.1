@@ -5,7 +5,7 @@ import { SearchBar } from '@/components/search-bar';
 import { AestheticBentoGrid } from '@/components/aesthetic-bento-grid';
 import { AestheticPropertyCard } from '@/components/aesthetic-property-card';
 import { createPublicServerSupabaseClient } from '@/lib/supabase/server';
-import { EXISTING_PROPERTIES, BRAND } from '@/lib/constants';
+import { BRAND } from '@/lib/constants';
 import { Sparkles, CheckCircle2, Trees, HeartHandshake, Shield, ArrowRight } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
@@ -21,7 +21,7 @@ async function getProperties() {
       .limit(6);
 
     if (!properties || properties.length === 0) {
-      return EXISTING_PROPERTIES;
+      return [];
     }
 
     const propertyIds = properties.map(p => p.id);
@@ -36,7 +36,7 @@ async function getProperties() {
       rooms: rooms ? rooms.filter(r => r.property_id === p.id) : []
     }));
   } catch {
-    return EXISTING_PROPERTIES;
+    return [];
   }
 }
 
