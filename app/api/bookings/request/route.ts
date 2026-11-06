@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { BookingRequestSchema } from '@/lib/validations';
 import { calculateNights, validateStayDates, generateBookingReference } from '@/lib/booking-calculator';
 
@@ -121,21 +122,33 @@ export async function POST(req: NextRequest) {
     // 8. Calculate trusted price server-side
     const totalEstimate = Math.round(Number(room.base_price) * nights);
 
-    // 9. Generate reference and access token
+    // 9. Generate reference and access token, and link authenticated guest if signed in
     const bookingReference = generateBookingReference();
     const guestAccessToken = crypto.randomBytes(32).toString('hex');
     const guestAccessTokenHash = crypto.createHash('sha256').update(guestAccessToken).digest('hex');
 
+    let guestUserId: string | null = null;
+    try {
+      const authSupabase = createServerSupabaseClient();
+      const {
+        data: { user }
+      } = await authSupabase.auth.getUser();
+      guestUserId = user?.id || null;
+    } catch {
+      guestUserId = null;
+    }
+
     // 10. Insert into stay_bookings table
-    const { data: newBooking, error: insertErr } = await supabase
+    const { error: insertErr } = await supabase
       .from('stay_bookings')
       .insert({
         booking_reference: bookingReference,
         property_id: property.id,
         room_unit_id: room.id,
-        guest_name,
-        guest_email,
-        guest_phone,
+        guest_user_id: guestUserId,
+        guest_name: guest_name.trim(),
+        guest_email: guest_email.trim().toLowerCase(),
+        guest_phone: guest_phone.trim(),
         check_in,
         check_out,
         adults,
@@ -145,9 +158,7 @@ export async function POST(req: NextRequest) {
         status: 'pending',
         total_estimate: totalEstimate,
         guest_access_token_hash: guestAccessTokenHash
-      })
-      .select('id, booking_reference, status, total_estimate')
-      .single();
+      });
 
     if (insertErr) {
       console.error('Booking insertion error:', insertErr);
