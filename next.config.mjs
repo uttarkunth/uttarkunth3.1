@@ -55,6 +55,7 @@ const nextConfig = {
   async rewrites() {
     return [
       { source: '/trips/:id', destination: '/guest/trips/:id' },
+      { source: '/stays/:slug', destination: '/properties/:slug' },
     ];
   },
 };
