@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { calculateNights, calculateBookingPrice, validateStayDates } from '@/lib/booking-calculator';
 import { formatINR } from '@/lib/utils';
-import { Calendar, Users, ShieldCheck, Clock, CheckCircle2, AlertCircle, Sparkles } from 'lucide-react';
+import { Calendar, Users, ShieldCheck, Clock, CheckCircle2, AlertCircle, Sparkles, UserCheck } from 'lucide-react';
+import { createClient } from '@/lib/supabase/client';
 
 interface RoomUnit {
   id: string;
@@ -21,6 +22,11 @@ interface BookingWidgetProps {
   initialCheckIn?: string;
   initialCheckOut?: string;
   initialGuests?: number;
+  currentUser?: {
+    name?: string;
+    email?: string;
+    phone?: string;
+  } | null;
 }
 
 export function BookingWidget({
@@ -29,17 +35,44 @@ export function BookingWidget({
   rooms,
   initialCheckIn = '',
   initialCheckOut = '',
-  initialGuests = 2
+  initialGuests = 2,
+  currentUser = null,
 }: BookingWidgetProps) {
   const [selectedRoomId, setSelectedRoomId] = useState<string>(rooms[0]?.id || '');
   const [checkIn, setCheckIn] = useState<string>(initialCheckIn);
   const [checkOut, setCheckOut] = useState<string>(initialCheckOut);
   const [adults, setAdults] = useState<number>(initialGuests);
   const [children, setChildren] = useState<number>(0);
-  const [guestName, setGuestName] = useState<string>('');
-  const [guestEmail, setGuestEmail] = useState<string>('');
-  const [guestPhone, setGuestPhone] = useState<string>('');
+  const [guestName, setGuestName] = useState<string>(currentUser?.name || '');
+  const [guestEmail, setGuestEmail] = useState<string>(currentUser?.email || '');
+  const [guestPhone, setGuestPhone] = useState<string>(currentUser?.phone || '');
+  const [isAutoFilled, setIsAutoFilled] = useState<boolean>(Boolean(currentUser?.email));
   const [specialRequests, setSpecialRequests] = useState<string>('');
+
+  useEffect(() => {
+    async function loadAuthProfile() {
+      try {
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const meta = user.user_metadata || {};
+          const fullName = meta.full_name || meta.name || '';
+          const phone = meta.phone || user.phone || '';
+          const email = user.email || '';
+
+          setGuestName((prev) => (prev ? prev : fullName));
+          setGuestEmail((prev) => (prev ? prev : email));
+          setGuestPhone((prev) => (prev ? prev : phone));
+          if (fullName || email || phone) {
+            setIsAutoFilled(true);
+          }
+        }
+      } catch {
+        // Guest is not logged in or in preview mode
+      }
+    }
+    loadAuthProfile();
+  }, []);
 
   const [loading, setLoading] = useState<boolean>(false);
   const [submittedBooking, setSubmittedBooking] = useState<{
@@ -295,9 +328,17 @@ export function BookingWidget({
 
         {/* Guest Contact Information */}
         <div className="pt-2 border-t border-forest/10 space-y-2">
-          <span className="block text-xs font-semibold uppercase tracking-wider text-charcoal-muted">
-            Guest Details
-          </span>
+          <div className="flex items-center justify-between">
+            <span className="block text-xs font-semibold uppercase tracking-wider text-charcoal-muted">
+              Guest Details
+            </span>
+            {isAutoFilled && (
+              <span className="text-[10px] text-emerald-800 bg-emerald-50 border border-emerald-200/60 px-2 py-0.5 rounded font-medium flex items-center gap-1">
+                <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                Pre-filled from your account
+              </span>
+            )}
+          </div>
           <input
             suppressHydrationWarning
             type="text"
