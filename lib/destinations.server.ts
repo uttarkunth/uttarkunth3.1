@@ -6,7 +6,7 @@ import {
   type Destination,
 } from '@/lib/destinations';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { createPublicServerSupabaseClient } from '@/lib/supabase/server';
 
 if (typeof window !== 'undefined') {
   throw new Error('Security Violation: lib/destinations.server.ts cannot be imported in client code.');
@@ -25,9 +25,16 @@ export {
  */
 export async function getActiveDestinations(): Promise<Destination[]> {
   try {
-    const supabase: any = process.env.SUPABASE_SERVICE_ROLE_KEY
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    const hasValidServiceKey =
+      Boolean(serviceKey) &&
+      !serviceKey!.includes('your_') &&
+      !serviceKey!.includes('placeholder') &&
+      serviceKey!.length > 40;
+
+    const supabase: any = hasValidServiceKey
       ? createAdminClient()
-      : createServerSupabaseClient();
+      : createPublicServerSupabaseClient();
     const { data, error } = await supabase
       .from('destinations')
       .select('id, slug, name, region, tagline, description, match_terms, featured, active, sort_order')
