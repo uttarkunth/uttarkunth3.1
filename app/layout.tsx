@@ -11,6 +11,8 @@ export const metadata: Metadata = {
   authors: [{ name: BRAND.founder }],
   icons: {
     icon: '/logo.png',
+    shortcut: '/logo.png',
+    apple: '/logo.png',
   },
   openGraph: {
     title: `${BRAND.name} — Himalayan Hospitality`,
