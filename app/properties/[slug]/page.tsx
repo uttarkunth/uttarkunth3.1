@@ -2,10 +2,11 @@ import React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { createPublicServerSupabaseClient } from '@/lib/supabase/server';
+import { createPublicServerSupabaseClient, createServerSupabaseClient } from '@/lib/supabase/server';
 import { BRAND } from '@/lib/constants';
 import { BookingWidget } from '@/components/booking-widget';
 import { RoomAvailabilityCalendar } from '@/components/stays/room-availability-calendar';
+import { PropertyMapView } from '@/components/property-map-view';
 import { MapPin, Users, CheckCircle2, ShieldCheck, Clock, Home, Sparkles, ChevronLeft, Wifi, Coffee, Utensils, Car } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
@@ -39,7 +40,7 @@ async function getPropertyBySlug(slug: string) {
     const supabase = createPublicServerSupabaseClient();
     const { data: property, error } = await supabase
       .from('properties')
-      .select('id, slug, name, description, address, village, district, state, property_type, booking_mode, amenities, photos, published, moderation_status')
+      .select('id, slug, name, description, address, village, district, state, latitude, longitude, property_type, booking_mode, amenities, photos, published, moderation_status')
       .eq('slug', slug)
       .eq('published', true)
       .eq('moderation_status', 'approved')
@@ -96,6 +97,21 @@ export default async function PropertyDetailPage({ params, searchParams }: Prope
   const secondaryPhotos = photos.slice(1).map(String);
   const amenitiesList = Array.isArray(property.amenities) ? (property.amenities as unknown as string[]) : [];
   const rooms = property.rooms || [];
+
+  let currentUser = null;
+  try {
+    const userClient = createServerSupabaseClient();
+    const { data: { user } } = await userClient.auth.getUser();
+    if (user) {
+      currentUser = {
+        name: user.user_metadata?.full_name || user.user_metadata?.name || '',
+        email: user.email || '',
+        phone: user.user_metadata?.phone || user.phone || '',
+      };
+    }
+  } catch {
+    currentUser = null;
+  }
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
@@ -265,6 +281,20 @@ export default async function PropertyDetailPage({ params, searchParams }: Prope
             </p>
           </div>
 
+          {/* Interactive Map & Directions */}
+          <div className="space-y-4 pb-8 border-b border-forest/10">
+            <PropertyMapView
+              name={property.name}
+              village={property.village || undefined}
+              district={property.district || undefined}
+              state={property.state || undefined}
+              address={property.address || undefined}
+              latitude={property.latitude}
+              longitude={property.longitude}
+              lowestPrice={rooms[0]?.base_price ? Number(rooms[0].base_price) : undefined}
+            />
+          </div>
+
           {/* Stay Rules & Cancellation Policy */}
           <div className="space-y-4 pb-8 border-b border-forest/10 text-xs text-charcoal-muted leading-relaxed">
             <h2 className="font-serif text-2xl font-bold text-forest text-charcoal">House Rules & Stay Policy</h2>
@@ -272,7 +302,7 @@ export default async function PropertyDetailPage({ params, searchParams }: Prope
               <li>Check-in: 12:00 PM onwards • Check-out: strictly before 11:00 AM.</li>
               <li>Host Approval: Every booking request is personally reviewed by the host before confirmation.</li>
               <li>Cancellation: Free cancellation for pending requests. For confirmed stays, cancellation is permitted online prior to check-in day.</li>
-              <li>Respectful Tourism: Parvati Valley is a sacred, fragile mountain ecosystem. Loud outdoor music is prohibited after 9:00 PM.</li>
+              <li>Respectful Tourism: The Himalayas are a sacred, fragile mountain ecosystem. Loud outdoor music is prohibited after 9:30 PM.</li>
             </ul>
           </div>
         </div>
@@ -286,6 +316,7 @@ export default async function PropertyDetailPage({ params, searchParams }: Prope
             initialCheckIn={searchParams.checkIn}
             initialCheckOut={searchParams.checkOut}
             initialGuests={searchParams.guests ? parseInt(searchParams.guests, 10) : 2}
+            currentUser={currentUser}
           />
         </div>
       </div>
