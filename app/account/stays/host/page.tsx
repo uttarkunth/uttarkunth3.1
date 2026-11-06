@@ -9,7 +9,7 @@ import { AgreementAcceptor } from '@/components/host/agreement-acceptor';
 import { formatINR } from '@/lib/utils';
 import { 
   Home, Inbox, CheckCircle2, Clock, PlusCircle, AlertCircle, 
-  ArrowRight, Sparkles, MapPin, Calendar, Users, Phone, Mail, Shield 
+  ArrowRight, Sparkles, MapPin, Calendar, Users, Phone, Mail, Shield, MessageSquare 
 } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
@@ -234,13 +234,26 @@ export default async function HostOverviewPage() {
                       </p>
                     )}
 
-                    <div className="pt-2 flex items-center justify-end gap-3">
+                    <div className="pt-2 flex flex-wrap items-center justify-end gap-3">
+                      {b.guest_phone && (
+                        <a
+                          href={`https://api.whatsapp.com/send?phone=${b.guest_phone.replace(/[^0-9]/g, '')}&text=${encodeURIComponent(`Namaste ${b.guest_name}, regarding your stay booking request #${b.booking_reference} at ${b.properties?.name || 'our homestay'}...`)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 px-3 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-xl text-xs font-semibold transition"
+                          title="Chat with Guest on WhatsApp"
+                        >
+                          <MessageSquare className="w-3.5 h-3.5 text-emerald-600" />
+                          <span>Chat on WhatsApp</span>
+                        </a>
+                      )}
+
                       <form action="/api/bookings/decision" method="POST">
                         <input suppressHydrationWarning type="hidden" name="booking_id" value={b.id} />
                         <input suppressHydrationWarning type="hidden" name="action" value="decline" />
                         <button suppressHydrationWarning
                           type="submit"
-                          className="px-4 py-2 border border-forest/20 text-charcoal-muted hover:text-red-700 hover:border-red-300 text-xs font-semibold rounded-xl transition-all"
+                          className="px-4 py-2 border border-red-300 text-red-700 hover:bg-red-50 text-xs font-semibold rounded-xl transition-all"
                         >
                           Decline Request
                         </button>
@@ -251,10 +264,10 @@ export default async function HostOverviewPage() {
                         <input suppressHydrationWarning type="hidden" name="action" value="confirm" />
                         <button suppressHydrationWarning
                           type="submit"
-                          className="px-5 py-2 bg-forest hover:bg-forest-hover text-white text-xs font-semibold rounded-xl shadow-xs transition-all flex items-center gap-1.5"
+                          className="px-5 py-2 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold rounded-xl shadow-xs transition-all flex items-center gap-1.5"
                         >
-                          <CheckCircle2 className="w-4 h-4 text-ukorange" />
-                          <span>Approve Stay</span>
+                          <CheckCircle2 className="w-4 h-4 text-white" />
+                          <span>Accept Booking</span>
                         </button>
                       </form>
                     </div>

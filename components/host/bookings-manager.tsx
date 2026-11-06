@@ -256,24 +256,37 @@ export function BookingsManager({ initialBookings }: BookingsManagerProps) {
                         </button>
                       </div>
 
-                      <div className="flex items-center gap-3">
+                      <div className="flex flex-wrap items-center gap-2.5">
+                        {b.guest_phone && (
+                          <a
+                            href={`https://api.whatsapp.com/send?phone=${b.guest_phone.replace(/[^0-9]/g, '')}&text=${encodeURIComponent(`Namaste ${b.guest_name}, regarding your booking request #${b.booking_reference} for ${b.properties?.name || 'our homestay'}...`)}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="px-3 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 text-xs font-semibold rounded-xl transition-all flex items-center gap-1.5"
+                            title="Chat with Guest on WhatsApp"
+                          >
+                            <MessageSquare className="w-3.5 h-3.5 text-emerald-600" />
+                            <span>WhatsApp Guest</span>
+                          </a>
+                        )}
+
                         <button suppressHydrationWarning
                           type="button"
                           disabled={isLoading}
                           onClick={() => handleDecision(b.id, 'decline')}
-                          className="px-4 py-2 border border-forest/20 text-charcoal-muted hover:text-red-700 hover:border-red-300 text-xs font-semibold rounded-xl transition-all disabled:opacity-50"
+                          className="px-4 py-2 border border-red-300 text-red-700 hover:bg-red-50 text-xs font-semibold rounded-xl transition-all disabled:opacity-50"
                         >
-                          {isLoading ? 'Processing...' : 'Decline'}
+                          {isLoading ? 'Processing...' : 'Decline Request'}
                         </button>
 
                         <button suppressHydrationWarning
                           type="button"
                           disabled={isLoading}
                           onClick={() => handleDecision(b.id, 'confirm')}
-                          className="px-5 py-2 bg-forest hover:bg-forest-hover text-white text-xs font-semibold rounded-xl shadow-xs transition-all flex items-center gap-1.5 disabled:opacity-50"
+                          className="px-5 py-2 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold rounded-xl shadow-xs transition-all flex items-center gap-1.5 disabled:opacity-50"
                         >
-                          <CheckCircle2 className="w-4 h-4 text-ukorange" />
-                          <span>{isLoading ? 'Confirming...' : 'Approve Stay'}</span>
+                          <CheckCircle2 className="w-4 h-4 text-white" />
+                          <span>{isLoading ? 'Accepting...' : 'Accept Booking'}</span>
                         </button>
                       </div>
                     </div>
