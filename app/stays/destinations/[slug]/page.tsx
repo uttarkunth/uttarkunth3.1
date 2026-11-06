@@ -8,7 +8,7 @@ import {
   getNearbyPropertiesForDestination,
   getActiveDestinations,
 } from '@/lib/destinations.server';
-import { createAdminClient } from '@/lib/supabase/admin';
+import { createPublicServerSupabaseClient } from '@/lib/supabase/server';
 import { EXISTING_PROPERTIES, BRAND } from '@/lib/constants';
 import { formatINR } from '@/lib/utils';
 import {
@@ -23,7 +23,7 @@ import {
   Building2,
 } from 'lucide-react';
 
-export const revalidate = 60;
+export const dynamic = 'force-dynamic';
 
 interface DestinationPageProps {
   params: {
@@ -36,7 +36,7 @@ async function getPropertiesForDestination(slug: string) {
   if (!destination) return { destination: null, properties: [], nearbyProperties: [] };
 
   try {
-    const supabase = createAdminClient();
+    const supabase = createPublicServerSupabaseClient();
     const { data: properties, error } = await supabase
       .from('properties')
       .select('id, slug, name, description, address, village, district, state, property_type, booking_mode, amenities, photos, published, moderation_status')

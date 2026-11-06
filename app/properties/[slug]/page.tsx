@@ -2,12 +2,12 @@ import React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { createAdminClient } from '@/lib/supabase/admin';
+import { createPublicServerSupabaseClient } from '@/lib/supabase/server';
 import { EXISTING_PROPERTIES, BRAND } from '@/lib/constants';
 import { BookingWidget } from '@/components/booking-widget';
 import { MapPin, Users, CheckCircle2, ShieldCheck, Clock, Home, Sparkles, ChevronLeft, Wifi, Coffee, Utensils, Car } from 'lucide-react';
 
-export const revalidate = 60;
+export const dynamic = 'force-dynamic';
 
 export async function generateMetadata({ params }: { params: { slug: string } }) {
   const property = await getPropertyBySlug(params.slug);
@@ -35,7 +35,7 @@ interface PropertyDetailPageProps {
 
 async function getPropertyBySlug(slug: string) {
   try {
-    const supabase = createAdminClient();
+    const supabase = createPublicServerSupabaseClient();
     const { data: property, error } = await supabase
       .from('properties')
       .select('id, slug, name, description, address, village, district, state, property_type, booking_mode, amenities, photos, published, moderation_status')
@@ -67,7 +67,7 @@ async function getPropertyBySlug(slug: string) {
 
 async function getRelatedStays(currentId: string) {
   try {
-    const supabase = createAdminClient();
+    const supabase = createPublicServerSupabaseClient();
     const { data: properties } = await supabase
       .from('properties')
       .select('id, slug, name, description, village, district, state, property_type, amenities, photos')

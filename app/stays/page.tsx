@@ -2,9 +2,9 @@ import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { SearchBar } from '@/components/search-bar';
-import { createAdminClient } from '@/lib/supabase/admin';
 import { EXISTING_PROPERTIES, BRAND } from '@/lib/constants';
-import { getActiveDestinations, filterPropertiesForDestination, Destination } from '@/lib/destinations.server';
+import { getActiveDestinations, filterPropertiesForDestination, CURATED_DESTINATIONS, Destination } from '@/lib/destinations.server';
+import { createPublicServerSupabaseClient } from '@/lib/supabase/server';
 import { formatINR } from '@/lib/utils';
 import {
   MapPin,
@@ -17,7 +17,7 @@ import {
   Building2,
 } from 'lucide-react';
 
-export const revalidate = 60;
+export const dynamic = 'force-dynamic';
 
 export const metadata = {
   title: `Stays — Find Your Place in the Mountains — ${BRAND.name}`,
@@ -25,10 +25,15 @@ export const metadata = {
 };
 
 async function getStaysData() {
-  const destinations = await getActiveDestinations();
+  let destinations = CURATED_DESTINATIONS;
+  try {
+    destinations = await getActiveDestinations();
+  } catch {
+    destinations = CURATED_DESTINATIONS;
+  }
 
   try {
-    const supabase = createAdminClient();
+    const supabase = createPublicServerSupabaseClient();
     const { data: properties, error } = await supabase
       .from('properties')
       .select('id, slug, name, description, address, village, district, state, property_type, booking_mode, amenities, photos, published, moderation_status')
