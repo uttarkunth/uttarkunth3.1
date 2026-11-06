@@ -4,15 +4,15 @@ import Image from 'next/image';
 import { SearchBar } from '@/components/search-bar';
 import { AestheticBentoGrid } from '@/components/aesthetic-bento-grid';
 import { AestheticPropertyCard } from '@/components/aesthetic-property-card';
-import { createAdminClient } from '@/lib/supabase/admin';
+import { createPublicServerSupabaseClient } from '@/lib/supabase/server';
 import { EXISTING_PROPERTIES, BRAND } from '@/lib/constants';
 import { Sparkles, CheckCircle2, Trees, HeartHandshake, Shield, ArrowRight } from 'lucide-react';
 
-export const revalidate = 60;
+export const dynamic = 'force-dynamic';
 
 async function getProperties() {
   try {
-    const supabase = createAdminClient();
+    const supabase = createPublicServerSupabaseClient();
     const { data: properties } = await supabase
       .from('properties')
       .select('id, slug, name, description, address, village, district, state, property_type, booking_mode, amenities, photos, published, moderation_status')

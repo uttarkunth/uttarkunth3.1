@@ -19,16 +19,21 @@ export const metadata = {
 };
 
 export default async function ProductsPage() {
-  const adminClient = createAdminClient();
+  let products: any[] = [];
+  try {
+    const adminClient = createAdminClient();
 
-  // Query only approved products for public marketplace
-  const { data: approvedProducts } = await adminClient
-    .from('products')
-    .select('*, sellers(business_name, valley, state)')
-    .eq('moderation_status', 'approved')
-    .order('created_at', { ascending: false });
+    // Query only approved products for public marketplace
+    const { data: approvedProducts } = await adminClient
+      .from('products')
+      .select('*, sellers(business_name, valley, state)')
+      .eq('moderation_status', 'approved')
+      .order('created_at', { ascending: false });
 
-  const products = approvedProducts || [];
+    products = approvedProducts || [];
+  } catch {
+    products = [];
+  }
 
   return (
     <div className="space-y-16 py-12 pb-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

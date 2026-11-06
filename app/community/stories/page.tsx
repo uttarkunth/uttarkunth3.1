@@ -13,15 +13,24 @@ export const metadata = {
 };
 
 export default async function CommunityStoriesPage() {
-  const adminClient = createAdminClient();
-  const { data: dbStories, error: storyErr } = await adminClient
-    .from('community_stories')
-    .select('*')
-    .eq('status', 'published')
-    .order('published_at', { ascending: false });
+  let stories: any[] = COMMUNITY_STORIES;
+  let isDbReady = false;
+  try {
+    const adminClient = createAdminClient();
+    const { data: dbStories, error: storyErr } = await adminClient
+      .from('community_stories')
+      .select('*')
+      .eq('status', 'published')
+      .order('published_at', { ascending: false });
 
-  const isDbReady = !storyErr;
-  const stories = dbStories && dbStories.length > 0 ? dbStories : COMMUNITY_STORIES;
+    isDbReady = !storyErr;
+    if (dbStories && dbStories.length > 0) {
+      stories = dbStories;
+    }
+  } catch {
+    isDbReady = false;
+    stories = COMMUNITY_STORIES;
+  }
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-12 pb-24 space-y-12">

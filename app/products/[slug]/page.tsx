@@ -25,17 +25,26 @@ interface ProductDetailPageProps {
 }
 
 export default async function ProductDetailPage({ params }: ProductDetailPageProps) {
-  const adminClient = createAdminClient();
+  let product: any = null;
+  try {
+    const adminClient = createAdminClient();
 
-  // Query product from database (only approved products accessible publicly)
-  const { data: product, error } = await adminClient
-    .from('products')
-    .select('*, sellers(business_name, bio, valley, state)')
-    .eq('slug', params.slug)
-    .eq('moderation_status', 'approved')
-    .maybeSingle();
+    // Query product from database (only approved products accessible publicly)
+    const { data, error } = await adminClient
+      .from('products')
+      .select('*, sellers(business_name, bio, valley, state)')
+      .eq('slug', params.slug)
+      .eq('moderation_status', 'approved')
+      .maybeSingle();
 
-  if (error || !product) {
+    if (!error && data) {
+      product = data;
+    }
+  } catch {
+    product = null;
+  }
+
+  if (!product) {
     notFound();
   }
 

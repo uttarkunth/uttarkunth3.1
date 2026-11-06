@@ -1,7 +1,7 @@
 import React from 'react';
 import { SearchBar } from '@/components/search-bar';
 import { PropertyCard } from '@/components/property-card';
-import { createAdminClient } from '@/lib/supabase/admin';
+import { createPublicServerSupabaseClient } from '@/lib/supabase/server';
 import { EXISTING_PROPERTIES, PROPERTY_TYPES, AMENITIES_LIST } from '@/lib/constants';
 import { Filter, SlidersHorizontal, Mountain, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
@@ -23,7 +23,7 @@ interface PropertiesPageProps {
 
 async function fetchFilteredProperties(params: PropertiesPageProps['searchParams']) {
   try {
-    const supabase = createAdminClient();
+    const supabase = createPublicServerSupabaseClient();
 
     let query = supabase
       .from('properties')
