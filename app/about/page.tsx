@@ -2,7 +2,6 @@ import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { BRAND } from '@/lib/constants';
-import { BrandIntroSplash } from '@/components/brand-intro-splash';
 import {
   Mountain,
   Compass,
@@ -103,9 +102,6 @@ export default function AboutPage() {
 
   return (
     <div className="bg-ivory text-charcoal min-h-screen">
-      {/* Brand Intro Splash with Logo Opening Transition */}
-      <BrandIntroSplash />
-
       {/* Sticky Table of Contents Header */}
       <div className="sticky top-16 z-30 bg-ivory/95 backdrop-blur-md border-b border-forest/10 py-3 overflow-x-auto scrollbar-none">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 flex items-center gap-2 sm:gap-4 text-xs font-semibold whitespace-nowrap">
