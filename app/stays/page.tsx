@@ -187,9 +187,10 @@ export default async function StaysPage({ searchParams }: StaysPageProps) {
               const amenities = property.amenities || [];
 
               return (
-                <div
+                <Link
                   key={property.id}
-                  className="bg-white rounded-3xl border border-forest/15 overflow-hidden shadow-soft hover:shadow-lifted transition-all flex flex-col group"
+                  href={`/stays/${property.slug}`}
+                  className="bg-white rounded-3xl border border-forest/15 overflow-hidden shadow-soft hover:shadow-lifted transition-all flex flex-col group cursor-pointer"
                 >
                   <div className="relative aspect-[16/10] w-full bg-forest-dark overflow-hidden">
                     {coverPhoto ? (
@@ -250,16 +251,13 @@ export default async function StaysPage({ searchParams }: StaysPageProps) {
                       <span className="text-[11px] font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full">
                         Request-Based Booking
                       </span>
-                      <Link
-                        href={`/stays/${property.slug}`}
-                        className="inline-flex items-center gap-1 text-xs font-bold text-forest hover:text-ukorange transition-colors"
-                      >
+                      <span className="inline-flex items-center gap-1 text-xs font-bold text-forest group-hover:text-ukorange transition-colors">
                         <span>View &amp; Request</span>
                         <ArrowRight className="w-3.5 h-3.5" />
-                      </Link>
+                      </span>
                     </div>
                   </div>
-                </div>
+                </Link>
               );
             })}
           </div>
@@ -343,7 +341,7 @@ export default async function StaysPage({ searchParams }: StaysPageProps) {
         <div className="space-y-6 pt-4">
           <div className="flex items-center gap-3 border-b border-forest/15 pb-3">
             <span className="text-xs uppercase font-bold tracking-widest text-forest">Region</span>
-            <h3 className="font-serif text-2xl font-bold text-forest">Jammon &amp; Kashmir</h3>
+            <h3 className="font-serif text-2xl font-bold text-forest">Jammu &amp; Kashmir</h3>
             <span className="text-xs text-charcoal-muted">({jkDestinations.length} Destinations)</span>
           </div>
 
