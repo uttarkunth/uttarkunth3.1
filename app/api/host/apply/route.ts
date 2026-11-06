@@ -68,6 +68,9 @@ export async function POST(req: NextRequest) {
         district: data.district,
         state: data.state,
         address: data.address || `${data.village}, ${data.district}, ${data.state}`,
+        latitude: data.latitude ?? null,
+        longitude: data.longitude ?? null,
+        cover_photo: data.cover_photo || (data.photos && data.photos[0]) || null,
         description: data.description,
         amenities: data.amenities || [],
         photos: data.photos || [],
@@ -101,6 +104,10 @@ export async function POST(req: NextRequest) {
     const roomsToInsert: any[] = [];
     if (Array.isArray(data.rooms) && data.rooms.length > 0) {
       data.rooms.forEach((r, idx) => {
+        const roomPhotos = Array.isArray(r.photos) ? r.photos : [];
+        const washroomPhotos = Array.isArray(r.washroom_photos) ? r.washroom_photos : [];
+        const allPhotos = [...roomPhotos, ...washroomPhotos];
+
         roomsToInsert.push({
           property_id: createdProperty.id,
           room_name: r.room_name,
@@ -111,7 +118,7 @@ export async function POST(req: NextRequest) {
           view_type: r.view_type || 'mountain',
           bed_type: r.bed_type || 'King / Double Bed',
           features: r.features || [],
-          photos: r.photos || [],
+          photos: allPhotos,
           sort_order: idx + 1,
           active: r.active ?? true,
         });
@@ -144,11 +151,14 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Send in-app notification confirming property submission is under review
+    // Send in-app, WhatsApp, and Email notifications confirming property submission is under review
     await notifyHostPropertySubmitted({
       hostUserId: user.id,
       propertyName: createdProperty.name,
       village: createdProperty.village || data.village,
+      hostEmail: contactEmail || user.email,
+      hostPhone: contactPhone,
+      hostWhatsapp: contactWhatsapp,
     });
 
     return NextResponse.json({

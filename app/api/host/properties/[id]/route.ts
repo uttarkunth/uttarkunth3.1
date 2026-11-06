@@ -105,6 +105,9 @@ export async function PATCH(
       village,
       district,
       state,
+      latitude,
+      longitude,
+      cover_photo,
       property_type,
       amenities,
       photos,
@@ -131,39 +134,37 @@ export async function PATCH(
     }
 
     const isLiveApproved = existingProp.published === true && existingProp.moderation_status === 'approved';
+
+    // Industry Standard Security Moderation:
+    // Only core identity & legal location changes require moderation review.
+    // Operational settings (amenities, photos, room rates, description, rules, contact) update directly.
     const isMaterialContentChange =
-      (name !== undefined && name.trim() !== existingProp.name) ||
-      (description !== undefined && description.trim() !== existingProp.description) ||
-      (address !== undefined && address.trim() !== existingProp.address) ||
-      (village !== undefined && village.trim() !== existingProp.village) ||
-      (district !== undefined && district.trim() !== existingProp.district) ||
-      (state !== undefined && state.trim() !== existingProp.state) ||
-      (property_type !== undefined && property_type !== existingProp.property_type) ||
-      (amenities !== undefined && JSON.stringify(amenities) !== JSON.stringify(existingProp.amenities)) ||
-      (photos !== undefined && JSON.stringify(photos) !== JSON.stringify(existingProp.photos));
+      (name !== undefined && name.trim() !== '' && name.trim() !== existingProp.name) ||
+      (address !== undefined && address.trim() !== '' && address.trim() !== existingProp.address) ||
+      (village !== undefined && village.trim() !== '' && village.trim() !== existingProp.village) ||
+      (district !== undefined && district.trim() !== '' && district.trim() !== existingProp.district) ||
+      (state !== undefined && state.trim() !== '' && state.trim() !== existingProp.state) ||
+      (property_type !== undefined && property_type !== existingProp.property_type);
 
     let stagedForReview = false;
 
     if (isLiveApproved && isMaterialContentChange) {
-      // Primary host check for content changes
+      // Primary host check for identity/location changes
       if (authResult.role !== 'owner' && authResult.role !== 'admin') {
         return NextResponse.json({
           ok: false,
-          error: 'Only the primary property host can propose public content or structural changes.'
+          error: 'Only the primary property host can propose changes to property name or physical location.'
         }, { status: 403 });
       }
 
       // Stage proposed changes in pending_changes so live listing remains visible
       const stagedPayload = {
         name: name !== undefined ? name.trim() : existingProp.name,
-        description: description !== undefined ? description.trim() : existingProp.description,
         address: address !== undefined ? address.trim() : existingProp.address,
         village: village !== undefined ? village.trim() : existingProp.village,
         district: district !== undefined ? district.trim() : existingProp.district,
         state: state !== undefined ? state.trim() : existingProp.state,
         property_type: property_type !== undefined ? property_type : existingProp.property_type,
-        amenities: amenities !== undefined ? amenities : existingProp.amenities,
-        photos: photos !== undefined ? photos : existingProp.photos,
       };
 
       const { error: stageErr } = await adminClient
@@ -171,70 +172,64 @@ export async function PATCH(
         .update({
           pending_changes: stagedPayload,
           pending_changes_submitted_at: new Date().toISOString(),
-          moderation_notes: 'Proposed updates staged for administrative review. Approved listing remains live.',
+          moderation_notes: 'Structural property details staged for administrative review. Approved listing remains live.',
           updated_at: new Date().toISOString()
         })
         .eq('id', params.id);
 
       if (stageErr) throw stageErr;
       stagedForReview = true;
-    } else if (!isLiveApproved && isMaterialContentChange) {
-      // Unapproved draft: updates apply directly to draft
-      const updateData: any = {
-        updated_at: new Date().toISOString(),
-        published: false,
-        moderation_status: 'pending'
-      };
-      if (name !== undefined) updateData.name = name.trim();
-      if (description !== undefined) updateData.description = description.trim();
-      if (address !== undefined) updateData.address = address.trim();
-      if (village !== undefined) updateData.village = village.trim();
-      if (district !== undefined) updateData.district = district.trim();
-      if (state !== undefined) updateData.state = state.trim();
-      if (property_type !== undefined) updateData.property_type = property_type;
-      if (amenities !== undefined) updateData.amenities = amenities;
-      if (photos !== undefined) updateData.photos = photos;
-      if (contact_phone !== undefined) updateData.contact_phone = contact_phone.trim();
-      if (contact_whatsapp !== undefined) updateData.contact_whatsapp = contact_whatsapp.trim();
-      if (contact_email !== undefined) updateData.contact_email = contact_email.trim();
-      if (notify_email !== undefined) updateData.notify_email = Boolean(notify_email);
-      if (notify_whatsapp !== undefined) updateData.notify_whatsapp = Boolean(notify_whatsapp);
-      if (house_rules !== undefined) updateData.house_rules = house_rules.trim();
-      if (check_in_time !== undefined) updateData.check_in_time = check_in_time.trim();
-      if (check_out_time !== undefined) updateData.check_out_time = check_out_time.trim();
-
-      const { error: draftUpdateErr } = await adminClient
-        .from('properties')
-        .update(updateData)
-        .eq('id', params.id);
-
-      if (draftUpdateErr) throw draftUpdateErr;
-    } else {
-      // Direct operational contact info updates
-      const contactUpdates: any = {};
-      if (contact_phone !== undefined) contactUpdates.contact_phone = contact_phone.trim();
-      if (contact_whatsapp !== undefined) contactUpdates.contact_whatsapp = contact_whatsapp.trim();
-      if (contact_email !== undefined) contactUpdates.contact_email = contact_email.trim();
-      if (notify_email !== undefined) contactUpdates.notify_email = Boolean(notify_email);
-      if (notify_whatsapp !== undefined) contactUpdates.notify_whatsapp = Boolean(notify_whatsapp);
-      if (house_rules !== undefined) contactUpdates.house_rules = house_rules.trim();
-      if (check_in_time !== undefined) contactUpdates.check_in_time = check_in_time.trim();
-      if (check_out_time !== undefined) contactUpdates.check_out_time = check_out_time.trim();
-
-      if (Object.keys(contactUpdates).length > 0) {
-        contactUpdates.updated_at = new Date().toISOString();
-        await adminClient.from('properties').update(contactUpdates).eq('id', params.id);
-      }
     }
 
-    // Operational updates: Room units & nightly rates (Primary Host or Manager can update)
+    // Direct updates for operational data on live or draft properties
+    const directUpdates: any = {
+      updated_at: new Date().toISOString(),
+    };
+
+    if (!isLiveApproved) {
+      // For unapproved draft, apply everything directly
+      if (name !== undefined) directUpdates.name = name.trim();
+      if (address !== undefined) directUpdates.address = address.trim();
+      if (village !== undefined) directUpdates.village = village.trim();
+      if (district !== undefined) directUpdates.district = district.trim();
+      if (state !== undefined) directUpdates.state = state.trim();
+      if (property_type !== undefined) directUpdates.property_type = property_type;
+    }
+
+    if (description !== undefined) directUpdates.description = description.trim();
+    if (amenities !== undefined) directUpdates.amenities = amenities;
+    if (photos !== undefined) directUpdates.photos = photos;
+    if (cover_photo !== undefined) directUpdates.cover_photo = cover_photo;
+    if (latitude !== undefined) directUpdates.latitude = latitude === null ? null : Number(latitude);
+    if (longitude !== undefined) directUpdates.longitude = longitude === null ? null : Number(longitude);
+    if (contact_phone !== undefined) directUpdates.contact_phone = contact_phone.trim();
+    if (contact_whatsapp !== undefined) directUpdates.contact_whatsapp = contact_whatsapp.trim();
+    if (contact_email !== undefined) directUpdates.contact_email = contact_email.trim();
+    if (notify_email !== undefined) directUpdates.notify_email = Boolean(notify_email);
+    if (notify_whatsapp !== undefined) directUpdates.notify_whatsapp = Boolean(notify_whatsapp);
+    if (house_rules !== undefined) directUpdates.house_rules = house_rules.trim();
+    if (check_in_time !== undefined) directUpdates.check_in_time = check_in_time.trim();
+    if (check_out_time !== undefined) directUpdates.check_out_time = check_out_time.trim();
+
+    if (Object.keys(directUpdates).length > 1) {
+      await adminClient.from('properties').update(directUpdates).eq('id', params.id);
+    }
+
+    // Operational updates: Room units, rates, photos & features
     if (Array.isArray(rooms)) {
       for (const room of rooms) {
-        if (room.id) {
+        if (room.deleted && room.id) {
+          // Delete room unit
+          await adminClient
+            .from('room_units')
+            .delete()
+            .eq('id', room.id)
+            .eq('property_id', params.id);
+        } else if (room.id) {
           const roomUpdates: any = {
             room_name: room.room_name?.trim(),
             description: room.description?.trim(),
-            max_guests: Number(room.max_guests),
+            max_guests: Number(room.max_guests) || 2,
             base_price: Number(room.base_price),
             active: room.active !== undefined ? Boolean(room.active) : true,
           };
