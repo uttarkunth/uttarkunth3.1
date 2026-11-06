@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Home, Calendar, Inbox, Sparkles, PlusCircle } from 'lucide-react';
+import { LayoutDashboard, Home, Calendar, Inbox, Sparkles, PlusCircle, Star } from 'lucide-react';
 
 interface HostSubnavProps {
   pendingCount?: number;
@@ -40,6 +40,12 @@ export function HostSubnav({ pendingCount = 0, propertiesCount = 0 }: HostSubnav
       active: pathname.startsWith('/account/stays/host/bookings'),
       badge: pendingCount > 0 ? pendingCount : undefined,
       badgeColor: 'bg-ukorange text-white',
+    },
+    {
+      href: '/account/stays/host/reviews',
+      label: 'Guest Reviews',
+      icon: Star,
+      active: pathname.startsWith('/account/stays/host/reviews'),
     },
   ];
 

@@ -5,6 +5,7 @@ import { notFound } from 'next/navigation';
 import { createPublicServerSupabaseClient } from '@/lib/supabase/server';
 import { EXISTING_PROPERTIES, BRAND } from '@/lib/constants';
 import { BookingWidget } from '@/components/booking-widget';
+import { RoomAvailabilityCalendar } from '@/components/stays/room-availability-calendar';
 import { MapPin, Users, CheckCircle2, ShieldCheck, Clock, Home, Sparkles, ChevronLeft, Wifi, Coffee, Utensils, Car } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
@@ -51,9 +52,10 @@ async function getPropertyBySlug(slug: string) {
 
     const { data: rooms } = await supabase
       .from('room_units')
-      .select('id, property_id, room_name, description, max_guests, base_price, active')
+      .select('id, property_id, room_name, description, max_guests, base_price, attached_washroom, view_type, bed_type, features, photos, active')
       .eq('property_id', property.id)
-      .eq('active', true);
+      .eq('active', true)
+      .order('sort_order', { ascending: true });
 
     return {
       ...property,
@@ -181,36 +183,60 @@ export default async function PropertyDetailPage({ params, searchParams }: Prope
 
           {/* Room Units & Accommodations */}
           <div className="space-y-4 pb-8 border-b border-forest/10">
-            <h2 className="font-serif text-2xl font-bold text-forest">Room Types & Inventory</h2>
+            <h2 className="font-serif text-2xl font-bold text-forest">Room Types &amp; Inventory</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {rooms.map(room => (
-                <div key={room.id} className="p-5 bg-white rounded-2xl border border-forest/15 shadow-sm space-y-3">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <h3 className="font-serif text-lg font-bold text-forest">{room.room_name}</h3>
-                      <span className="text-xs text-charcoal-muted flex items-center gap-1 mt-0.5">
-                        <Users className="w-3.5 h-3.5 text-ukorange" />
-                        Max {room.max_guests} Guests
-                      </span>
+              {rooms.map((roomItem) => {
+                const room = roomItem as any;
+                return (
+                  <div key={room.id} className="p-5 bg-white rounded-2xl border border-forest/15 shadow-sm space-y-3 flex flex-col justify-between">
+                    <div className="space-y-2">
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <h3 className="font-serif text-lg font-bold text-forest">{room.room_name}</h3>
+                          <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                            <span className="text-[11px] text-charcoal-muted flex items-center gap-1">
+                              <Users className="w-3.5 h-3.5 text-ukorange" />
+                              Max {room.max_guests} Guests
+                            </span>
+                            {room.attached_washroom !== undefined && (
+                              <span className={`px-2 py-0.5 text-[10px] font-bold rounded-full ${room.attached_washroom ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-100 text-gray-700'}`}>
+                                {room.attached_washroom ? 'Attached Washroom' : 'Shared Washroom'}
+                              </span>
+                            )}
+                            {room.view_type && room.view_type !== 'none' && (
+                              <span className="px-2 py-0.5 text-[10px] font-semibold bg-sky-100 text-sky-800 rounded-full capitalize">
+                                {room.view_type} View
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <span className="font-serif text-xl font-bold text-forest whitespace-nowrap">
+                          ₹{Number(room.base_price)}
+                          <span className="text-xs text-charcoal-muted font-sans font-normal"> / night</span>
+                        </span>
+                      </div>
+                      {room.description && (
+                        <p className="text-xs text-charcoal-muted leading-relaxed">
+                          {room.description}
+                        </p>
+                      )}
                     </div>
-                    <span className="font-serif text-xl font-bold text-forest">
-                      ₹{Number(room.base_price)}
-                      <span className="text-xs text-charcoal-muted font-sans font-normal"> / night</span>
-                    </span>
+                    <div className="pt-2 text-[11px] font-medium text-forest flex items-center gap-1 border-t border-forest/5">
+                      <CheckCircle2 className="w-3 h-3 text-ukorange" />
+                      <span>{room.bed_type || 'Double Bed'} • Clean mountain linens included</span>
+                    </div>
                   </div>
-                  {room.description && (
-                    <p className="text-xs text-charcoal-muted leading-relaxed">
-                      {room.description}
-                    </p>
-                  )}
-                  <div className="pt-2 text-[11px] font-medium text-forest flex items-center gap-1">
-                    <CheckCircle2 className="w-3 h-3 text-ukorange" />
-                    Clean linens & mountain views included
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
+
+          {/* Interactive Room Availability Calendar */}
+          <RoomAvailabilityCalendar
+            propertyId={property.id}
+            propertyName={property.name}
+            rooms={rooms as any}
+          />
 
           {/* Amenities */}
           <div className="space-y-4 pb-8 border-b border-forest/10">

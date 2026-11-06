@@ -25,6 +25,12 @@ interface Property {
   moderation_notes?: string | null;
   pending_changes?: any;
   pending_changes_submitted_at?: string | null;
+  contact_phone?: string | null;
+  contact_whatsapp?: string | null;
+  contact_email?: string | null;
+  house_rules?: string | null;
+  check_in_time?: string | null;
+  check_out_time?: string | null;
   created_at: string;
   room_units?: any[];
 }
@@ -330,7 +336,63 @@ export function PropertyModerationEngine({ initialProperties }: PropertyModerati
                     </span>
                   </div>
 
+                  {/* Contact & Notification Details */}
+                  {(p.contact_phone || p.contact_whatsapp || p.contact_email) && (
+                    <div className="p-3 bg-ivory-warm rounded-xl border border-forest/10 flex flex-wrap gap-4 text-xs">
+                      {p.contact_phone && (
+                        <div>
+                          <strong className="text-charcoal-muted">Phone: </strong>
+                          <span className="font-semibold text-forest">{p.contact_phone}</span>
+                        </div>
+                      )}
+                      {p.contact_whatsapp && (
+                        <div>
+                          <strong className="text-charcoal-muted">WhatsApp: </strong>
+                          <span className="font-semibold text-emerald-700">{p.contact_whatsapp}</span>
+                        </div>
+                      )}
+                      {p.contact_email && (
+                        <div>
+                          <strong className="text-charcoal-muted">Email: </strong>
+                          <span className="font-semibold text-forest">{p.contact_email}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   <p className="text-xs text-charcoal leading-relaxed">{p.description}</p>
+
+                  {/* Room Inventory Breakdown */}
+                  {Array.isArray(p.room_units) && p.room_units.length > 0 && (
+                    <div className="space-y-2">
+                      <strong className="text-[11px] uppercase tracking-wider text-charcoal-muted block">
+                        Room Inventory ({p.room_units.length} {p.room_units.length === 1 ? 'Room' : 'Rooms'}):
+                      </strong>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {p.room_units.map((room: any, rIdx: number) => (
+                          <div key={room.id || rIdx} className="p-3 bg-white rounded-xl border border-forest/15 text-xs space-y-1">
+                            <div className="flex items-center justify-between font-bold text-forest">
+                              <span>{room.room_name}</span>
+                              <span>₹{room.base_price}/night</span>
+                            </div>
+                            <div className="flex flex-wrap gap-1 text-[10px]">
+                              <span className="px-1.5 py-0.2 bg-forest/10 text-forest rounded">
+                                Max {room.max_guests} Guests
+                              </span>
+                              <span className={`px-1.5 py-0.2 rounded font-semibold ${room.attached_washroom ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-100 text-gray-700'}`}>
+                                {room.attached_washroom ? 'Attached Washroom' : 'Shared Washroom'}
+                              </span>
+                              {room.view_type && room.view_type !== 'none' && (
+                                <span className="px-1.5 py-0.2 bg-sky-100 text-sky-800 rounded capitalize">
+                                  {room.view_type} View
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
                   {photos.length > 0 && (
                     <div className="flex gap-2 overflow-x-auto py-1">

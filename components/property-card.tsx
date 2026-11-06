@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { formatINR } from '@/lib/utils';
-import { MapPin, Sparkles, CheckCircle2, Heart, ArrowRight } from 'lucide-react';
+import { MapPin, Sparkles, CheckCircle2, Heart, ArrowRight, Calendar } from 'lucide-react';
 
 export interface RoomSummary {
   id: string;
@@ -127,16 +127,23 @@ export function PropertyCard({ property }: { property: PropertyCardData }) {
           {property.description || 'Authentic Himalayan accommodation with home-cooked meals and tranquil views.'}
         </p>
 
-        {/* Amenities Highlights */}
-        {Array.isArray(property.amenities) && property.amenities.length > 0 && (
-          <div className="flex flex-wrap gap-1.5 text-xs font-medium text-forest">
-            {property.amenities.slice(0, 3).map((a: string, i: number) => (
-              <span key={i} className="px-2.5 py-1 bg-forest/5 rounded-md border border-forest/10">
-                {a}
-              </span>
-            ))}
+        {/* Amenities Highlights & Live Calendar Pill */}
+        <div className="space-y-2">
+          {Array.isArray(property.amenities) && property.amenities.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 text-xs font-medium text-forest">
+              {property.amenities.slice(0, 3).map((a: string, i: number) => (
+                <span key={i} className="px-2.5 py-1 bg-forest/5 rounded-md border border-forest/10">
+                  {a}
+                </span>
+              ))}
+            </div>
+          )}
+
+          <div className="flex items-center gap-1.5 text-[11px] font-semibold text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200/80 w-fit">
+            <Calendar className="w-3.5 h-3.5 text-emerald-600" />
+            <span>Room Availability Calendar Live</span>
           </div>
-        )}
+        </div>
 
         {/* Price & Action Row */}
         <div className="pt-3 border-t border-forest/10 flex items-center justify-between">

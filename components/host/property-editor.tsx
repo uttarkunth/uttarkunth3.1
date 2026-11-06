@@ -16,6 +16,9 @@ interface RoomUnit {
   description?: string;
   max_guests: number;
   base_price: number;
+  attached_washroom?: boolean;
+  view_type?: string;
+  bed_type?: string;
   active: boolean;
 }
 
@@ -43,6 +46,16 @@ export function PropertyEditor({ initialProperty }: PropertyEditorProps) {
   const [state, setState] = useState(initialProperty.state || 'Himachal Pradesh');
   const [propertyType, setPropertyType] = useState(initialProperty.property_type || 'homestay');
 
+  // Contact & Notifications State
+  const [contactPhone, setContactPhone] = useState(initialProperty.contact_phone || '');
+  const [contactWhatsapp, setContactWhatsapp] = useState(initialProperty.contact_whatsapp || '');
+  const [contactEmail, setContactEmail] = useState(initialProperty.contact_email || '');
+  const [notifyEmail, setNotifyEmail] = useState(initialProperty.notify_email ?? true);
+  const [notifyWhatsapp, setNotifyWhatsapp] = useState(initialProperty.notify_whatsapp ?? false);
+  const [houseRules, setHouseRules] = useState(initialProperty.house_rules || '');
+  const [checkInTime, setCheckInTime] = useState(initialProperty.check_in_time || '12:00 PM');
+  const [checkOutTime, setCheckOutTime] = useState(initialProperty.check_out_time || '11:00 AM');
+
   // Room Units State
   const [rooms, setRooms] = useState<RoomUnit[]>(
     Array.isArray(initialProperty.room_units) && initialProperty.room_units.length > 0
@@ -53,6 +66,9 @@ export function PropertyEditor({ initialProperty }: PropertyEditorProps) {
             description: 'Comfortable Himalayan room',
             max_guests: 2,
             base_price: 1500,
+            attached_washroom: true,
+            view_type: 'mountain',
+            bed_type: 'King / Double Bed',
             active: true
           }
         ]
@@ -62,6 +78,9 @@ export function PropertyEditor({ initialProperty }: PropertyEditorProps) {
   const [newRoomName, setNewRoomName] = useState('');
   const [newRoomPrice, setNewRoomPrice] = useState(1500);
   const [newRoomGuests, setNewRoomGuests] = useState(2);
+  const [newRoomWashroom, setNewRoomWashroom] = useState(true);
+  const [newRoomView, setNewRoomView] = useState('mountain');
+  const [newRoomBed, setNewRoomBed] = useState('King / Double Bed');
   const [showAddRoom, setShowAddRoom] = useState(false);
 
   // Uploading state
@@ -133,12 +152,18 @@ export function PropertyEditor({ initialProperty }: PropertyEditorProps) {
         room_name: newRoomName.trim(),
         max_guests: Number(newRoomGuests),
         base_price: Number(newRoomPrice),
+        attached_washroom: Boolean(newRoomWashroom),
+        view_type: newRoomView,
+        bed_type: newRoomBed,
         active: true,
       },
     ]);
     setNewRoomName('');
     setNewRoomPrice(1500);
     setNewRoomGuests(2);
+    setNewRoomWashroom(true);
+    setNewRoomView('mountain');
+    setNewRoomBed('King / Double Bed');
     setShowAddRoom(false);
   };
 
@@ -162,6 +187,14 @@ export function PropertyEditor({ initialProperty }: PropertyEditorProps) {
           amenities,
           photos,
           rooms,
+          contact_phone: contactPhone,
+          contact_whatsapp: contactWhatsapp,
+          contact_email: contactEmail,
+          notify_email: notifyEmail,
+          notify_whatsapp: notifyWhatsapp,
+          house_rules: houseRules,
+          check_in_time: checkInTime,
+          check_out_time: checkOutTime,
         }),
       });
 
@@ -388,9 +421,19 @@ export function PropertyEditor({ initialProperty }: PropertyEditorProps) {
               className="py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
             >
               <div className="space-y-1">
-                <h3 className="font-semibold text-sm text-forest">{room.room_name}</h3>
+                <div className="flex items-center gap-2">
+                  <h3 className="font-semibold text-sm text-forest">{room.room_name}</h3>
+                  <span className={`px-2 py-0.5 text-[10px] font-bold rounded-full ${room.attached_washroom ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-100 text-gray-700'}`}>
+                    {room.attached_washroom ? 'Attached Washroom' : 'Shared Washroom'}
+                  </span>
+                  {room.view_type && room.view_type !== 'none' && (
+                    <span className="px-2 py-0.5 text-[10px] font-semibold bg-sky-100 text-sky-800 rounded-full capitalize">
+                      {room.view_type} View
+                    </span>
+                  )}
+                </div>
                 <p className="text-xs text-charcoal-muted">
-                  Capacity: {room.max_guests} Guests max • Status:{' '}
+                  Capacity: {room.max_guests} Guests max • Bedding: {room.bed_type || 'Double Bed'} • Status:{' '}
                   <span className={room.active ? 'text-emerald-700 font-medium' : 'text-charcoal-muted'}>
                     {room.active ? 'Active' : 'Inactive'}
                   </span>
@@ -635,6 +678,116 @@ export function PropertyEditor({ initialProperty }: PropertyEditorProps) {
               onChange={(e) => setAddress(e.target.value)}
               className="w-full p-2.5 text-xs bg-ivory-warm border border-forest/20 rounded-xl focus:outline-none"
             />
+          </div>
+        </div>
+
+        {/* Contact & Notification Settings */}
+        <div className="pt-6 border-t border-forest/10 space-y-4">
+          <div>
+            <h3 className="font-serif text-lg font-bold text-forest">Host Contact &amp; Booking Alerts</h3>
+            <p className="text-xs text-charcoal-muted">
+              Configure your phone, WhatsApp, and notification preferences for booking requests.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div>
+              <label className="block text-xs font-semibold text-charcoal-muted mb-1">
+                Contact Phone
+              </label>
+              <input suppressHydrationWarning
+                type="text"
+                value={contactPhone}
+                onChange={(e) => setContactPhone(e.target.value)}
+                placeholder="+91 98160 00000"
+                className="w-full p-2.5 text-xs bg-ivory-warm border border-forest/20 rounded-xl focus:outline-none"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-charcoal-muted mb-1">
+                WhatsApp Number
+              </label>
+              <input suppressHydrationWarning
+                type="text"
+                value={contactWhatsapp}
+                onChange={(e) => setContactWhatsapp(e.target.value)}
+                placeholder="+91 98160 00000"
+                className="w-full p-2.5 text-xs bg-ivory-warm border border-forest/20 rounded-xl focus:outline-none"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-charcoal-muted mb-1">
+                Contact Email
+              </label>
+              <input suppressHydrationWarning
+                type="email"
+                value={contactEmail}
+                onChange={(e) => setContactEmail(e.target.value)}
+                placeholder="contact@homestay.com"
+                className="w-full p-2.5 text-xs bg-ivory-warm border border-forest/20 rounded-xl focus:outline-none"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-semibold text-charcoal-muted mb-1">
+                Check-in Time
+              </label>
+              <input suppressHydrationWarning
+                type="text"
+                value={checkInTime}
+                onChange={(e) => setCheckInTime(e.target.value)}
+                className="w-full p-2.5 text-xs bg-ivory-warm border border-forest/20 rounded-xl focus:outline-none"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-charcoal-muted mb-1">
+                Check-out Time
+              </label>
+              <input suppressHydrationWarning
+                type="text"
+                value={checkOutTime}
+                onChange={(e) => setCheckOutTime(e.target.value)}
+                className="w-full p-2.5 text-xs bg-ivory-warm border border-forest/20 rounded-xl focus:outline-none"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-charcoal-muted mb-1">
+              House Rules &amp; Policies
+            </label>
+            <textarea suppressHydrationWarning
+              rows={2}
+              value={houseRules}
+              onChange={(e) => setHouseRules(e.target.value)}
+              className="w-full p-2.5 text-xs bg-ivory-warm border border-forest/20 rounded-xl focus:outline-none leading-relaxed"
+            />
+          </div>
+
+          <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-200/80 space-y-2">
+            <label className="flex items-center gap-2 text-xs text-charcoal cursor-pointer">
+              <input suppressHydrationWarning
+                type="checkbox"
+                checked={notifyWhatsapp}
+                onChange={(e) => setNotifyWhatsapp(e.target.checked)}
+                className="rounded text-forest focus:ring-forest"
+              />
+              <span className="font-semibold text-forest">Enable WhatsApp alerts for booking requests</span>
+            </label>
+            <label className="flex items-center gap-2 text-xs text-charcoal cursor-pointer">
+              <input suppressHydrationWarning
+                type="checkbox"
+                checked={notifyEmail}
+                onChange={(e) => setNotifyEmail(e.target.checked)}
+                className="rounded text-forest focus:ring-forest"
+              />
+              <span className="font-semibold text-forest">Enable email alerts for booking requests</span>
+            </label>
           </div>
         </div>
 

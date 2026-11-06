@@ -31,6 +31,29 @@ export default async function AccountNotificationsPage() {
   // Aggregate user notifications across the 4 pillars
   const notifications: any[] = [];
 
+  // 0. Stored user notifications
+  const { data: dbNotifications } = await adminClient
+    .from('user_notifications')
+    .select('*')
+    .eq('user_id', user.id)
+    .order('created_at', { ascending: false })
+    .limit(20);
+
+  if (dbNotifications) {
+    for (const n of dbNotifications) {
+      notifications.push({
+        id: `db-${n.id}`,
+        pillar: n.pillar || 'stays',
+        title: n.title,
+        message: n.message,
+        action_url: n.action_url || '/account',
+        created_at: n.created_at,
+        icon: Bell,
+        color: n.pillar === 'stays' ? 'text-forest bg-forest/10' : 'text-ukorange bg-ukorange/10',
+      });
+    }
+  }
+
   // 1. Stay Bookings
   const { data: bookings } = await adminClient
     .from('stay_bookings')
