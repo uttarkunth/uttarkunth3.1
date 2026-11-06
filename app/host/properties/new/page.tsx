@@ -623,7 +623,7 @@ export default function NewPropertyOnboardingPage() {
                   description="Landscape hero shot of your homestay facade against the Himalayan peaks."
                   photos={coverPhoto ? [coverPhoto] : []}
                   maxPhotos={1}
-                  onPhotosChange={(urls) => setCoverPhoto(urls[0] || '')}
+                  onChange={(urls) => setCoverPhoto(urls[0] || '')}
                 />
               </div>
 
@@ -634,7 +634,7 @@ export default function NewPropertyOnboardingPage() {
                   description="Upload up to 8 wide landscape shots of dining areas, outdoor sitting, orchard, garden, and panoramic views."
                   photos={propertyPhotos}
                   maxPhotos={8}
-                  onPhotosChange={setPropertyPhotos}
+                  onChange={setPropertyPhotos}
                 />
               </div>
             </div>
@@ -967,7 +967,7 @@ export default function NewPropertyOnboardingPage() {
                         description="Bed, windows, balcony view, and interior space. Landscape 4000px format."
                         photos={room.photos}
                         maxPhotos={5}
-                        onPhotosChange={(newPhotos) => updateRoom(index, { photos: newPhotos })}
+                        onChange={(newPhotos) => updateRoom(index, { photos: newPhotos })}
                       />
                     </div>
 
@@ -978,7 +978,7 @@ export default function NewPropertyOnboardingPage() {
                         description="Show clean toilet, geyser/hot water setup, mirror, and tiles to build guest trust."
                         photos={room.washroom_photos}
                         maxPhotos={3}
-                        onPhotosChange={(newWashroomPhotos) =>
+                        onChange={(newWashroomPhotos) =>
                           updateRoom(index, { washroom_photos: newWashroomPhotos })
                         }
                       />
