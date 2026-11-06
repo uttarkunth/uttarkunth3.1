@@ -37,7 +37,11 @@ function StaffLoginContent() {
   const searchParams = useSearchParams();
   const portalParam = searchParams.get('portal');
   const defaultNextPath = portalParam === 'staff' ? '/staff' : '/admin/dashboard';
-  const nextPath = sanitizeInternalRedirectPath(searchParams.get('next'), defaultNextPath);
+  const rawSanitizedNext = sanitizeInternalRedirectPath(searchParams.get('next'), defaultNextPath);
+  const nextPath =
+    rawSanitizedNext === '/admin' || rawSanitizedNext === '/admin/'
+      ? '/admin/dashboard'
+      : rawSanitizedNext;
   const queryError = searchParams.get('error');
 
   const isFounderPortal =
@@ -199,8 +203,12 @@ function StaffLoginContent() {
         return;
       }
 
-      router.push(nextPath);
-      router.refresh();
+      if (typeof window !== 'undefined') {
+        window.location.assign(nextPath);
+      } else {
+        router.push(nextPath);
+        router.refresh();
+      }
     } catch (err: any) {
       setError(err?.message || 'Unexpected error during staff authentication.');
       setLoading(false);
@@ -237,8 +245,12 @@ function StaffLoginContent() {
         return;
       }
 
-      router.push(nextPath);
-      router.refresh();
+      if (typeof window !== 'undefined') {
+        window.location.assign(nextPath);
+      } else {
+        router.push(nextPath);
+        router.refresh();
+      }
     } catch (err: any) {
       setError(err?.message || 'MFA verification failed.');
       setLoading(false);

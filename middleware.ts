@@ -120,12 +120,21 @@ export async function middleware(request: NextRequest) {
   // 3. Dedicated portal hostname root & boundary routing
   // A. Founder Command Centre (admin.uttarkunth.com) -> Founder Only
   if (isFounderSubdomain) {
-    if (pathname === '/') {
+    if (pathname === '/' || pathname === '/admin' || pathname === '/dashboard') {
       const targetPath = user
         ? '/admin/dashboard'
         : '/staff/login?portal=founder&next=/admin/dashboard';
       return applySecurityHeaders(
         NextResponse.redirect(new URL(targetPath, request.url)),
+        portalKind
+      );
+    }
+
+    if (pathname === '/admin/login') {
+      return applySecurityHeaders(
+        NextResponse.redirect(
+          new URL('/staff/login?portal=founder&next=/admin/dashboard', request.url)
+        ),
         portalKind
       );
     }
@@ -151,7 +160,7 @@ export async function middleware(request: NextRequest) {
 
   // B. Staff Portal (team.uttarkunth.com) -> Approved Staff & Founder
   if (isStaffSubdomain) {
-    if (pathname === '/') {
+    if (pathname === '/' || pathname === '/dashboard' || pathname === '/staff/dashboard') {
       const targetPath = user ? '/staff' : '/staff/login?portal=staff&next=/staff';
       return applySecurityHeaders(
         NextResponse.redirect(new URL(targetPath, request.url)),
@@ -176,7 +185,7 @@ export async function middleware(request: NextRequest) {
     }
 
     // Block Founder-only governance routes on team.uttarkunth.com
-    if (pathname === '/admin/staff' || pathname === '/admin/dashboard') {
+    if (pathname === '/admin/staff' || pathname === '/admin/dashboard' || pathname === '/admin') {
       const targetPath = user ? '/staff' : '/staff/login?portal=staff&next=/staff';
       return applySecurityHeaders(
         NextResponse.redirect(new URL(targetPath, request.url)),
@@ -210,7 +219,9 @@ export async function middleware(request: NextRequest) {
   if (!user) {
     if (isProtectedStaffRoute) {
       const redirectUrl = new URL('/staff/login', request.url);
-      redirectUrl.searchParams.set('next', pathname);
+      const safeNext =
+        pathname === '/admin' || pathname === '/admin/' ? '/admin/dashboard' : pathname;
+      redirectUrl.searchParams.set('next', safeNext);
       if (isFounderSubdomain) {
         redirectUrl.searchParams.set('portal', 'founder');
       } else if (isStaffSubdomain) {
