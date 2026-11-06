@@ -25,57 +25,64 @@ import {
 import { PhotoUploader } from '@/components/host/photo-uploader';
 import { MapLocationPicker } from '@/components/host/map-location-picker';
 
-const AMENITY_OPTIONS = [
-  'Mountain View Balcony',
-  'Home-Cooked Himalayan Meals',
-  'Wood-Fired Bukhari / Room Heater',
-  'High-Speed Wi-Fi',
-  '24x7 Hot Water Geyser',
-  'Apple Orchard / Garden Sit-Out',
-  'On-Site Safe Parking',
-  'Guided Village & Forest Treks',
-  'Evening Bonfire Facility',
-  'Power Backup / Inverter',
-  'Workstation Setup (Desk & Chair)',
-  'Pet Friendly',
-  'Traditional Pahadi Kitchen Access',
-  'Stargazing Rooftop Terrace',
-];
-
-const VIEW_TYPE_OPTIONS = [
-  { value: 'mountain', label: 'Snow-Capped Mountain View' },
-  { value: 'valley', label: 'Lush Pine Valley View' },
-  { value: 'river', label: 'River / Stream View' },
-  { value: 'garden', label: 'Apple Orchard / Garden View' },
-  { value: 'forest', label: 'Deodar Forest View' },
-  { value: 'village', label: 'Traditional Village View' },
-  { value: 'courtyard', label: 'Inner Stone Courtyard View' },
-  { value: 'none', label: 'Standard Room' },
-];
-
-const BED_OPTIONS = [
-  'King / Double Bed',
-  'Queen Bed',
-  'Twin Single Beds',
-  'King Bed + Single Bed (Triple)',
-  'Traditional Himachali Wooden Bedding',
-  'Family Suite (2 Double Beds)',
-];
-
-interface RoomDraft {
-  room_name: string;
-  base_price: number;
-  max_guests: number;
-  attached_washroom: boolean;
+interface RoomFormState {
+  name: string;
+  room_type: string;
+  base_price_inr: number;
+  max_occupancy: number;
+  has_attached_washroom: boolean;
   view_type: string;
   bed_type: string;
-  description: string;
+  features: string[];
   photos: string[];
   washroom_photos: string[];
 }
 
-export default function HostNewPropertyApplicationPage() {
-  // Step 1: Property Details
+const PROPERTY_TYPES = [
+  { value: 'homestay', label: 'Village Homestay (Authentic & Family-run)' },
+  { value: 'cottage', label: 'Himalayan Cottage' },
+  { value: 'villa', label: 'Mountain Villa' },
+  { value: 'guesthouse', label: 'Traditional Guesthouse' },
+  { value: 'hotel', label: 'Eco-lodge / Small Hotel' },
+  { value: 'resort', label: 'Wilderness Retreat' },
+];
+
+const AMENITY_OPTIONS = [
+  'Fresh Mountain Water',
+  'Home-Cooked Himalayan Meals',
+  'Traditional Wood Fireplace (Bukhari)',
+  'Organic Orchard & Garden',
+  'Guided Forest Trails & Treks',
+  'High-Speed Wi-Fi',
+  'Hot Water (Geyser/Hamam)',
+  'Private Balcony with Valley View',
+  'Free Safe Parking',
+  'Bonfire Facility',
+  'Pet Friendly',
+  'Local Village Cultural Tour',
+  '24x7 Power Backup',
+  'Herbal Tea & Local Apple Cider',
+];
+
+const ROOM_FEATURE_TAGS = [
+  'Attached Private Washroom',
+  'Geyser / Running Hot Water',
+  'Balcony with Peak View',
+  'Valley View',
+  'Garden View',
+  'Heater / Bukhari',
+  'Electric Kettle & Herbal Teas',
+  'Workstation / Desk',
+  'Wooden Paneling & Pine Floors',
+  'Large Bay Window',
+  'Extra Mattress Available',
+  'Sound of Rushing River',
+];
+
+export default function NewPropertyOnboardingPage() {
+  const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
+
+  // Step 1: Basic Property Details
   const [name, setName] = useState('');
   const [propertyType, setPropertyType] = useState('homestay');
   const [village, setVillage] = useState('');
@@ -84,58 +91,45 @@ export default function HostNewPropertyApplicationPage() {
   const [address, setAddress] = useState('');
   const [description, setDescription] = useState('');
   const [amenities, setAmenities] = useState<string[]>([
-    'Mountain View Balcony',
+    'Fresh Mountain Water',
     'Home-Cooked Himalayan Meals',
-    '24x7 Hot Water Geyser',
-    'High-Speed Wi-Fi',
+    'Hot Water (Geyser/Hamam)',
   ]);
+  const [coverPhoto, setCoverPhoto] = useState('');
+  const [propertyPhotos, setPropertyPhotos] = useState<string[]>([]);
+  const [latitude, setLatitude] = useState<number | null>(null);
+  const [longitude, setLongitude] = useState<number | null>(null);
 
-  // Map Coordinates & Pinning
-  const [latitude, setLatitude] = useState<number | null>(30.7268);
-  const [longitude, setLongitude] = useState<number | null>(78.4354);
-
-  // Step 2: Contact & Notification Settings
+  // Step 2: Contact & Notification Preferences
   const [contactPhone, setContactPhone] = useState('');
   const [contactWhatsapp, setContactWhatsapp] = useState('');
-  const [sameAsPhone, setSameAsPhone] = useState(true);
   const [contactEmail, setContactEmail] = useState('');
-  const [notifyWhatsapp, setNotifyWhatsapp] = useState(true);
-  const [notifyEmail, setNotifyEmail] = useState(true);
+  const [notifyOnWhatsapp, setNotifyOnWhatsapp] = useState(true);
+  const [notifyOnEmail, setNotifyOnEmail] = useState(true);
 
-  // Step 3: Multi-Room Inventory Configuration
-  const [rooms, setRooms] = useState<RoomDraft[]>([
+  // Step 3: Room Inventory
+  const [rooms, setRooms] = useState<RoomFormState[]>([
     {
-      room_name: 'Room 1 - Mountain View Deluxe',
-      base_price: 1800,
-      max_guests: 2,
-      attached_washroom: true,
-      view_type: 'mountain',
-      bed_type: 'King / Double Bed',
-      description: 'Spacious room with large windows overlooking snow-clad Himalayan peaks.',
+      name: 'Deluxe Himalayan Room (Room 1)',
+      room_type: 'private_room',
+      base_price_inr: 1800,
+      max_occupancy: 2,
+      has_attached_washroom: true,
+      view_type: 'Snow Peak Mountain View',
+      bed_type: 'King Bed',
+      features: ['Attached Private Washroom', 'Geyser / Running Hot Water', 'Balcony with Peak View'],
       photos: [],
       washroom_photos: [],
     },
   ]);
 
-  // Step 4: House Rules & Timings
-  const [checkInTime, setCheckInTime] = useState('12:00 PM');
-  const [checkOutTime, setCheckOutTime] = useState('11:00 AM');
-  const [houseRules, setHouseRules] = useState(
-    'Quiet hours after 9:30 PM. Home-cooked meals served on advance notice. Please maintain cleanliness.'
-  );
-
-  // Step 5: General Property Photos & Cover
-  const [photoUrls, setPhotoUrls] = useState<string[]>([]);
-  const [coverPhoto, setCoverPhoto] = useState<string>('');
-
-  // Operational State
+  // Submission State
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submittedProperty, setSubmittedProperty] = useState<{
     id: string;
+    slug: string;
     name: string;
-    village: string;
-    moderation_status: string;
   } | null>(null);
 
   const toggleAmenity = (item: string) => {
@@ -144,25 +138,19 @@ export default function HostNewPropertyApplicationPage() {
     );
   };
 
-  const handlePhoneChange = (val: string) => {
-    setContactPhone(val);
-    if (sameAsPhone) {
-      setContactWhatsapp(val);
-    }
-  };
-
   const handleAddRoom = () => {
-    const roomCount = rooms.length + 1;
+    const nextNum = rooms.length + 1;
     setRooms((prev) => [
       ...prev,
       {
-        room_name: `Room ${roomCount} - Mountain View`,
-        base_price: 1800,
-        max_guests: 2,
-        attached_washroom: true,
-        view_type: 'mountain',
-        bed_type: 'King / Double Bed',
-        description: 'Quiet room with scenic Himalayan views.',
+        name: `Cozy Mountain Room (Room ${nextNum})`,
+        room_type: 'private_room',
+        base_price_inr: 1500,
+        max_occupancy: 2,
+        has_attached_washroom: true,
+        view_type: 'Valley View',
+        bed_type: 'Double Bed',
+        features: ['Attached Private Washroom', 'Geyser / Running Hot Water'],
         photos: [],
         washroom_photos: [],
       },
@@ -170,60 +158,86 @@ export default function HostNewPropertyApplicationPage() {
   };
 
   const handleRemoveRoom = (index: number) => {
-    if (rooms.length <= 1) return;
+    if (rooms.length <= 1) {
+      alert('Your homestay must have at least one room.');
+      return;
+    }
     setRooms((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const handleRoomFieldChange = (index: number, field: keyof RoomDraft, value: any) => {
-    setRooms((prev) => {
-      const copy = [...prev];
-      copy[index] = { ...copy[index], [field]: value };
-      return copy;
-    });
+  const updateRoom = (index: number, patch: Partial<RoomFormState>) => {
+    setRooms((prev) =>
+      prev.map((r, i) => (i === index ? { ...r, ...patch } : r))
+    );
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const toggleRoomFeature = (index: number, feature: string) => {
+    setRooms((prev) =>
+      prev.map((r, i) => {
+        if (i !== index) return r;
+        const exists = r.features.includes(feature);
+        const newFeatures = exists
+          ? r.features.filter((f) => f !== feature)
+          : [...r.features, feature];
+        return { ...r, features: newFeatures };
+      })
+    );
+  };
+
+  const handleSubmitListing = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setSubmitting(true);
 
-    if (rooms.length === 0) {
-      setError('Please add at least one room unit to your property.');
-      setSubmitting(false);
-      return;
-    }
-
     try {
+      if (!name.trim()) throw new Error('Please provide the homestay name.');
+      if (!village.trim()) throw new Error('Please specify the village name.');
+      if (description.trim().length < 20) {
+        throw new Error('Please write at least 20 characters describing your homestay.');
+      }
+      if (!contactPhone.trim()) {
+        throw new Error('Please provide a primary contact phone number.');
+      }
+      if (rooms.length === 0) {
+        throw new Error('Please add at least 1 room to your homestay.');
+      }
+
+      for (let i = 0; i < rooms.length; i++) {
+        const r = rooms[i];
+        if (!r.name.trim()) throw new Error(`Room #${i + 1} is missing a name.`);
+        if (!r.base_price_inr || r.base_price_inr <= 0) {
+          throw new Error(`Room "${r.name}" must have a nightly rate greater than ₹0.`);
+        }
+      }
+
+      const allPhotos = [coverPhoto, ...propertyPhotos].filter(Boolean);
+
       const payload = {
         name: name.trim(),
         property_type: propertyType,
         village: village.trim(),
         district: district.trim(),
         state: state.trim(),
-        address: address.trim(),
-        latitude: latitude ?? null,
-        longitude: longitude ?? null,
+        address: address.trim() || undefined,
         description: description.trim(),
-        contact_phone: contactPhone.trim(),
-        contact_whatsapp: contactWhatsapp.trim(),
-        contact_email: contactEmail.trim() || undefined,
-        notify_whatsapp: notifyWhatsapp,
-        notify_email: notifyEmail,
         amenities,
-        photos: photoUrls,
-        cover_photo: coverPhoto || photoUrls[0] || undefined,
-        house_rules: houseRules.trim(),
-        check_in_time: checkInTime.trim(),
-        check_out_time: checkOutTime.trim(),
+        photos: allPhotos,
+        cover_photo: coverPhoto || (allPhotos.length > 0 ? allPhotos[0] : null),
+        latitude: latitude ?? undefined,
+        longitude: longitude ?? undefined,
+        contact_phone: contactPhone.trim(),
+        contact_whatsapp: (contactWhatsapp || contactPhone).trim(),
+        contact_email: contactEmail.trim() || undefined,
         rooms: rooms.map((r) => ({
-          room_name: r.room_name.trim(),
-          base_price: Number(r.base_price),
-          max_guests: Number(r.max_guests),
-          attached_washroom: Boolean(r.attached_washroom),
-          view_type: r.view_type,
-          bed_type: r.bed_type,
-          description: r.description.trim(),
-          photos: [...(r.photos || []), ...(r.washroom_photos || [])],
+          name: r.name.trim(),
+          room_type: r.room_type,
+          base_price_inr: Number(r.base_price_inr),
+          max_occupancy: Number(r.max_occupancy),
+          has_attached_washroom: Boolean(r.has_attached_washroom),
+          view_type: r.view_type.trim() || undefined,
+          bed_type: r.bed_type.trim() || undefined,
+          features: r.features,
+          photos: r.photos || [],
           washroom_photos: r.washroom_photos || [],
           active: true,
         })),
@@ -237,61 +251,89 @@ export default function HostNewPropertyApplicationPage() {
 
       const data = await res.json();
       if (!res.ok || !data.ok) {
-        setError(data.error || 'Could not submit homestay application.');
-        setSubmitting(false);
-        return;
+        throw new Error(data.error || 'Failed to submit property application.');
       }
 
-      setSubmittedProperty(data.property);
+      setSubmittedProperty({
+        id: data.property_id,
+        slug: data.slug,
+        name: name.trim(),
+      });
+      setStep(4);
     } catch (err: any) {
-      setError(err.message || 'Network error while submitting application.');
+      setError(err.message || 'Something went wrong while submitting.');
     } finally {
       setSubmitting(false);
     }
   };
 
-  if (submittedProperty) {
+  // Step 4: Submission Confirmation Screen
+  if (step === 4 && submittedProperty) {
     return (
-      <div className="max-w-2xl mx-auto py-16 px-4 sm:px-6">
-        <div className="bg-white rounded-3xl p-8 sm:p-10 border border-forest/15 shadow-soft text-center space-y-6">
-          <div className="w-16 h-16 rounded-3xl bg-emerald-100 text-emerald-800 flex items-center justify-center mx-auto shadow-inner">
-            <CheckCircle2 className="w-9 h-9" />
+      <div className="max-w-3xl mx-auto px-4 py-12 sm:py-16">
+        <div className="bg-white rounded-3xl p-8 sm:p-12 border border-forest/15 shadow-soft text-center space-y-6">
+          <div className="w-16 h-16 bg-emerald-100 text-emerald-800 rounded-full flex items-center justify-center mx-auto">
+            <CheckCircle2 className="w-10 h-10" />
           </div>
 
           <div className="space-y-2">
-            <span className="text-xs font-bold uppercase tracking-widest text-emerald-700">
-              Application Submitted &amp; Under Curation Review
+            <span className="text-xs font-semibold uppercase tracking-widest text-emerald-800 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
+              Listing Submitted for Review
             </span>
-            <h1 className="font-serif text-3xl font-bold text-forest">
-              {submittedProperty.name}
+            <h1 className="text-2xl sm:text-3xl font-serif text-charcoal">
+              &quot;{submittedProperty.name}&quot; is Under Curation Review
             </h1>
-            <p className="text-xs sm:text-sm text-charcoal-muted max-w-md mx-auto leading-relaxed">
-              Your homestay in <strong>{submittedProperty.village}</strong> has been safely recorded. You will receive real-time notifications on WhatsApp and Email once verified by our curation team.
+            <p className="text-sm text-stone-600 max-w-xl mx-auto leading-relaxed">
+              Thank you for listing with Uttarkunth! Your homestay has been securely submitted to our
+              curation desk. To preserve authentic Himalayan hospitality standards, our founder and
+              assigned field team will review your photos, room features, and safety guidelines.
             </p>
           </div>
 
-          <div className="p-4 bg-ivory-warm rounded-2xl border border-forest/10 text-xs text-charcoal space-y-1.5 text-left">
-            <div className="flex justify-between font-mono">
-              <span className="text-charcoal-muted">Application ID:</span>
-              <span className="font-bold">{submittedProperty.id}</span>
-            </div>
-            <div className="flex justify-between font-mono">
-              <span className="text-charcoal-muted">Moderation Status:</span>
-              <span className="text-ukorange font-bold uppercase">{submittedProperty.moderation_status}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-charcoal-muted">Rooms Configured:</span>
-              <span className="font-semibold">{rooms.length} room units</span>
-            </div>
+          <div className="bg-ivory-warm p-6 rounded-2xl border border-forest/10 text-left space-y-3">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-charcoal flex items-center gap-2">
+              <Clock className="w-4 h-4 text-emerald-800" />
+              What Happens Next?
+            </h4>
+            <ul className="text-xs text-stone-600 space-y-2">
+              <li className="flex items-start gap-2">
+                <span className="text-emerald-800 font-bold">•</span>
+                <span>
+                  <strong>Review Notification:</strong> You will receive real-time updates via WhatsApp &amp; Email
+                  when our team finishes reviewing your listing.
+                </span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-emerald-800 font-bold">•</span>
+                <span>
+                  <strong>Direct Feedback:</strong> If anything needs refinement (like higher-resolution photos or
+                  room clarification), our staff will send a note directly from the portal.
+                </span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-emerald-800 font-bold">•</span>
+                <span>
+                  <strong>Going Live:</strong> Once approved, your property card will appear on the live Uttarkunth Stays
+                  directory, allowing travelers to view your room calendar and send booking requests.
+                </span>
+              </li>
+            </ul>
           </div>
 
-          <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
+          <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-3">
             <Link
               href="/account/stays/host"
-              className="w-full sm:w-auto px-6 py-2.5 bg-forest hover:bg-forest-hover text-white text-xs font-semibold rounded-xl shadow-xs transition-colors flex items-center justify-center gap-2"
+              className="w-full sm:w-auto px-6 py-3 bg-forest hover:bg-forest/90 text-white font-medium rounded-xl text-sm transition shadow-soft flex items-center justify-center gap-2"
             >
-              <span>Go to Host Dashboard</span>
-              <ArrowRight className="w-3.5 h-3.5" />
+              <Home className="w-4 h-4" />
+              Go to Host Dashboard
+            </Link>
+            <Link
+              href={`/preview?slug=${submittedProperty.slug}`}
+              className="w-full sm:w-auto px-6 py-3 bg-stone-100 hover:bg-stone-200 text-charcoal font-medium rounded-xl text-sm transition flex items-center justify-center gap-2"
+            >
+              <span>Preview Draft Card</span>
+              <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
         </div>
@@ -300,593 +342,677 @@ export default function HostNewPropertyApplicationPage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
-      {/* Top Breadcrumb */}
-      <div>
+    <div className="max-w-4xl mx-auto px-4 py-8 sm:py-12">
+      {/* Top Header */}
+      <div className="mb-8">
         <Link
           href="/account/stays/host"
-          className="inline-flex items-center gap-1.5 text-xs font-semibold text-charcoal-muted hover:text-forest transition-colors mb-3"
+          className="inline-flex items-center gap-2 text-xs text-stone-500 hover:text-forest transition mb-3"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
-          <span>Back to Host Overview</span>
+          <span>Back to Host Portal</span>
         </Link>
-        <span className="text-xs font-bold uppercase tracking-widest text-ukorange block">
-          Homestay Onboarding Portal
-        </span>
-        <h1 className="font-serif text-3xl sm:text-4xl font-bold text-forest mt-1">
-          List Your Mountain Homestay
-        </h1>
-        <p className="text-xs sm:text-sm text-charcoal-muted mt-1 leading-relaxed">
-          Provide your property details, room configurations, direct gallery photos, and map coordinates. All listings undergo curation review before going live.
-        </p>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-serif text-charcoal">
+              List Your Himalayan Homestay
+            </h1>
+            <p className="text-xs sm:text-sm text-stone-600 mt-1">
+              Add your rooms, high-definition photos, custom nightly rates, and notification preferences.
+            </p>
+          </div>
+          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-full text-xs font-medium shrink-0">
+            <ShieldCheck className="w-4 h-4" />
+            <span>Curated Himalayan Network</span>
+          </div>
+        </div>
+
+        {/* Stepper Tabs */}
+        <div className="grid grid-cols-3 gap-2 mt-6">
+          <button suppressHydrationWarning
+            type="button"
+            onClick={() => setStep(1)}
+            className={`py-3 px-3 rounded-xl border text-left transition flex items-center gap-2.5 ${
+              step === 1
+                ? 'bg-forest text-white border-forest shadow-soft'
+                : 'bg-white text-stone-600 border-forest/15 hover:bg-ivory-warm'
+            }`}
+          >
+            <span
+              className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${
+                step === 1 ? 'bg-white/20 text-white' : 'bg-stone-100 text-stone-700'
+              }`}
+            >
+              1
+            </span>
+            <div className="truncate">
+              <p className="text-xs font-bold leading-tight truncate">Property Details</p>
+              <p className="text-[10px] opacity-80 leading-tight">Location &amp; Photos</p>
+            </div>
+          </button>
+
+          <button suppressHydrationWarning
+            type="button"
+            onClick={() => setStep(2)}
+            className={`py-3 px-3 rounded-xl border text-left transition flex items-center gap-2.5 ${
+              step === 2
+                ? 'bg-forest text-white border-forest shadow-soft'
+                : 'bg-white text-stone-600 border-forest/15 hover:bg-ivory-warm'
+            }`}
+          >
+            <span
+              className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${
+                step === 2 ? 'bg-white/20 text-white' : 'bg-stone-100 text-stone-700'
+              }`}
+            >
+              2
+            </span>
+            <div className="truncate">
+              <p className="text-xs font-bold leading-tight truncate">Contact &amp; Alerts</p>
+              <p className="text-[10px] opacity-80 leading-tight">WhatsApp &amp; Email</p>
+            </div>
+          </button>
+
+          <button suppressHydrationWarning
+            type="button"
+            onClick={() => setStep(3)}
+            className={`py-3 px-3 rounded-xl border text-left transition flex items-center gap-2.5 ${
+              step === 3
+                ? 'bg-forest text-white border-forest shadow-soft'
+                : 'bg-white text-stone-600 border-forest/15 hover:bg-ivory-warm'
+            }`}
+          >
+            <span
+              className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${
+                step === 3 ? 'bg-white/20 text-white' : 'bg-stone-100 text-stone-700'
+              }`}
+            >
+              3
+            </span>
+            <div className="truncate">
+              <p className="text-xs font-bold leading-tight truncate">Room Inventory</p>
+              <p className="text-[10px] opacity-80 leading-tight">{rooms.length} Room(s) Configured</p>
+            </div>
+          </button>
+        </div>
       </div>
 
       {error && (
-        <div className="p-4 bg-red-50 text-red-800 border border-red-200 rounded-2xl text-xs flex items-center gap-2">
-          <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0" />
+        <div className="mb-6 p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs flex items-center gap-3">
+          <AlertCircle className="w-5 h-5 shrink-0" />
           <span>{error}</span>
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-8">
-        {/* SECTION 1: HOMESTAY BASICS */}
-        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-forest/15 shadow-soft space-y-6">
-          <div className="flex items-center gap-3 pb-4 border-b border-forest/10">
-            <div className="w-10 h-10 rounded-2xl bg-forest/10 text-forest flex items-center justify-center">
-              <Home className="w-5 h-5 text-ukorange" />
-            </div>
+      <form onSubmit={handleSubmitListing} className="space-y-6">
+        {/* STEP 1: Property Info & Photos */}
+        {step === 1 && (
+          <div className="bg-white rounded-3xl p-6 sm:p-8 border border-forest/15 shadow-soft space-y-6">
             <div>
-              <h2 className="font-serif text-xl font-bold text-forest">1. Homestay Details &amp; Location</h2>
-              <p className="text-xs text-charcoal-muted">Core identity of your property</p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="sm:col-span-2">
-              <label className="block text-xs font-semibold text-charcoal mb-1">
-                Homestay / Property Name *
-              </label>
-              <input suppressHydrationWarning
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="e.g. Yash Home Stay"
-                required
-                className="w-full p-3 text-sm bg-ivory-warm border border-forest/20 rounded-xl focus:outline-none focus:border-forest"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-charcoal mb-1">
-                Property Type
-              </label>
-              <select suppressHydrationWarning
-                value={propertyType}
-                onChange={(e) => setPropertyType(e.target.value)}
-                className="w-full p-3 text-sm bg-ivory-warm border border-forest/20 rounded-xl focus:outline-none focus:border-forest"
-              >
-                <option value="homestay">Traditional Himalayan Homestay</option>
-                <option value="cottage">Mountain Cottage / Cabin</option>
-                <option value="guesthouse">Family-Run Guesthouse</option>
-                <option value="villa">Mountain Villa</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-charcoal mb-1">
-                Village / Town *
-              </label>
-              <input suppressHydrationWarning
-                type="text"
-                value={village}
-                onChange={(e) => setVillage(e.target.value)}
-                placeholder="e.g. Harsil, Chopta, Sankri, or Mana"
-                required
-                className="w-full p-3 text-sm bg-ivory-warm border border-forest/20 rounded-xl focus:outline-none focus:border-forest"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-charcoal mb-1">
-                District *
-              </label>
-              <input suppressHydrationWarning
-                type="text"
-                value={district}
-                onChange={(e) => setDistrict(e.target.value)}
-                placeholder="e.g. Uttarkashi, Rudraprayag, Chamoli"
-                required
-                className="w-full p-3 text-sm bg-ivory-warm border border-forest/20 rounded-xl focus:outline-none focus:border-forest"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-charcoal mb-1">
-                State *
-              </label>
-              <input suppressHydrationWarning
-                type="text"
-                value={state}
-                onChange={(e) => setState(e.target.value)}
-                placeholder="e.g. Uttarakhand"
-                required
-                className="w-full p-3 text-sm bg-ivory-warm border border-forest/20 rounded-xl focus:outline-none focus:border-forest"
-              />
-            </div>
-
-            <div className="sm:col-span-2">
-              <label className="block text-xs font-semibold text-charcoal mb-1">
-                Detailed Address / Landmark Directions
-              </label>
-              <input suppressHydrationWarning
-                type="text"
-                value={address}
-                onChange={(e) => setAddress(e.target.value)}
-                placeholder="e.g. Near Old Apple Orchard, Upper Village Road"
-                className="w-full p-3 text-sm bg-ivory-warm border border-forest/20 rounded-xl focus:outline-none focus:border-forest"
-              />
-            </div>
-
-            <div className="sm:col-span-2">
-              <label className="block text-xs font-semibold text-charcoal mb-1">
-                Authentic Property Description * (min 20 characters)
-              </label>
-              <textarea suppressHydrationWarning
-                rows={4}
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Describe your family homestay, mountain view, home-cooked food, nearby trails, and what guests will experience..."
-                required
-                className="w-full p-3 text-xs sm:text-sm bg-ivory-warm border border-forest/20 rounded-xl focus:outline-none focus:border-forest leading-relaxed"
-              />
-            </div>
-          </div>
-
-          {/* Interactive Map Pinning */}
-          <div className="pt-2">
-            <MapLocationPicker
-              latitude={latitude}
-              longitude={longitude}
-              onChange={(lat, lng) => {
-                setLatitude(lat);
-                setLongitude(lng);
-              }}
-              addressHint={address || village}
-            />
-          </div>
-
-          {/* Amenities Selector */}
-          <div className="pt-2 space-y-2">
-            <label className="block text-xs font-semibold text-charcoal">
-              Homestay Amenities &amp; Features
-            </label>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              {AMENITY_OPTIONS.map((item) => {
-                const active = amenities.includes(item);
-                return (
-                  <button suppressHydrationWarning
-                    type="button"
-                    key={item}
-                    onClick={() => toggleAmenity(item)}
-                    className={`p-2.5 rounded-xl border text-left text-xs font-medium transition-all flex items-center justify-between ${
-                      active
-                        ? 'bg-forest/10 border-forest text-forest font-semibold'
-                        : 'bg-ivory-warm border-forest/15 text-charcoal-muted hover:border-forest/30'
-                    }`}
-                  >
-                    <span>{item}</span>
-                    {active && <CheckCircle2 className="w-3.5 h-3.5 text-forest flex-shrink-0" />}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-
-        {/* SECTION 2: HOST CONTACT & NOTIFICATION PREFERENCES */}
-        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-forest/15 shadow-soft space-y-6">
-          <div className="flex items-center gap-3 pb-4 border-b border-forest/10">
-            <div className="w-10 h-10 rounded-2xl bg-forest/10 text-forest flex items-center justify-center">
-              <MessageSquare className="w-5 h-5 text-ukorange" />
-            </div>
-            <div>
-              <h2 className="font-serif text-xl font-bold text-forest">
-                2. Host Contact &amp; Booking Notifications
-              </h2>
-              <p className="text-xs text-charcoal-muted">
-                Receive instant booking requests and updates on your phone and email
+              <h3 className="text-lg font-serif text-charcoal">1. Property Essentials</h3>
+              <p className="text-xs text-stone-500 mt-0.5">
+                Tell travelers where your homestay is situated and what makes it special.
               </p>
             </div>
-          </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-semibold text-charcoal mb-1 flex items-center gap-1.5">
-                <Phone className="w-3.5 h-3.5 text-forest" />
-                <span>Primary Contact Phone *</span>
-              </label>
-              <input suppressHydrationWarning
-                type="tel"
-                value={contactPhone}
-                onChange={(e) => handlePhoneChange(e.target.value)}
-                placeholder="+91 98160 00000"
-                required
-                className="w-full p-3 text-sm bg-ivory-warm border border-forest/20 rounded-xl focus:outline-none focus:border-forest"
-              />
-            </div>
-
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className="text-xs font-semibold text-charcoal flex items-center gap-1.5">
-                  <MessageSquare className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>WhatsApp Number for Alerts</span>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="sm:col-span-2">
+                <label className="block text-xs font-semibold text-charcoal mb-1">
+                  Homestay Name *
                 </label>
-                <label className="text-[11px] text-charcoal-muted flex items-center gap-1 cursor-pointer">
-                  <input suppressHydrationWarning
-                    type="checkbox"
-                    checked={sameAsPhone}
-                    onChange={(e) => {
-                      setSameAsPhone(e.target.checked);
-                      if (e.target.checked) setContactWhatsapp(contactPhone);
-                    }}
-                    className="rounded text-forest focus:ring-forest"
-                  />
-                  <span>Same as phone</span>
-                </label>
-              </div>
-              <input suppressHydrationWarning
-                type="tel"
-                value={contactWhatsapp}
-                onChange={(e) => {
-                  setContactWhatsapp(e.target.value);
-                  setSameAsPhone(false);
-                }}
-                placeholder="+91 98160 00000"
-                className="w-full p-3 text-sm bg-ivory-warm border border-forest/20 rounded-xl focus:outline-none focus:border-forest"
-              />
-            </div>
-
-            <div className="sm:col-span-2">
-              <label className="block text-xs font-semibold text-charcoal mb-1 flex items-center gap-1.5">
-                <Mail className="w-3.5 h-3.5 text-forest" />
-                <span>Official Contact Email (Optional)</span>
-              </label>
-              <input suppressHydrationWarning
-                type="email"
-                value={contactEmail}
-                onChange={(e) => setContactEmail(e.target.value)}
-                placeholder="yourhomestay@example.com"
-                className="w-full p-3 text-sm bg-ivory-warm border border-forest/20 rounded-xl focus:outline-none focus:border-forest"
-              />
-            </div>
-          </div>
-
-          {/* Notification Alert Toggles */}
-          <div className="p-4 bg-emerald-50/70 rounded-2xl border border-emerald-200/80 space-y-3">
-            <span className="text-xs font-bold uppercase tracking-wider text-emerald-900 block">
-              Automated Booking Alerts
-            </span>
-            <div className="space-y-2">
-              <label className="flex items-center gap-2.5 text-xs text-charcoal cursor-pointer">
                 <input suppressHydrationWarning
-                  type="checkbox"
-                  checked={notifyWhatsapp}
-                  onChange={(e) => setNotifyWhatsapp(e.target.checked)}
-                  className="rounded text-forest focus:ring-forest"
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="e.g. Yash Home Stay, Wonderway Retreat, Pine Haven"
+                  required
+                  className="w-full p-3 text-xs sm:text-sm bg-ivory-warm border border-forest/20 rounded-xl focus:outline-none focus:border-forest"
                 />
-                <span className="font-semibold text-forest">
-                  Send immediate WhatsApp notification when a guest requests a booking
-                </span>
-              </label>
-              <label className="flex items-center gap-2.5 text-xs text-charcoal cursor-pointer">
-                <input suppressHydrationWarning
-                  type="checkbox"
-                  checked={notifyEmail}
-                  onChange={(e) => setNotifyEmail(e.target.checked)}
-                  className="rounded text-forest focus:ring-forest"
-                />
-                <span className="font-semibold text-forest">
-                  Send email notifications for booking requests and status updates
-                </span>
-              </label>
-            </div>
-          </div>
-        </div>
-
-        {/* SECTION 3: MULTI-ROOM INVENTORY CONFIGURATION */}
-        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-forest/15 shadow-soft space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-forest/10">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-forest/10 text-forest flex items-center justify-center">
-                <BedDouble className="w-5 h-5 text-ukorange" />
               </div>
+
               <div>
-                <h2 className="font-serif text-xl font-bold text-forest">
-                  3. Room Inventory &amp; Specifications ({rooms.length} {rooms.length === 1 ? 'Room' : 'Rooms'})
-                </h2>
-                <p className="text-xs text-charcoal-muted">
-                  Configure attached washrooms, views, capacity, rates, and direct gallery photos for each room
-                </p>
+                <label className="block text-xs font-semibold text-charcoal mb-1">
+                  Property Category
+                </label>
+                <select suppressHydrationWarning
+                  value={propertyType}
+                  onChange={(e) => setPropertyType(e.target.value)}
+                  className="w-full p-3 text-xs sm:text-sm bg-ivory-warm border border-forest/20 rounded-xl focus:outline-none focus:border-forest"
+                >
+                  {PROPERTY_TYPES.map((pt) => (
+                    <option key={pt.value} value={pt.value}>
+                      {pt.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-charcoal mb-1">
+                  Village / Settlement *
+                </label>
+                <input suppressHydrationWarning
+                  type="text"
+                  value={village}
+                  onChange={(e) => setVillage(e.target.value)}
+                  placeholder="e.g. Jari, Sankri, Harsil, Chopta"
+                  required
+                  className="w-full p-3 text-xs sm:text-sm bg-ivory-warm border border-forest/20 rounded-xl focus:outline-none focus:border-forest"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-charcoal mb-1">
+                  District *
+                </label>
+                <input suppressHydrationWarning
+                  type="text"
+                  value={district}
+                  onChange={(e) => setDistrict(e.target.value)}
+                  placeholder="e.g. Uttarkashi, Kullu, Chamoli, Rudraprayag"
+                  required
+                  className="w-full p-3 text-xs sm:text-sm bg-ivory-warm border border-forest/20 rounded-xl focus:outline-none focus:border-forest"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-charcoal mb-1">
+                  State
+                </label>
+                <input suppressHydrationWarning
+                  type="text"
+                  value={state}
+                  onChange={(e) => setState(e.target.value)}
+                  placeholder="Uttarakhand"
+                  className="w-full p-3 text-xs sm:text-sm bg-ivory-warm border border-forest/20 rounded-xl focus:outline-none focus:border-forest"
+                />
+              </div>
+
+              <div className="sm:col-span-2">
+                <label className="block text-xs font-semibold text-charcoal mb-1">
+                  Exact Address &amp; Landmarks
+                </label>
+                <input suppressHydrationWarning
+                  type="text"
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                  placeholder="e.g. Near Old Temple, Above Apple Orchard, Main Village Path"
+                  className="w-full p-3 text-xs sm:text-sm bg-ivory-warm border border-forest/20 rounded-xl focus:outline-none focus:border-forest"
+                />
+              </div>
+
+              <div className="sm:col-span-2">
+                <label className="block text-xs font-semibold text-charcoal mb-1">
+                  Authentic Property Description * (min 20 characters)
+                </label>
+                <textarea suppressHydrationWarning
+                  rows={4}
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Describe your family homestay, mountain view, home-cooked food, nearby trails, and what guests will experience..."
+                  required
+                  className="w-full p-3 text-xs sm:text-sm bg-ivory-warm border border-forest/20 rounded-xl focus:outline-none focus:border-forest leading-relaxed"
+                />
               </div>
             </div>
 
-            <button suppressHydrationWarning
-              type="button"
-              onClick={handleAddRoom}
-              className="inline-flex items-center gap-1.5 px-4 py-2 bg-forest hover:bg-forest-hover text-white text-xs font-semibold rounded-xl shadow-xs transition-colors self-start sm:self-auto"
-            >
-              <Plus className="w-4 h-4 text-ukorange" />
-              <span>Add Another Room</span>
-            </button>
-          </div>
+            {/* Interactive Map Pinning */}
+            <div className="pt-2">
+              <MapLocationPicker
+                latitude={latitude}
+                longitude={longitude}
+                onChange={(coordsOrLat: any, maybeLng?: any) => {
+                  const finalLat = typeof coordsOrLat === 'object' && coordsOrLat !== null ? coordsOrLat.latitude : coordsOrLat;
+                  const finalLng = typeof coordsOrLat === 'object' && coordsOrLat !== null ? coordsOrLat.longitude : maybeLng;
+                  if (typeof finalLat === 'number' && !isNaN(finalLat)) setLatitude(finalLat);
+                  if (typeof finalLng === 'number' && !isNaN(finalLng)) setLongitude(finalLng);
+                }}
+                addressHint={address || village}
+              />
+            </div>
 
-          <div className="space-y-6">
-            {rooms.map((room, idx) => (
-              <div
-                key={idx}
-                className="p-5 sm:p-6 bg-ivory-warm/70 rounded-2xl border border-forest/20 space-y-5 relative"
-              >
-                <div className="flex items-center justify-between pb-3 border-b border-forest/10">
-                  <span className="text-xs font-bold uppercase tracking-wider text-forest flex items-center gap-2">
-                    <span className="w-6 h-6 rounded-full bg-forest text-white text-xs flex items-center justify-center">
-                      {idx + 1}
-                    </span>
-                    <span>Room #{idx + 1} Specifications</span>
-                  </span>
-
-                  {rooms.length > 1 && (
+            {/* Amenities Selector */}
+            <div className="pt-2 space-y-2">
+              <label className="block text-xs font-semibold text-charcoal">
+                Homestay Amenities &amp; Features
+              </label>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {AMENITY_OPTIONS.map((item) => {
+                  const active = amenities.includes(item);
+                  return (
                     <button suppressHydrationWarning
                       type="button"
-                      onClick={() => handleRemoveRoom(idx)}
-                      className="text-xs text-red-600 hover:text-red-800 flex items-center gap-1 font-semibold"
+                      key={item}
+                      onClick={() => toggleAmenity(item)}
+                      className={`text-left p-2.5 rounded-xl border text-xs transition flex items-center gap-2 ${
+                        active
+                          ? 'bg-emerald-50 border-emerald-300 text-emerald-900 font-medium'
+                          : 'bg-ivory-warm border-forest/10 text-stone-600 hover:bg-stone-100'
+                      }`}
                     >
-                      <Trash2 className="w-3.5 h-3.5" />
-                      <span>Remove Room</span>
+                      <span
+                        className={`w-3.5 h-3.5 rounded border flex items-center justify-center shrink-0 ${
+                          active ? 'bg-emerald-700 border-emerald-700 text-white' : 'border-stone-400'
+                        }`}
+                      >
+                        {active && '✓'}
+                      </span>
+                      <span className="truncate">{item}</span>
                     </button>
-                  )}
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Direct Gallery Photo Uploaders with Photography Guidelines */}
+            <div className="pt-4 border-t border-forest/10 space-y-6">
+              <div>
+                <h4 className="text-sm font-semibold text-charcoal flex items-center gap-2">
+                  <Camera className="w-4 h-4 text-emerald-800" />
+                  Homestay Exterior &amp; Surroundings Photos
+                </h4>
+                <p className="text-xs text-stone-500 mt-0.5">
+                  Upload directly from your device gallery or camera. Follow landscape orientation and 4000px resolution guidelines.
+                </p>
+              </div>
+
+              {/* Cover Photo */}
+              <div className="p-4 bg-stone-50 rounded-2xl border border-stone-200">
+                <PhotoUploader
+                  label="Primary Cover Photo (The First Image Guests See)"
+                  description="Landscape hero shot of your homestay facade against the Himalayan peaks."
+                  photos={coverPhoto ? [coverPhoto] : []}
+                  maxPhotos={1}
+                  onPhotosChange={(urls) => setCoverPhoto(urls[0] || '')}
+                />
+              </div>
+
+              {/* General Property Gallery */}
+              <div className="p-4 bg-stone-50 rounded-2xl border border-stone-200">
+                <PhotoUploader
+                  label="Common Areas, Dining Hall &amp; Surrounding Valley Photos"
+                  description="Upload up to 8 wide landscape shots of dining areas, outdoor sitting, orchard, garden, and panoramic views."
+                  photos={propertyPhotos}
+                  maxPhotos={8}
+                  onPhotosChange={setPropertyPhotos}
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end pt-4">
+              <button suppressHydrationWarning
+                type="button"
+                onClick={() => {
+                  if (!name.trim()) {
+                    alert('Please enter a property name.');
+                    return;
+                  }
+                  if (!village.trim()) {
+                    alert('Please enter your village.');
+                    return;
+                  }
+                  setStep(2);
+                }}
+                className="px-6 py-3 bg-forest hover:bg-forest/90 text-white font-medium rounded-xl text-xs sm:text-sm transition flex items-center gap-2 shadow-soft"
+              >
+                <span>Continue to Step 2: Contact &amp; Notifications</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* STEP 2: Contact & Notifications */}
+        {step === 2 && (
+          <div className="bg-white rounded-3xl p-6 sm:p-8 border border-forest/15 shadow-soft space-y-6">
+            <div>
+              <h3 className="text-lg font-serif text-charcoal">2. Contact &amp; Instant Notification Preferences</h3>
+              <p className="text-xs text-stone-500 mt-0.5">
+                Whenever a guest requests a booking, you will be notified instantly so you can accept or decline.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-semibold text-charcoal mb-1 flex items-center gap-1.5">
+                  <Phone className="w-3.5 h-3.5 text-emerald-800" />
+                  Primary Phone Number *
+                </label>
+                <input suppressHydrationWarning
+                  type="tel"
+                  value={contactPhone}
+                  onChange={(e) => setContactPhone(e.target.value)}
+                  placeholder="e.g. +91 98160 12345"
+                  required
+                  className="w-full p-3 text-xs sm:text-sm bg-ivory-warm border border-forest/20 rounded-xl focus:outline-none focus:border-forest"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-charcoal mb-1 flex items-center gap-1.5">
+                  <MessageSquare className="w-3.5 h-3.5 text-emerald-800" />
+                  WhatsApp Number (For Instant Booking Alerts) *
+                </label>
+                <input suppressHydrationWarning
+                  type="tel"
+                  value={contactWhatsapp}
+                  onChange={(e) => setContactWhatsapp(e.target.value)}
+                  placeholder="e.g. +91 98160 12345 (Leave blank if same as phone)"
+                  className="w-full p-3 text-xs sm:text-sm bg-ivory-warm border border-forest/20 rounded-xl focus:outline-none focus:border-forest"
+                />
+                <p className="text-[10px] text-stone-500 mt-1">
+                  We send instant booking requests and review updates directly to this WhatsApp.
+                </p>
+              </div>
+
+              <div className="sm:col-span-2">
+                <label className="block text-xs font-semibold text-charcoal mb-1 flex items-center gap-1.5">
+                  <Mail className="w-3.5 h-3.5 text-emerald-800" />
+                  Email Address (For Booking Vouchers &amp; Receipts)
+                </label>
+                <input suppressHydrationWarning
+                  type="email"
+                  value={contactEmail}
+                  onChange={(e) => setContactEmail(e.target.value)}
+                  placeholder="e.g. host@uttarkunth.com"
+                  className="w-full p-3 text-xs sm:text-sm bg-ivory-warm border border-forest/20 rounded-xl focus:outline-none focus:border-forest"
+                />
+              </div>
+            </div>
+
+            {/* Notification checkboxes */}
+            <div className="bg-ivory-warm p-4 rounded-2xl border border-forest/10 space-y-3">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-charcoal">
+                Notification Channels
+              </h4>
+              <label className="flex items-center gap-3 cursor-pointer text-xs text-stone-700">
+                <input suppressHydrationWarning
+                  type="checkbox"
+                  checked={notifyOnWhatsapp}
+                  onChange={(e) => setNotifyOnWhatsapp(e.target.checked)}
+                  className="w-4 h-4 text-emerald-700 rounded border-stone-300 focus:ring-emerald-600"
+                />
+                <span>Send WhatsApp alerts when guests request a booking or cancel.</span>
+              </label>
+
+              <label className="flex items-center gap-3 cursor-pointer text-xs text-stone-700">
+                <input suppressHydrationWarning
+                  type="checkbox"
+                  checked={notifyOnEmail}
+                  onChange={(e) => setNotifyOnEmail(e.target.checked)}
+                  className="w-4 h-4 text-emerald-700 rounded border-stone-300 focus:ring-emerald-600"
+                />
+                <span>Send email alerts with full guest details and stay dates.</span>
+              </label>
+            </div>
+
+            <div className="flex items-center justify-between pt-4">
+              <button suppressHydrationWarning
+                type="button"
+                onClick={() => setStep(1)}
+                className="px-5 py-2.5 bg-stone-100 hover:bg-stone-200 text-stone-700 font-medium rounded-xl text-xs sm:text-sm transition"
+              >
+                Back to Step 1
+              </button>
+
+              <button suppressHydrationWarning
+                type="button"
+                onClick={() => {
+                  if (!contactPhone.trim()) {
+                    alert('Please enter your primary contact number.');
+                    return;
+                  }
+                  setStep(3);
+                }}
+                className="px-6 py-3 bg-forest hover:bg-forest/90 text-white font-medium rounded-xl text-xs sm:text-sm transition flex items-center gap-2 shadow-soft"
+              >
+                <span>Continue to Step 3: Room Inventory</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* STEP 3: Room Inventory & Direct Photos */}
+        {step === 3 && (
+          <div className="space-y-6">
+            <div className="bg-white rounded-3xl p-6 sm:p-8 border border-forest/15 shadow-soft space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div>
+                  <h3 className="text-lg font-serif text-charcoal">3. Room Inventory &amp; Washroom Details</h3>
+                  <p className="text-xs text-stone-500 mt-0.5">
+                    Configure each room, set individual nightly rates, attached washroom status, view, and upload photos.
+                  </p>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <div className="sm:col-span-2">
-                    <label className="block text-[11px] font-semibold text-charcoal mb-1">
-                      Room Name / Title *
-                    </label>
-                    <input suppressHydrationWarning
-                      type="text"
-                      value={room.room_name}
-                      onChange={(e) => handleRoomFieldChange(idx, 'room_name', e.target.value)}
-                      placeholder="e.g. Upper Valley View Room"
-                      required
-                      className="w-full p-2.5 text-xs bg-white border border-forest/20 rounded-xl focus:outline-none focus:border-forest font-semibold"
-                    />
+                <button suppressHydrationWarning
+                  type="button"
+                  onClick={handleAddRoom}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 text-xs font-semibold rounded-xl transition shrink-0"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Add Another Room</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Room Cards */}
+            <div className="space-y-6">
+              {rooms.map((room, index) => (
+                <div
+                  key={index}
+                  className="bg-white rounded-3xl p-6 sm:p-8 border border-forest/15 shadow-soft space-y-6 relative"
+                >
+                  <div className="flex items-center justify-between pb-3 border-b border-stone-200">
+                    <div className="flex items-center gap-2.5">
+                      <span className="w-7 h-7 bg-forest text-white rounded-full flex items-center justify-center text-xs font-bold">
+                        {index + 1}
+                      </span>
+                      <h4 className="text-sm sm:text-base font-semibold text-charcoal">
+                        {room.name || `Room #${index + 1}`}
+                      </h4>
+                    </div>
+
+                    {rooms.length > 1 && (
+                      <button suppressHydrationWarning
+                        type="button"
+                        onClick={() => handleRemoveRoom(index)}
+                        className="inline-flex items-center gap-1 text-xs text-red-600 hover:text-red-800 transition"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        <span>Delete Room</span>
+                      </button>
+                    )}
                   </div>
 
-                  <div>
-                    <label className="block text-[11px] font-semibold text-charcoal mb-1">
-                      Nightly Rate (₹) *
-                    </label>
-                    <div className="relative">
-                      <span className="absolute left-3 top-2.5 text-xs text-charcoal-muted">₹</span>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div className="sm:col-span-2">
+                      <label className="block text-xs font-semibold text-charcoal mb-1">
+                        Room Name / Title *
+                      </label>
                       <input suppressHydrationWarning
-                        type="number"
-                        value={room.base_price}
-                        onChange={(e) => handleRoomFieldChange(idx, 'base_price', Number(e.target.value))}
-                        min={100}
+                        type="text"
+                        value={room.name}
+                        onChange={(e) => updateRoom(index, { name: e.target.value })}
+                        placeholder="e.g. Deluxe Pine Room with Balcony"
                         required
-                        className="w-full pl-7 pr-3 py-2.5 text-xs bg-white border border-forest/20 rounded-xl focus:outline-none focus:border-forest font-bold"
+                        className="w-full p-2.5 text-xs sm:text-sm bg-ivory-warm border border-forest/20 rounded-xl focus:outline-none focus:border-forest"
                       />
                     </div>
-                  </div>
 
-                  <div>
-                    <label className="block text-[11px] font-semibold text-charcoal mb-1">
-                      Max Guests
-                    </label>
-                    <input suppressHydrationWarning
-                      type="number"
-                      value={room.max_guests}
-                      onChange={(e) => handleRoomFieldChange(idx, 'max_guests', Number(e.target.value))}
-                      min={1}
-                      max={16}
-                      className="w-full p-2.5 text-xs bg-white border border-forest/20 rounded-xl focus:outline-none"
-                    />
-                  </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-charcoal mb-1">
+                        Nightly Rate (₹ INR) *
+                      </label>
+                      <input suppressHydrationWarning
+                        type="number"
+                        min="100"
+                        step="50"
+                        value={room.base_price_inr}
+                        onChange={(e) =>
+                          updateRoom(index, { base_price_inr: parseFloat(e.target.value) || 0 })
+                        }
+                        placeholder="1800"
+                        required
+                        className="w-full p-2.5 text-xs sm:text-sm bg-ivory-warm border border-forest/20 rounded-xl focus:outline-none focus:border-forest font-semibold"
+                      />
+                    </div>
 
-                  <div>
-                    <label className="block text-[11px] font-semibold text-charcoal mb-1">
-                      Himalayan View Type
-                    </label>
-                    <select suppressHydrationWarning
-                      value={room.view_type}
-                      onChange={(e) => handleRoomFieldChange(idx, 'view_type', e.target.value)}
-                      className="w-full p-2.5 text-xs bg-white border border-forest/20 rounded-xl focus:outline-none"
-                    >
-                      {VIEW_TYPE_OPTIONS.map((opt) => (
-                        <option key={opt.value} value={opt.value}>
-                          {opt.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-charcoal mb-1">
+                        Bed Type
+                      </label>
+                      <input suppressHydrationWarning
+                        type="text"
+                        value={room.bed_type}
+                        onChange={(e) => updateRoom(index, { bed_type: e.target.value })}
+                        placeholder="e.g. King Bed, Double Bed, 2 Single Beds"
+                        className="w-full p-2.5 text-xs sm:text-sm bg-ivory-warm border border-forest/20 rounded-xl focus:outline-none focus:border-forest"
+                      />
+                    </div>
 
-                  <div>
-                    <label className="block text-[11px] font-semibold text-charcoal mb-1">
-                      Bedding Setup
-                    </label>
-                    <select suppressHydrationWarning
-                      value={room.bed_type}
-                      onChange={(e) => handleRoomFieldChange(idx, 'bed_type', e.target.value)}
-                      className="w-full p-2.5 text-xs bg-white border border-forest/20 rounded-xl focus:outline-none"
-                    >
-                      {BED_OPTIONS.map((b) => (
-                        <option key={b} value={b}>
-                          {b}
-                        </option>
-                      ))}
-                    </select>
+                    <div>
+                      <label className="block text-xs font-semibold text-charcoal mb-1">
+                        Max Occupancy
+                      </label>
+                      <select suppressHydrationWarning
+                        value={room.max_occupancy}
+                        onChange={(e) =>
+                          updateRoom(index, { max_occupancy: parseInt(e.target.value) || 2 })
+                        }
+                        className="w-full p-2.5 text-xs sm:text-sm bg-ivory-warm border border-forest/20 rounded-xl focus:outline-none focus:border-forest"
+                      >
+                        <option value={1}>1 Guest</option>
+                        <option value={2}>2 Guests</option>
+                        <option value={3}>3 Guests</option>
+                        <option value={4}>4 Guests</option>
+                        <option value={5}>5 Guests (Family Suite)</option>
+                        <option value={6}>6+ Guests (Dorm)</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-charcoal mb-1">
+                        Scenic View Type
+                      </label>
+                      <input suppressHydrationWarning
+                        type="text"
+                        value={room.view_type}
+                        onChange={(e) => updateRoom(index, { view_type: e.target.value })}
+                        placeholder="e.g. Snow Peak View, Pine Forest View"
+                        className="w-full p-2.5 text-xs sm:text-sm bg-ivory-warm border border-forest/20 rounded-xl focus:outline-none focus:border-forest"
+                      />
+                    </div>
                   </div>
 
                   {/* Attached Washroom Toggle */}
-                  <div className="sm:col-span-3 flex items-center justify-between p-3 bg-white rounded-xl border border-forest/15">
+                  <div className="p-3 bg-emerald-50/70 border border-emerald-200 rounded-2xl flex items-center justify-between">
                     <div>
-                      <span className="text-xs font-bold text-forest block">
+                      <h5 className="text-xs font-semibold text-emerald-900">
                         Attached Private Washroom
-                      </span>
-                      <span className="text-[11px] text-charcoal-muted">
-                        Does this room have an exclusive ensuite bathroom with hot water geyser?
-                      </span>
+                      </h5>
+                      <p className="text-[11px] text-emerald-700">
+                        Does this room have its own attached bathroom, or is it shared?
+                      </p>
                     </div>
-
-                    <label className="flex items-center gap-2 cursor-pointer">
+                    <label className="relative inline-flex items-center cursor-pointer">
                       <input suppressHydrationWarning
                         type="checkbox"
-                        checked={room.attached_washroom}
-                        onChange={(e) => handleRoomFieldChange(idx, 'attached_washroom', e.target.checked)}
-                        className="w-4 h-4 rounded text-forest focus:ring-forest"
+                        checked={room.has_attached_washroom}
+                        onChange={(e) =>
+                          updateRoom(index, { has_attached_washroom: e.target.checked })
+                        }
+                        className="sr-only peer"
                       />
-                      <span className="text-xs font-semibold text-charcoal">
-                        {room.attached_washroom ? 'Yes (Attached Washroom)' : 'No (Shared Washroom)'}
+                      <div className="w-11 h-6 bg-stone-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-700"></div>
+                      <span className="ml-2 text-xs font-bold text-emerald-900">
+                        {room.has_attached_washroom ? 'Yes (Private Attached)' : 'Shared Bathroom'}
                       </span>
                     </label>
                   </div>
 
-                  <div className="sm:col-span-3">
-                    <label className="block text-[11px] font-semibold text-charcoal mb-1">
-                      Room Description / Features
+                  {/* Room Feature Tags */}
+                  <div className="space-y-2">
+                    <label className="block text-xs font-semibold text-charcoal">
+                      Room Features &amp; In-Room Amenities
                     </label>
-                    <input suppressHydrationWarning
-                      type="text"
-                      value={room.description}
-                      onChange={(e) => handleRoomFieldChange(idx, 'description', e.target.value)}
-                      placeholder="e.g. Private balcony, wooden interiors, kettle, mountain view windows"
-                      className="w-full p-2.5 text-xs bg-white border border-forest/20 rounded-xl focus:outline-none"
-                    />
+                    <div className="flex flex-wrap gap-1.5">
+                      {ROOM_FEATURE_TAGS.map((tag) => {
+                        const active = room.features.includes(tag);
+                        return (
+                          <button suppressHydrationWarning
+                            type="button"
+                            key={tag}
+                            onClick={() => toggleRoomFeature(index, tag)}
+                            className={`text-xs px-2.5 py-1 rounded-full border transition ${
+                              active
+                                ? 'bg-forest text-white border-forest font-medium'
+                                : 'bg-stone-50 text-stone-600 border-stone-200 hover:bg-stone-100'
+                            }`}
+                          >
+                            {active ? '✓ ' : '+ '}
+                            {tag}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Room Photos & Washroom Photos */}
+                  <div className="pt-4 border-t border-stone-200 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {/* Room Interior Photos */}
+                    <div className="p-3 bg-stone-50 rounded-2xl border border-stone-200">
+                      <PhotoUploader
+                        label={`Room ${index + 1} Interior Photos`}
+                        description="Bed, windows, balcony view, and interior space. Landscape 4000px format."
+                        photos={room.photos}
+                        maxPhotos={5}
+                        onPhotosChange={(newPhotos) => updateRoom(index, { photos: newPhotos })}
+                      />
+                    </div>
+
+                    {/* Washroom Photos */}
+                    <div className="p-3 bg-stone-50 rounded-2xl border border-stone-200">
+                      <PhotoUploader
+                        label={`Room ${index + 1} Washroom & Hygiene Photos`}
+                        description="Show clean toilet, geyser/hot water setup, mirror, and tiles to build guest trust."
+                        photos={room.washroom_photos}
+                        maxPhotos={3}
+                        onPhotosChange={(newWashroomPhotos) =>
+                          updateRoom(index, { washroom_photos: newWashroomPhotos })
+                        }
+                      />
+                    </div>
                   </div>
                 </div>
+              ))}
+            </div>
 
-                {/* Direct Gallery Photos for this Room */}
-                <div className="pt-3 border-t border-forest/10 space-y-4">
-                  <PhotoUploader
-                    label={`Room #${idx + 1} Bedroom Photos`}
-                    description="Upload wide landscape photos of the bed, window view, and living area from your phone gallery."
-                    photos={room.photos}
-                    onChange={(urls) => handleRoomFieldChange(idx, 'photos', urls)}
-                    category="room"
-                    maxPhotos={6}
-                  />
+            {/* Bottom Actions */}
+            <div className="bg-white rounded-3xl p-6 sm:p-8 border border-forest/15 shadow-soft flex flex-col sm:flex-row items-center justify-between gap-4">
+              <button suppressHydrationWarning
+                type="button"
+                onClick={() => setStep(2)}
+                className="w-full sm:w-auto px-5 py-2.5 bg-stone-100 hover:bg-stone-200 text-stone-700 font-medium rounded-xl text-xs sm:text-sm transition"
+              >
+                Back to Step 2
+              </button>
 
-                  <PhotoUploader
-                    label={`Room #${idx + 1} Washroom Photos`}
-                    description="Upload clear photos of the bathroom, hot water geyser, shower, and sanitary fittings."
-                    photos={room.washroom_photos}
-                    onChange={(urls) => handleRoomFieldChange(idx, 'washroom_photos', urls)}
-                    category="washroom"
-                    maxPhotos={4}
-                  />
-                </div>
+              <div className="w-full sm:w-auto flex items-center gap-3">
+                <button suppressHydrationWarning
+                  type="submit"
+                  disabled={submitting}
+                  className="w-full sm:w-auto px-8 py-3.5 bg-forest hover:bg-forest/90 text-white font-semibold rounded-xl text-sm transition shadow-soft flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                  <Sparkles className="w-4 h-4" />
+                  <span>
+                    {submitting ? 'Submitting Application...' : 'Submit Listing for Curation Review'}
+                  </span>
+                </button>
               </div>
-            ))}
-          </div>
-        </div>
-
-        {/* SECTION 4: HOUSE RULES & TIMINGS */}
-        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-forest/15 shadow-soft space-y-6">
-          <div className="flex items-center gap-3 pb-4 border-b border-forest/10">
-            <div className="w-10 h-10 rounded-2xl bg-forest/10 text-forest flex items-center justify-center">
-              <Clock className="w-5 h-5 text-ukorange" />
-            </div>
-            <div>
-              <h2 className="font-serif text-xl font-bold text-forest">4. Stay Rules &amp; Check-In Times</h2>
-              <p className="text-xs text-charcoal-muted">Set expectations for arriving travelers</p>
             </div>
           </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-semibold text-charcoal mb-1">
-                Standard Check-In Time
-              </label>
-              <input suppressHydrationWarning
-                type="text"
-                value={checkInTime}
-                onChange={(e) => setCheckInTime(e.target.value)}
-                placeholder="12:00 PM"
-                className="w-full p-3 text-sm bg-ivory-warm border border-forest/20 rounded-xl focus:outline-none"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-charcoal mb-1">
-                Standard Check-Out Time
-              </label>
-              <input suppressHydrationWarning
-                type="text"
-                value={checkOutTime}
-                onChange={(e) => setCheckOutTime(e.target.value)}
-                placeholder="11:00 AM"
-                className="w-full p-3 text-sm bg-ivory-warm border border-forest/20 rounded-xl focus:outline-none"
-              />
-            </div>
-
-            <div className="sm:col-span-2">
-              <label className="block text-xs font-semibold text-charcoal mb-1">
-                House Rules &amp; Local Mountain Etiquette
-              </label>
-              <textarea suppressHydrationWarning
-                rows={3}
-                value={houseRules}
-                onChange={(e) => setHouseRules(e.target.value)}
-                placeholder="e.g. Quiet hours after 9:30 PM. No loud outdoor speakers. Traditional village etiquette applies."
-                className="w-full p-3 text-xs bg-ivory-warm border border-forest/20 rounded-xl focus:outline-none leading-relaxed"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* SECTION 5: GENERAL PROPERTY PHOTOGRAPHY WITH SPECIFICATIONS */}
-        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-forest/15 shadow-soft space-y-6">
-          <div className="flex items-center gap-3 pb-4 border-b border-forest/10">
-            <div className="w-10 h-10 rounded-2xl bg-forest/10 text-forest flex items-center justify-center">
-              <Camera className="w-5 h-5 text-ukorange" />
-            </div>
-            <div>
-              <h2 className="font-serif text-xl font-bold text-forest">
-                5. Main Homestay Photography &amp; Exterior Views
-              </h2>
-              <p className="text-xs text-charcoal-muted">
-                Exterior building facade, mountain vistas, garden sit-outs, and entrance from your device gallery
-              </p>
-            </div>
-          </div>
-
-          <PhotoUploader
-            label="Homestay Exterior &amp; Grounds Photos"
-            description="Select multiple landscape photos from your phone or camera gallery. Tap 'Make Cover' on your best exterior shot."
-            photos={photoUrls}
-            onChange={setPhotoUrls}
-            coverPhoto={coverPhoto}
-            onCoverChange={setCoverPhoto}
-            category="general"
-            maxPhotos={12}
-            showGuidelines={true}
-          />
-        </div>
-
-        {/* SUBMIT BUTTON */}
-        <div className="pt-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="text-xs text-charcoal-muted">
-            <span className="font-semibold text-forest">Verification Guarantee:</span> Your property will be verified by the Uttarkunth team. You will receive WhatsApp &amp; Email alerts as it progresses.
-          </div>
-
-          <button suppressHydrationWarning
-            type="submit"
-            disabled={submitting}
-            className="w-full sm:w-auto px-8 py-3.5 bg-forest hover:bg-forest-hover text-white text-sm font-semibold rounded-2xl shadow-lifted transition-all flex items-center justify-center gap-2 disabled:opacity-50"
-          >
-            <ShieldCheck className="w-4 h-4 text-ukorange" />
-            <span>{submitting ? 'Submitting Application...' : 'Submit Property for Curation'}</span>
-          </button>
-        </div>
+        )}
       </form>
     </div>
   );
