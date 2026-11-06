@@ -1,7 +1,7 @@
 import type { MetadataRoute } from 'next';
 import { BRAND } from '@/lib/constants';
 
-const SITE_URL = BRAND.officialDomain.replace(/\\/+$/, '');
+const SITE_URL = BRAND.officialDomain;
 
 export default function robots(): MetadataRoute.Robots {
   return {
