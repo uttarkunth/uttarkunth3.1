@@ -43,7 +43,10 @@ export function PropertyCard({ property }: { property: PropertyCardData }) {
     : 900;
 
   return (
-    <div className="group bg-white rounded-3xl overflow-hidden border border-forest/15 hover:border-forest/40 shadow-soft hover:shadow-2xl transition-all duration-500 flex flex-col justify-between">
+    <Link
+      href={`/stays/${property.slug}`}
+      className="group bg-white rounded-3xl overflow-hidden border border-forest/15 hover:border-forest/40 shadow-soft hover:shadow-2xl transition-all duration-500 flex flex-col justify-between cursor-pointer block text-inherit no-underline"
+    >
       
       {/* Photo Scrubber Container */}
       <div 
@@ -66,7 +69,11 @@ export function PropertyCard({ property }: { property: PropertyCardData }) {
               <div
                 key={idx}
                 className="flex-1 h-full cursor-pointer"
-                onMouseEnter={() => setPhotoIndex(idx)}
+                onMouseEnter={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setPhotoIndex(idx);
+                }}
               />
             ))}
           </div>
@@ -101,6 +108,7 @@ export function PropertyCard({ property }: { property: PropertyCardData }) {
         <button suppressHydrationWarning
           onClick={(e) => {
             e.preventDefault();
+            e.stopPropagation();
             setIsSaved(!isSaved);
           }}
           className="absolute top-7 right-4 w-9 h-9 rounded-full bg-black/40 backdrop-blur-md text-white flex items-center justify-center hover:bg-black/60 transition-colors z-30"
@@ -154,16 +162,15 @@ export function PropertyCard({ property }: { property: PropertyCardData }) {
             <span className="text-xs text-charcoal-muted font-normal"> / night</span>
           </div>
 
-          <Link
-            href={`/properties/${property.slug}`}
-            className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-forest hover:bg-forest-hover text-ivory text-xs font-semibold uppercase tracking-wider shadow-sm transition-all hover:gap-2"
+          <span
+            className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-forest group-hover:bg-forest-hover text-ivory text-xs font-semibold uppercase tracking-wider shadow-sm transition-all group-hover:gap-2"
           >
             <span>View Stay</span>
             <ArrowRight className="w-3.5 h-3.5 text-ukorange" />
-          </Link>
+          </span>
         </div>
       </div>
 
-    </div>
+    </Link>
   );
 }
