@@ -28,7 +28,7 @@ interface OccupancyBlock {
   room_unit_id: string;
   start_date: string;
   end_date: string;
-  kind: 'booking' | 'block';
+  kind: 'booking' | 'block' | 'booked' | 'blocked';
 }
 
 interface RoomAvailabilityCalendarProps {
@@ -100,8 +100,9 @@ export function RoomAvailabilityCalendar({
     });
 
     if (match) {
+      const isConfirmedBooking = match.kind === 'booking' || match.kind === 'booked';
       return {
-        status: match.kind === 'booking' ? 'booked' : 'blocked',
+        status: isConfirmedBooking ? 'booked' : 'blocked',
         kind: match.kind,
       };
     }
