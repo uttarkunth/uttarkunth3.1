@@ -26,6 +26,30 @@ export const HostDecisionSchema = z.object({
 
 export type HostDecisionInput = z.infer<typeof HostDecisionSchema>;
 
+export const HostRoomSchema = z.object({
+  room_name: z.string().trim().min(2, "Room name is required"),
+  description: z.string().trim().optional().default(""),
+  max_guests: z.coerce.number().int().min(1).max(16).default(2),
+  base_price: z.coerce.number().min(100, "Price must be at least ₹100"),
+  attached_washroom: z.boolean().default(false),
+  view_type: z.enum([
+    "none",
+    "mountain",
+    "valley",
+    "river",
+    "garden",
+    "forest",
+    "village",
+    "courtyard"
+  ]).default("mountain"),
+  bed_type: z.string().trim().optional().default("King / Double Bed"),
+  features: z.array(z.string()).optional().default([]),
+  photos: z.array(z.string()).optional().default([]),
+  active: z.boolean().default(true),
+});
+
+export type HostRoomInput = z.infer<typeof HostRoomSchema>;
+
 export const PropertyFormSchema = z.object({
   name: z.string().trim().min(3, "Property name must be at least 3 characters").max(120),
   description: z.string().trim().min(20, "Please provide a descriptive overview (at least 20 chars)").max(2000),
@@ -36,13 +60,15 @@ export const PropertyFormSchema = z.object({
   property_type: z.enum(["homestay", "hotel", "resort", "villa", "guesthouse", "cottage", "other"]),
   amenities: z.array(z.string()).default([]),
   photos: z.array(z.string().url()).default([]),
-  rooms: z.array(z.object({
-    room_name: z.string().trim().min(2, "Room name is required"),
-    description: z.string().trim().optional(),
-    max_guests: z.coerce.number().int().min(1).max(10).default(2),
-    base_price: z.coerce.number().min(100, "Price must be at least ₹100"),
-    active: z.boolean().default(true),
-  })).min(1, "At least one room type must be added"),
+  contact_phone: z.string().trim().max(20).optional().or(z.literal('')),
+  contact_whatsapp: z.string().trim().max(20).optional().or(z.literal('')),
+  contact_email: z.string().trim().email().optional().or(z.literal('')),
+  notify_email: z.boolean().default(true),
+  notify_whatsapp: z.boolean().default(false),
+  house_rules: z.string().trim().max(2000).optional().default(''),
+  check_in_time: z.string().trim().default('12:00 PM'),
+  check_out_time: z.string().trim().default('11:00 AM'),
+  rooms: z.array(HostRoomSchema).min(1, "At least one room type must be added"),
 });
 
 export type PropertyFormInput = z.infer<typeof PropertyFormSchema>;
@@ -59,12 +85,25 @@ export const HostApplySchema = z.object({
     .trim()
     .min(20, 'Authentic property description (at least 20 chars) is required')
     .max(2000),
+  contact_phone: z.string().trim().max(20).optional().or(z.literal('')),
+  contact_whatsapp: z.string().trim().max(20).optional().or(z.literal('')),
+  contact_email: z.string().trim().email().optional().or(z.literal('')),
+  notify_email: z.boolean().default(true),
+  notify_whatsapp: z.boolean().default(false),
+  house_rules: z.string().trim().max(2000).optional().default(''),
+  check_in_time: z.string().trim().default('12:00 PM'),
+  check_out_time: z.string().trim().default('11:00 AM'),
   host_phone: z.string().trim().optional(),
   amenities: z.array(z.string()).optional().default([]),
-  initial_room_name: z.string().trim().min(2).default('Mountain View Room'),
-  initial_room_guests: z.coerce.number().int().min(1).max(16).default(2),
-  initial_room_price: z.coerce.number().min(100).default(2000),
+  photos: z.array(z.string()).optional().default([]),
+  rooms: z.array(HostRoomSchema).optional(),
+  // Backward compatibility with single-room setup
+  initial_room_name: z.string().trim().optional().default('Mountain View Room'),
+  initial_room_guests: z.coerce.number().int().min(1).max(16).optional().default(2),
+  initial_room_price: z.coerce.number().min(100).optional().default(2000),
   initial_room_description: z.string().trim().optional(),
+  attached_washroom: z.boolean().optional(),
+  view_type: z.string().optional(),
 });
 
 export type HostApplyInput = z.infer<typeof HostApplySchema>;

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { HostApplySchema } from '@/lib/validations';
+import { notifyHostPropertySubmitted } from '@/lib/notifications';
 
 export const dynamic = 'force-dynamic';
 
@@ -53,6 +54,10 @@ export async function POST(req: NextRequest) {
     const adminClient = createAdminClient();
     const slug = slugifyProperty(data.name, data.village);
 
+    const contactPhone = data.contact_phone || data.host_phone || '';
+    const contactWhatsapp = data.contact_whatsapp || contactPhone;
+    const contactEmail = data.contact_email || user.email || '';
+
     const { data: createdProperty, error: propErr } = await adminClient
       .from('properties')
       .insert({
@@ -64,15 +69,23 @@ export async function POST(req: NextRequest) {
         state: data.state,
         address: data.address || `${data.village}, ${data.district}, ${data.state}`,
         description: data.description,
-        amenities: data.amenities,
-        photos: [],
+        amenities: data.amenities || [],
+        photos: data.photos || [],
+        contact_phone: contactPhone || null,
+        contact_whatsapp: contactWhatsapp || null,
+        contact_email: contactEmail || null,
+        notify_email: data.notify_email ?? true,
+        notify_whatsapp: data.notify_whatsapp ?? false,
+        house_rules: data.house_rules || null,
+        check_in_time: data.check_in_time || '12:00 PM',
+        check_out_time: data.check_out_time || '11:00 AM',
         booking_mode: 'request',
         host_id: user.id,
         published: false,
         moderation_status: 'pending',
-        moderation_notes: data.host_phone
-          ? `Host application submitted by ${user.email} (Contact: ${data.host_phone}). Pending Property Reviewer verification.`
-          : `Host application submitted by ${user.email}. Pending Property Reviewer verification.`,
+        moderation_notes: contactPhone
+          ? `Host application submitted by ${user.email} (Contact: ${contactPhone}, WhatsApp: ${contactWhatsapp || contactPhone}). Pending Curation Review.`
+          : `Host application submitted by ${user.email}. Pending Curation Review.`,
       })
       .select()
       .single();
@@ -84,25 +97,59 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Insert initial room into room_units and inspect error for honest failure handling
-    const { error: roomErr } = await adminClient.from('room_units').insert({
-      property_id: createdProperty.id,
-      room_name: data.initial_room_name,
-      max_guests: data.initial_room_guests,
-      base_price: data.initial_room_price,
-      description: data.initial_room_description || null,
-      active: true,
-    });
+    // Prepare room records: either from multi-room array or fallback to initial_room_*
+    const roomsToInsert: any[] = [];
+    if (Array.isArray(data.rooms) && data.rooms.length > 0) {
+      data.rooms.forEach((r, idx) => {
+        roomsToInsert.push({
+          property_id: createdProperty.id,
+          room_name: r.room_name,
+          max_guests: r.max_guests || 2,
+          base_price: r.base_price,
+          description: r.description || null,
+          attached_washroom: r.attached_washroom ?? false,
+          view_type: r.view_type || 'mountain',
+          bed_type: r.bed_type || 'King / Double Bed',
+          features: r.features || [],
+          photos: r.photos || [],
+          sort_order: idx + 1,
+          active: r.active ?? true,
+        });
+      });
+    } else {
+      roomsToInsert.push({
+        property_id: createdProperty.id,
+        room_name: data.initial_room_name || 'Mountain View Room',
+        max_guests: data.initial_room_guests || 2,
+        base_price: data.initial_room_price || 2000,
+        description: data.initial_room_description || null,
+        attached_washroom: data.attached_washroom ?? false,
+        view_type: (data.view_type as any) || 'mountain',
+        bed_type: 'King / Double Bed',
+        features: [],
+        photos: [],
+        sort_order: 1,
+        active: true,
+      });
+    }
+
+    const { error: roomErr } = await adminClient.from('room_units').insert(roomsToInsert);
 
     if (roomErr) {
-      // Rollback draft property insertion if room unit creation fails to prevent orphaned listings
       console.error('Room creation failed, rolling back draft property:', roomErr);
       await adminClient.from('properties').delete().eq('id', createdProperty.id);
       return NextResponse.json(
-        { ok: false, error: `Failed to configure initial room unit: ${roomErr.message}` },
+        { ok: false, error: `Failed to configure room units: ${roomErr.message}` },
         { status: 500 }
       );
     }
+
+    // Send in-app notification confirming property submission is under review
+    await notifyHostPropertySubmitted({
+      hostUserId: user.id,
+      propertyName: createdProperty.name,
+      village: createdProperty.village || data.village,
+    });
 
     return NextResponse.json({
       ok: true,

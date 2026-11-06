@@ -1,7 +1,7 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { createClient } from '@supabase/supabase-js';
-import { cookies, headers } from 'next/headers';
-import type { Database } from './types';
+import { cookies, headers } from 'next/headers.js';
+import type { Database } from './types.ts';
 
 export function createServerSupabaseClient() {
   if (typeof window !== 'undefined') {

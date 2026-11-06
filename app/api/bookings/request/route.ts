@@ -4,6 +4,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { BookingRequestSchema } from '@/lib/validations';
 import { calculateNights, validateStayDates, generateBookingReference } from '@/lib/booking-calculator';
+import { notifyHostNewBooking, sendNotification } from '@/lib/notifications';
 
 export const dynamic = 'force-dynamic';
 
@@ -50,7 +51,7 @@ export async function POST(req: NextRequest) {
     // 4. Verify property is published and approved
     const { data: property, error: propErr } = await supabase
       .from('properties')
-      .select('id, name, published, moderation_status')
+      .select('id, name, published, moderation_status, host_id, contact_phone, contact_whatsapp, contact_email, notify_email, notify_whatsapp')
       .eq('id', property_id)
       .single();
 
@@ -191,6 +192,35 @@ export async function POST(req: NextRequest) {
       });
     } catch {
       // Non-critical mirror
+    }
+
+    // Notify host about incoming booking request
+    try {
+      await notifyHostNewBooking({
+        hostUserId: property.host_id,
+        hostPhone: property.contact_phone,
+        hostWhatsapp: property.contact_whatsapp,
+        hostEmail: property.contact_email,
+        propertyName: property.name,
+        roomName: room.room_name,
+        guestName: guest_name.trim(),
+        guestPhone: guest_phone.trim(),
+        checkIn: check_in,
+        checkOut: check_out,
+        bookingReference,
+      });
+
+      if (guestUserId) {
+        await sendNotification({
+          userId: guestUserId,
+          pillar: 'stays',
+          title: `Booking Request Sent: ${property.name}`,
+          message: `Your booking request (${bookingReference}) for ${room.room_name} (${check_in} to ${check_out}) has been sent to the host. You will receive an update once reviewed.`,
+          actionUrl: '/trips',
+        });
+      }
+    } catch (notifErr) {
+      console.error('Notification dispatch non-critical error:', notifErr);
     }
 
     return NextResponse.json({

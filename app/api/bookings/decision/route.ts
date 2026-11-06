@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { HostDecisionSchema } from '@/lib/validations';
+import { notifyGuestBookingDecision } from '@/lib/notifications';
 
 export const dynamic = 'force-dynamic';
 
@@ -75,6 +76,32 @@ export async function POST(req: NextRequest) {
       }
     } catch {
       // Ignored
+    }
+
+    // Notify guest regarding host's decision
+    try {
+      const { data: bookingDetail } = await adminSupabase
+        .from('stay_bookings')
+        .select('guest_user_id, guest_email, guest_phone, check_in, check_out, booking_reference, properties(name), room_units(room_name)')
+        .eq('id', booking_id)
+        .single();
+
+      if (bookingDetail) {
+        await notifyGuestBookingDecision({
+          guestUserId: bookingDetail.guest_user_id,
+          guestEmail: bookingDetail.guest_email,
+          guestPhone: bookingDetail.guest_phone,
+          propertyName: (bookingDetail.properties as any)?.name || 'Himalayan Stay',
+          roomName: (bookingDetail.room_units as any)?.room_name || 'Room',
+          checkIn: bookingDetail.check_in,
+          checkOut: bookingDetail.check_out,
+          action: action as any,
+          hostNotes: host_notes?.trim() || null,
+          bookingReference: bookingDetail.booking_reference,
+        });
+      }
+    } catch (notifErr) {
+      console.error('Guest notification non-critical error:', notifErr);
     }
 
     // If request was from an HTML form, redirect back

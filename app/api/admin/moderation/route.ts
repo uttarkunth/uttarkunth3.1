@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { requireStaffPermission, recordStaffAuditLog } from '@/lib/staff-rbac';
+import { notifyHostPropertyModeration } from '@/lib/notifications';
 
 export const dynamic = 'force-dynamic';
 
@@ -98,7 +99,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { error: updateErr } = await adminClient
+    const { data: updatedProp, error: updateErr } = await adminClient
       .from('properties')
       .update({
         moderation_status: newStatus,
@@ -108,10 +109,22 @@ export async function POST(req: NextRequest) {
         reviewed_by: user.id,
         updated_at: new Date().toISOString(),
       })
-      .eq('id', property_id);
+      .eq('id', property_id)
+      .select('id, name, host_id')
+      .single();
 
     if (updateErr) {
       throw updateErr;
+    }
+
+    // Notify host about the moderation outcome
+    if (updatedProp?.host_id) {
+      await notifyHostPropertyModeration({
+        hostUserId: updatedProp.host_id,
+        propertyName: updatedProp.name,
+        status: newStatus as any,
+        moderationNotes: admin_notes?.trim() || null,
+      });
     }
 
     await recordStaffAuditLog({

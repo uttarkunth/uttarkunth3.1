@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
-import type { Database } from './types';
-import { createServerSupabaseClient } from './server';
+import type { Database } from './types.ts';
+import { createServerSupabaseClient } from './server.ts';
 
 export function createAdminClient(): ReturnType<typeof createClient<Database>> {
   if (typeof window !== 'undefined') {

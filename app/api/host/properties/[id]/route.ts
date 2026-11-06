@@ -108,7 +108,15 @@ export async function PATCH(
       property_type,
       amenities,
       photos,
-      rooms
+      rooms,
+      contact_phone,
+      contact_whatsapp,
+      contact_email,
+      notify_email,
+      notify_whatsapp,
+      house_rules,
+      check_in_time,
+      check_out_time,
     } = body;
 
     // Fetch existing property
@@ -186,6 +194,14 @@ export async function PATCH(
       if (property_type !== undefined) updateData.property_type = property_type;
       if (amenities !== undefined) updateData.amenities = amenities;
       if (photos !== undefined) updateData.photos = photos;
+      if (contact_phone !== undefined) updateData.contact_phone = contact_phone.trim();
+      if (contact_whatsapp !== undefined) updateData.contact_whatsapp = contact_whatsapp.trim();
+      if (contact_email !== undefined) updateData.contact_email = contact_email.trim();
+      if (notify_email !== undefined) updateData.notify_email = Boolean(notify_email);
+      if (notify_whatsapp !== undefined) updateData.notify_whatsapp = Boolean(notify_whatsapp);
+      if (house_rules !== undefined) updateData.house_rules = house_rules.trim();
+      if (check_in_time !== undefined) updateData.check_in_time = check_in_time.trim();
+      if (check_out_time !== undefined) updateData.check_out_time = check_out_time.trim();
 
       const { error: draftUpdateErr } = await adminClient
         .from('properties')
@@ -193,21 +209,44 @@ export async function PATCH(
         .eq('id', params.id);
 
       if (draftUpdateErr) throw draftUpdateErr;
+    } else {
+      // Direct operational contact info updates
+      const contactUpdates: any = {};
+      if (contact_phone !== undefined) contactUpdates.contact_phone = contact_phone.trim();
+      if (contact_whatsapp !== undefined) contactUpdates.contact_whatsapp = contact_whatsapp.trim();
+      if (contact_email !== undefined) contactUpdates.contact_email = contact_email.trim();
+      if (notify_email !== undefined) contactUpdates.notify_email = Boolean(notify_email);
+      if (notify_whatsapp !== undefined) contactUpdates.notify_whatsapp = Boolean(notify_whatsapp);
+      if (house_rules !== undefined) contactUpdates.house_rules = house_rules.trim();
+      if (check_in_time !== undefined) contactUpdates.check_in_time = check_in_time.trim();
+      if (check_out_time !== undefined) contactUpdates.check_out_time = check_out_time.trim();
+
+      if (Object.keys(contactUpdates).length > 0) {
+        contactUpdates.updated_at = new Date().toISOString();
+        await adminClient.from('properties').update(contactUpdates).eq('id', params.id);
+      }
     }
 
     // Operational updates: Room units & nightly rates (Primary Host or Manager can update)
     if (Array.isArray(rooms)) {
       for (const room of rooms) {
         if (room.id) {
+          const roomUpdates: any = {
+            room_name: room.room_name?.trim(),
+            description: room.description?.trim(),
+            max_guests: Number(room.max_guests),
+            base_price: Number(room.base_price),
+            active: room.active !== undefined ? Boolean(room.active) : true,
+          };
+          if (room.attached_washroom !== undefined) roomUpdates.attached_washroom = Boolean(room.attached_washroom);
+          if (room.view_type !== undefined) roomUpdates.view_type = room.view_type;
+          if (room.bed_type !== undefined) roomUpdates.bed_type = room.bed_type.trim();
+          if (room.features !== undefined) roomUpdates.features = room.features;
+          if (room.photos !== undefined) roomUpdates.photos = room.photos;
+
           await adminClient
             .from('room_units')
-            .update({
-              room_name: room.room_name?.trim(),
-              description: room.description?.trim(),
-              max_guests: Number(room.max_guests),
-              base_price: Number(room.base_price),
-              active: room.active !== undefined ? Boolean(room.active) : true,
-            })
+            .update(roomUpdates)
             .eq('id', room.id)
             .eq('property_id', params.id);
         } else if (room.room_name && room.base_price) {
@@ -219,6 +258,11 @@ export async function PATCH(
               description: room.description?.trim() || '',
               max_guests: Number(room.max_guests) || 2,
               base_price: Number(room.base_price),
+              attached_washroom: room.attached_washroom ? Boolean(room.attached_washroom) : false,
+              view_type: room.view_type || 'mountain',
+              bed_type: room.bed_type?.trim() || 'King / Double Bed',
+              features: room.features || [],
+              photos: room.photos || [],
               active: true
             });
         }
