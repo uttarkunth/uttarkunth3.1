@@ -4,7 +4,7 @@ import { getActiveDestinations } from '@/lib/destinations.server';
 import { createPublicServerSupabaseClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 
-const SITE_URL = BRAND.officialDomain.replace(/\\/+$/, '');
+const SITE_URL = BRAND.officialDomain;
 const sitemapEntry = (
   path: string,
   priority: number,
