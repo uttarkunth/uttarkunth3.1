@@ -1,10 +1,10 @@
 import type { MetadataRoute } from 'next';
 import { BRAND, AUTHENTIC_PRODUCTIONS, COMMUNITY_INITIATIVES } from '@/lib/constants';
-import { getActiveDestinations } from '@/lib/destinations.server';
+import { CURATED_DESTINATIONS } from '@/lib/destinations';
 import { createPublicServerSupabaseClient } from '@/lib/supabase/server';
-import { createAdminClient } from '@/lib/supabase/admin';
 
 const SITE_URL = BRAND.officialDomain;
+
 const sitemapEntry = (
   path: string,
   priority: number,
@@ -21,9 +21,10 @@ const sitemapEntry = (
  * Only canonical, public-facing URLs belong here. Private account, host,
  * guest, staff and admin routes are deliberately excluded.
  *
- * Dynamic listing URLs are limited to published + approved stays and
- * approved products. If a data source is temporarily unavailable, the
- * static public pages still remain in the sitemap.
+ * Database queries use the public Supabase client only. This metadata route
+ * must not depend on request cookies, request headers, or a service-role
+ * fallback. Every catalogue lookup is isolated so an unavailable table or
+ * environment variable cannot prevent the static public URLs from rendering.
  */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticEntries: MetadataRoute.Sitemap = [
@@ -48,16 +49,32 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   const destinationEntries: MetadataRoute.Sitemap = [];
   try {
-    const destinations = await getActiveDestinations();
-    for (const destination of destinations) {
-      if (destination?.slug) {
-        destinationEntries.push(
-          sitemapEntry(`/stays/destinations/${encodeURIComponent(destination.slug)}`, 0.65, 'monthly'),
-        );
-      }
+    const supabase = createPublicServerSupabaseClient();
+    const { data, error } = await supabase
+      .from('destinations')
+      .select('slug')
+      .eq('active', true)
+      .order('sort_order', { ascending: true });
+
+    const slugs = !error && data?.length
+      ? data.map((destination) => destination.slug)
+      : CURATED_DESTINATIONS.map((destination) => destination.slug);
+
+    for (const slug of new Set(slugs.filter(Boolean))) {
+      destinationEntries.push(
+        sitemapEntry(`/stays/destinations/${encodeURIComponent(slug)}`, 0.65, 'monthly'),
+      );
     }
   } catch {
-    // Keep the rest of the sitemap available if destinations cannot be read.
+    for (const destination of CURATED_DESTINATIONS) {
+      destinationEntries.push(
+        sitemapEntry(
+          `/stays/destinations/${encodeURIComponent(destination.slug)}`,
+          0.65,
+          'monthly',
+        ),
+      );
+    }
   }
 
   const propertyEntries: MetadataRoute.Sitemap = [];
@@ -78,14 +95,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       }
     }
   } catch {
-    // Do not fail the public sitemap if the public stay catalogue is unavailable.
+    // Static public pages and destination pages remain available.
   }
 
   const productEntries: MetadataRoute.Sitemap = [];
   try {
-    // Match the public product page's approval rule. Only approved products
-    // are returned; draft, pending and rejected products are never listed.
-    const supabase = createAdminClient();
+    // RLS must expose only approved products to the public client.
+    // If public read access is unavailable, omit product details rather than
+    // using a privileged service-role client in this public metadata route.
+    const supabase = createPublicServerSupabaseClient();
     const { data, error } = await supabase
       .from('products')
       .select('slug, updated_at')
@@ -100,7 +118,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       }
     }
   } catch {
-    // Keep the sitemap useful even if product catalogue credentials are absent.
+    // Keep the sitemap available if the public product catalogue is unavailable.
   }
 
   const productionEntries = AUTHENTIC_PRODUCTIONS
