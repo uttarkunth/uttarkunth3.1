@@ -98,8 +98,60 @@ function StaffLoginContent() {
       }
 
       // Verify that this account is an authorized staff identity (never an ordinary public member)
-      const roleRes = await fetch('/api/auth/role', { cache: 'no-store' });
-      const roleData = await roleRes.json();
+      const sessionJwt = signInData.session?.access_token;
+      const roleRes = await fetch('/api/auth/role', {
+        cache: 'no-store',
+        headers: sessionJwt ? { Authorization: `Bearer ${sessionJwt}` } : undefined,
+      });
+      let roleData = await roleRes.json();
+
+      // Fallback to direct RLS-enforced staff_profiles verification using the authenticated session
+      // in case server cookies are blocked by a preview iframe or proxy
+      if (!roleData?.isAdmin || !roleData?.staffProfile) {
+        const { data: directStaffRow } = await (supabase.from('staff_profiles' as any) as any)
+          .select(
+            'user_id, staff_id, full_legal_name, preferred_name, designation, department, role_slug, role_code, status, founder_approved, founder_approved_at, founder_approved_by, session_revoked_at, agreements_completed, all_agreements_accepted'
+          )
+          .eq('user_id', signInData.user.id)
+          .maybeSingle();
+
+        const resolvedRole = directStaffRow?.role_slug || directStaffRow?.role_code;
+        const agreementsOk =
+          resolvedRole === 'founder' ||
+          Boolean(
+            directStaffRow?.agreements_completed ??
+              directStaffRow?.all_agreements_accepted ??
+              false
+          );
+
+        if (
+          directStaffRow &&
+          directStaffRow.status === 'active' &&
+          !directStaffRow.session_revoked_at &&
+          resolvedRole &&
+          agreementsOk &&
+          directStaffRow.founder_approved_at &&
+          directStaffRow.founder_approved_by &&
+          directStaffRow.staff_id
+        ) {
+          roleData = {
+            ok: true,
+            isAdmin: true,
+            isFounder: resolvedRole === 'founder',
+            staffProfile: {
+              staff_id: directStaffRow.staff_id,
+              full_name:
+                directStaffRow.preferred_name ||
+                directStaffRow.full_legal_name ||
+                signInData.user.email,
+              designation: directStaffRow.designation,
+              role: resolvedRole,
+              role_slug: resolvedRole,
+              department: directStaffRow.department,
+            },
+          };
+        }
+      }
 
       if (!roleData?.isAdmin || !roleData?.staffProfile) {
         await supabase.auth.signOut();
