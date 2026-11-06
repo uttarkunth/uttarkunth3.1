@@ -582,9 +582,11 @@ export function PropertyEditor({ initialProperty }: PropertyEditorProps) {
         <MapLocationPicker
           latitude={latitude}
           longitude={longitude}
-          onChange={(lat, lng) => {
-            setLatitude(lat);
-            setLongitude(lng);
+          onChange={(coordsOrLat: any, maybeLng?: any) => {
+            const finalLat = typeof coordsOrLat === 'object' && coordsOrLat !== null ? coordsOrLat.latitude : coordsOrLat;
+            const finalLng = typeof coordsOrLat === 'object' && coordsOrLat !== null ? coordsOrLat.longitude : maybeLng;
+            if (typeof finalLat === 'number' && !isNaN(finalLat)) setLatitude(finalLat);
+            if (typeof finalLng === 'number' && !isNaN(finalLng)) setLongitude(finalLng);
           }}
           addressHint={address || village}
         />
