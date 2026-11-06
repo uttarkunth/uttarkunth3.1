@@ -57,103 +57,142 @@ export async function POST(req: NextRequest) {
         throw rpcErr;
       }
 
+      // Notify host of staged review decision
+      try {
+        const { data: prop } = await adminClient
+          .from('properties')
+          .select('name, host_id, slug, contact_email, contact_phone')
+          .eq('id', property_id)
+          .single();
+
+        if (prop && prop.host_id) {
+          await notifyHostPropertyModeration({
+            hostUserId: prop.host_id,
+            hostEmail: prop.contact_email,
+            hostPhone: prop.contact_phone,
+            propertyName: prop.name,
+            status: action === 'approve_staged' ? 'approved' : 'rejected',
+            adminNotes: admin_notes,
+            slug: prop.slug,
+          });
+        }
+      } catch (e) {
+        console.warn('Failed to notify host on staged changes:', e);
+      }
+
       await recordStaffAuditLog({
-        actorUserId: user.id,
-        actorEmail: user.email,
-        staffId: staffProfile.staff_id,
-        roleSlug: staffProfile.role_slug,
-        action: `property_${action}`,
-        targetType: 'property',
-        targetId: String(property_id),
-        reason: admin_notes?.trim() || null,
-        afterState: { staged_decision: rpcAction },
+        staffId: staffProfile.id,
+        userId: user.id,
+        action: action === 'approve_staged' ? 'property_changes_approved' : 'property_changes_rejected',
+        resourceType: 'properties',
+        resourceId: property_id,
+        details: {
+          admin_notes: admin_notes?.trim() || null,
+          decision: action,
+        },
       });
 
       return NextResponse.json({
         ok: true,
-        action,
         message:
           action === 'approve_staged'
-            ? 'Proposed changes approved and published to the live listing.'
-            : 'Proposed changes rejected. Current approved listing remains live.',
+            ? 'Staged changes approved and applied to live listing.'
+            : 'Staged changes rejected and discarded.',
       });
     }
 
-    // 2. Initial Listing Moderation Actions (Approve / Reject / Request Changes)
-    let newStatus = 'pending';
-    let isPublished = false;
+    // 2. Initial Listing Moderation Actions: approve, reject, changes_requested
+    let updatePayload: Record<string, any> = {};
+    let auditAction: string = '';
 
     if (action === 'approve') {
-      newStatus = 'approved';
-      isPublished = true;
+      updatePayload = {
+        moderation_status: 'approved',
+        moderation_notes: admin_notes?.trim() || null,
+        moderated_by: user.id,
+        moderated_at: new Date().toISOString(),
+      };
+      auditAction = 'property_approved';
     } else if (action === 'reject') {
-      newStatus = 'rejected';
-      isPublished = false;
-    } else if (action === 'request_changes') {
-      newStatus = 'changes_requested';
-      isPublished = false;
+      updatePayload = {
+        moderation_status: 'rejected',
+        moderation_notes: admin_notes?.trim() || null,
+        moderated_by: user.id,
+        moderated_at: new Date().toISOString(),
+      };
+      auditAction = 'property_rejected';
+    } else if (action === 'changes_requested') {
+      updatePayload = {
+        moderation_status: 'changes_requested',
+        moderation_notes: admin_notes?.trim() || null,
+        moderated_by: user.id,
+        moderated_at: new Date().toISOString(),
+      };
+      auditAction = 'property_changes_requested';
     } else {
       return NextResponse.json(
-        { ok: false, error: 'Invalid moderation action.' },
+        {
+          ok: false,
+          error: `Invalid moderation action: ${action}`,
+        },
         { status: 400 }
       );
     }
 
-    const { data: updatedProp, error: updateErr } = await adminClient
+    const { error: updateErr } = await adminClient
       .from('properties')
-      .update({
-        moderation_status: newStatus,
-        published: isPublished,
-        moderation_notes: admin_notes?.trim() || `Property ${newStatus} by administrator.`,
-        reviewed_at: new Date().toISOString(),
-        reviewed_by: user.id,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', property_id)
-      .select('id, name, host_id')
-      .single();
+      .update(updatePayload)
+      .eq('id', property_id);
 
     if (updateErr) {
       throw updateErr;
     }
 
-    // Notify host about the moderation outcome
-    if (updatedProp?.host_id) {
-      await notifyHostPropertyModeration({
-        hostUserId: updatedProp.host_id,
-        propertyName: updatedProp.name,
-        status: newStatus as any,
-        moderationNotes: admin_notes?.trim() || null,
-      });
+    // Notify host of moderation decision
+    try {
+      const { data: prop } = await adminClient
+        .from('properties')
+        .select('name, host_id, slug, contact_email, contact_phone')
+        .eq('id', property_id)
+        .single();
+
+      if (prop && prop.host_id) {
+        await notifyHostPropertyModeration({
+          hostUserId: prop.host_id,
+          hostEmail: prop.contact_email,
+          hostPhone: prop.contact_phone,
+          propertyName: prop.name,
+          status: action as any,
+          adminNotes: admin_notes,
+          slug: prop.slug,
+        });
+      }
+    } catch (e) {
+      console.warn('Failed to notify host on property moderation:', e);
     }
 
     await recordStaffAuditLog({
-      actorUserId: user.id,
-      actorEmail: user.email,
-      staffId: staffProfile.staff_id,
-      roleSlug: staffProfile.role_slug,
-      action: `property_${newStatus}`,
-      targetType: 'property',
-      targetId: String(property_id),
-      reason: admin_notes?.trim() || null,
-      afterState: {
-        moderation_status: newStatus,
-        published: isPublished,
+      staffId: staffProfile.id,
+      userId: user.id,
+      action: auditAction,
+      resourceType: 'properties',
+      resourceId: property_id,
+      details: {
+        admin_notes: admin_notes?.trim() || null,
+        status: updatePayload.moderation_status,
       },
     });
 
     return NextResponse.json({
       ok: true,
-      action: newStatus,
-      published: isPublished,
-      message: `Property successfully ${newStatus}.`,
+      message: `Property ${property_id} has been ${action === 'changes_requested' ? 'marked for revisions' : action + 'd'}.`,
     });
   } catch (err: any) {
-    console.error('Moderation action error:', err);
+    console.error('Property moderation API error:', err);
     return NextResponse.json(
       {
         ok: false,
-        error: err.message || 'Failed to apply moderation action.',
+        error: err.message || 'Failed to execute moderation action.',
       },
       { status: 500 }
     );
