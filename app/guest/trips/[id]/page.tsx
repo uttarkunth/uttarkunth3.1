@@ -28,7 +28,7 @@ export default async function TripDetailPage({ params }: TripDetailPageProps) {
 
   const { data: booking, error } = await adminClient
     .from('stay_bookings')
-    .select('*, properties(id, name, slug, address, village, district, state, photos), room_units(id, room_name, base_price)')
+    .select('*, properties(id, name, slug, address, village, district, state, photos, host_id), room_units(id, room_name, base_price)')
     .eq('id', params.id)
     .single();
 
@@ -36,16 +36,17 @@ export default async function TripDetailPage({ params }: TripDetailPageProps) {
     notFound();
   }
 
-  // Verify ownership: guest must match user ID or email
+  const prop = booking.properties as any;
+  const isHost = prop?.host_id === user.id;
   const isOwner = booking.guest_user_id === user.id || booking.guest_email?.toLowerCase() === user.email?.toLowerCase();
   const isAdmin = await checkIsPlatformAdmin(user.id);
 
-  if (!isOwner && !isAdmin) {
+  if (!isOwner && !isHost && !isAdmin) {
     return (
       <div className="max-w-xl mx-auto py-20 px-4 text-center">
         <h2 className="font-serif text-2xl font-bold text-red-700">Access Restricted</h2>
-        <p className="text-xs text-charcoal-muted mt-2">You can only view your own booking requests.</p>
-        <Link href="/guest/trips" className="mt-4 inline-block px-4 py-2 bg-forest text-white text-xs font-semibold rounded-lg">
+        <p className="text-xs text-charcoal-muted mt-2">You can only view bookings associated with your account.</p>
+        <Link href="/trips" className="mt-4 inline-block px-4 py-2 bg-forest text-white text-xs font-semibold rounded-lg">
           Back to Trips
         </Link>
       </div>
@@ -53,11 +54,9 @@ export default async function TripDetailPage({ params }: TripDetailPageProps) {
   }
 
   const nights = calculateNights(booking.check_in, booking.check_out);
-  const prop = booking.properties as any;
   const room = booking.room_units as any;
   const photos = prop?.photos && Array.isArray(prop.photos) ? prop.photos : [];
   const photoUrl = photos[0] || 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=600&q=80';
-
   const isCancellable = booking.status === 'pending' || (booking.status === 'confirmed' && new Date(booking.check_in) > new Date());
 
   return (
@@ -166,8 +165,49 @@ export default async function TripDetailPage({ params }: TripDetailPageProps) {
           </div>
         </div>
 
-        {/* Cancellation Action */}
-        {isCancellable && (
+        {/* Host Decision Action (if user is host or admin) */}
+        {(isHost || isAdmin) && booking.status === 'pending' && (
+          <div className="pt-6 border-t border-forest/10 bg-emerald-50/50 p-5 rounded-2xl border border-emerald-200/80 space-y-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <span className="text-xs font-bold text-forest uppercase tracking-wider block">
+                  Host Reservation Decision
+                </span>
+                <span className="text-xs text-charcoal-muted">
+                  Guest {booking.guest_name} ({booking.guest_phone}) is waiting for your response.
+                </span>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <form action="/api/bookings/decision" method="POST">
+                  <input suppressHydrationWarning type="hidden" name="booking_id" value={booking.id} />
+                  <input suppressHydrationWarning type="hidden" name="action" value="decline" />
+                  <button suppressHydrationWarning
+                    type="submit"
+                    className="px-4 py-2 border border-red-300 text-red-700 hover:bg-red-50 text-xs font-semibold rounded-xl transition-all"
+                  >
+                    Decline Request
+                  </button>
+                </form>
+
+                <form action="/api/bookings/decision" method="POST">
+                  <input suppressHydrationWarning type="hidden" name="booking_id" value={booking.id} />
+                  <input suppressHydrationWarning type="hidden" name="action" value="confirm" />
+                  <button suppressHydrationWarning
+                    type="submit"
+                    className="px-5 py-2 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold rounded-xl shadow-xs transition-all flex items-center gap-1.5"
+                  >
+                    <CheckCircle2 className="w-4 h-4 text-white" />
+                    <span>Accept Booking</span>
+                  </button>
+                </form>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Guest Cancellation Action (only shown to guests, not the host) */}
+        {!isHost && isCancellable && (
           <div className="pt-6 border-t border-forest/10 flex items-center justify-between">
             <div>
               <span className="text-xs font-semibold text-charcoal block">Need to change your plans?</span>
