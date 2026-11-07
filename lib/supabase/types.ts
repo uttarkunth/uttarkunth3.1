@@ -838,7 +838,7 @@ export type Database = {
           country?: string
           created_at?: string
           email?: string | null
-          full_name: string
+          full_name?: string
           id: string
           interests?: string[]
           location?: string | null
@@ -886,8 +886,6 @@ export type Database = {
           host_id: string | null
           house_rules: string | null
           id: string
-          latitude: number | null
-          longitude: number | null
           moderation_notes: string | null
           moderation_status: string
           name: string
@@ -921,8 +919,6 @@ export type Database = {
           host_id?: string | null
           house_rules?: string | null
           id?: string
-          latitude?: number | null
-          longitude?: number | null
           moderation_notes?: string | null
           moderation_status?: string
           name: string
@@ -956,8 +952,6 @@ export type Database = {
           host_id?: string | null
           house_rules?: string | null
           id?: string
-          latitude?: number | null
-          longitude?: number | null
           moderation_notes?: string | null
           moderation_status?: string
           name?: string
@@ -976,6 +970,48 @@ export type Database = {
           village?: string | null
         }
         Relationships: []
+      }
+      property_private_locations: {
+        Row: {
+          created_at: string
+          exact_address: string
+          google_maps_url: string | null
+          location_confirmed: boolean
+          pending_exact_address: string | null
+          pending_google_maps_url: string | null
+          property_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          exact_address?: string
+          google_maps_url?: string | null
+          location_confirmed?: boolean
+          pending_exact_address?: string | null
+          pending_google_maps_url?: string | null
+          property_id: string
+          updated_at?: string
+        }
+        Insert_Relationships: []
+        Update: {
+          created_at?: string
+          exact_address?: string
+          google_maps_url?: string | null
+          location_confirmed?: boolean
+          pending_exact_address?: string | null
+          pending_google_maps_url?: string | null
+          property_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "property_private_locations_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: true
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       property_hosts: {
         Row: {
@@ -1784,7 +1820,7 @@ export type Database = {
           new_status?: string
           previous_status?: string | null
           reason?: string
-          staff_profile_id: string
+          staff_profile_id?: string
         }
         Relationships: [
           {
