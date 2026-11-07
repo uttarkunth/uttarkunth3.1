@@ -40,7 +40,7 @@ async function getHomePageData() {
     const supabase = createPublicServerSupabaseClient();
     const { data: properties, error } = await supabase
       .from('properties')
-      .select('id, slug, name, description, address, village, district, state, property_type, booking_mode, amenities, photos, published, moderation_status')
+      .select('id, slug, name, description, village, district, state, property_type, booking_mode, amenities, photos, published, moderation_status')
       .eq('published', true)
       .eq('moderation_status', 'approved')
       .limit(6);
@@ -559,7 +559,7 @@ export default async function HomePage() {
               </div>
               <div className="text-[11px] font-semibold text-forest group-hover:text-ukorange flex items-center justify-between pt-2 border-t border-forest/5">
                 <span>View Stays</span>
-                <ArrowRight className="w-3.5 h-3.5" />
+                <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
               </div>
             </Link>
           ))}
