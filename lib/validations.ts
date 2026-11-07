@@ -51,6 +51,71 @@ export const HostRoomSchema = z.object({
 
 export type HostRoomInput = z.infer<typeof HostRoomSchema>;
 
+const GOOGLE_MAPS_URL_ERROR =
+  'Please enter a valid Google Maps share link (for example, https://maps.app.goo.gl/... or https://www.google.com/maps/...).';
+
+const ALLOWED_GOOGLE_MAPS_PATTERNS: RegExp[] = [
+  /^https:\/\/maps\.app\.goo\.gl\/[A-Za-z0-9_-]+([/?#][^\s]*)?$/,
+  /^https:\/\/goo\.gl\/maps\/[A-Za-z0-9_-]+([/?#][^\s]*)?$/,
+  /^https:\/\/(www\.)?google\.(com|co\.in)\/maps([/?#][^\s]*)?$/,
+  /^https:\/\/maps\.google\.(com|co\.in)([/?#][^\s]*)?$/,
+];
+
+const OPEN_REDIRECT_PARAM_REGEX = /[?&](url|q|continue|redirect|next|dest|destination)=https?:/i;
+
+export function validateGoogleMapsUrl(
+  rawUrl: string | null | undefined
+): { valid: boolean; normalizedUrl?: string; error?: string } {
+  if (typeof rawUrl !== 'string') {
+    return { valid: false, error: GOOGLE_MAPS_URL_ERROR };
+  }
+
+  const trimmed = rawUrl.trim();
+  if (!trimmed || trimmed.length < 18 || trimmed.length > 2048) {
+    return { valid: false, error: GOOGLE_MAPS_URL_ERROR };
+  }
+
+  if (/\s/.test(trimmed)) {
+    return { valid: false, error: GOOGLE_MAPS_URL_ERROR };
+  }
+
+  let parsed: URL;
+  try {
+    parsed = new URL(trimmed);
+  } catch {
+    return { valid: false, error: GOOGLE_MAPS_URL_ERROR };
+  }
+
+  if (parsed.protocol !== 'https:' || parsed.username || parsed.password) {
+    return { valid: false, error: GOOGLE_MAPS_URL_ERROR };
+  }
+
+  if (OPEN_REDIRECT_PARAM_REGEX.test(trimmed)) {
+    return { valid: false, error: GOOGLE_MAPS_URL_ERROR };
+  }
+
+  const matchesAllowedPattern = ALLOWED_GOOGLE_MAPS_PATTERNS.some((pattern) =>
+    pattern.test(trimmed)
+  );
+  if (!matchesAllowedPattern) {
+    return { valid: false, error: GOOGLE_MAPS_URL_ERROR };
+  }
+
+  return { valid: true, normalizedUrl: trimmed };
+}
+
+export function isValidGoogleMapsShareUrl(rawUrl: string | null | undefined): boolean {
+  return validateGoogleMapsUrl(rawUrl).valid;
+}
+
+export const GoogleMapsUrlSchema = z
+  .string()
+  .trim()
+  .min(1, GOOGLE_MAPS_URL_ERROR)
+  .refine((val) => isValidGoogleMapsShareUrl(val), {
+    message: GOOGLE_MAPS_URL_ERROR,
+  });
+
 export const PropertyFormSchema = z.object({
   name: z.string().trim().min(3, "Property name must be at least 3 characters").max(120),
   description: z.string().trim().min(20, "Please provide a descriptive overview (at least 20 chars)").max(2000),
@@ -58,8 +123,10 @@ export const PropertyFormSchema = z.object({
   village: z.string().trim().min(2, "Village is required"),
   district: z.string().trim().min(2, "District is required").default("Kullu"),
   state: z.string().trim().min(2).default("Himachal Pradesh"),
-  latitude: z.coerce.number().optional().nullable(),
-  longitude: z.coerce.number().optional().nullable(),
+  google_maps_url: GoogleMapsUrlSchema,
+  location_confirmed: z.boolean().refine((val) => val === true, {
+    message: "Please confirm that your Google Maps link points to your actual property location.",
+  }),
   cover_photo: z.string().optional().nullable(),
   property_type: z.enum(["homestay", "hotel", "resort", "villa", "guesthouse", "cottage", "other"]),
   amenities: z.array(z.string()).default([]),
@@ -83,9 +150,11 @@ export const HostApplySchema = z.object({
   village: z.string().trim().min(2, 'Village is required'),
   district: z.string().trim().min(2, 'District is required'),
   state: z.string().trim().min(2).default('Himachal Pradesh'),
-  address: z.string().trim().optional(),
-  latitude: z.coerce.number().optional().nullable(),
-  longitude: z.coerce.number().optional().nullable(),
+  address: z.string().trim().min(5, 'Exact property address and landmarks are required'),
+  google_maps_url: GoogleMapsUrlSchema,
+  location_confirmed: z.boolean().refine((val) => val === true, {
+    message: 'Please confirm that your Google Maps link points to your actual property location.',
+  }),
   cover_photo: z.string().optional().nullable(),
   description: z
     .string()

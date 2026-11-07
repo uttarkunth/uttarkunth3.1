@@ -6,7 +6,6 @@ import { createPublicServerSupabaseClient, createServerSupabaseClient } from '@/
 import { BRAND } from '@/lib/constants';
 import { BookingWidget } from '@/components/booking-widget';
 import { RoomAvailabilityCalendar } from '@/components/stays/room-availability-calendar';
-import { PropertyMapView } from '@/components/property-map-view';
 import { MapPin, Users, CheckCircle2, ShieldCheck, Clock, Home, Sparkles, ChevronLeft, Wifi, Coffee, Utensils, Car } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
@@ -40,7 +39,7 @@ async function getPropertyBySlug(slug: string) {
     const supabase = createPublicServerSupabaseClient();
     const { data: property, error } = await supabase
       .from('properties')
-      .select('id, slug, name, description, address, village, district, state, latitude, longitude, property_type, booking_mode, amenities, photos, published, moderation_status')
+      .select('id, slug, name, description, village, district, state, property_type, booking_mode, amenities, photos, published, moderation_status')
       .eq('slug', slug)
       .eq('published', true)
       .eq('moderation_status', 'approved')
@@ -144,7 +143,7 @@ export default async function PropertyDetailPage({ params, searchParams }: Prope
 
         <p className="flex items-center gap-1.5 text-sm text-charcoal-muted">
           <MapPin className="w-4 h-4 text-ukorange flex-shrink-0" />
-          <span>{(property as any).address || `${property.village}, ${property.district}, ${property.state}, India`}</span>
+          <span>{`${property.village}, ${property.district}, ${property.state}, India`}</span>
         </p>
       </div>
 
@@ -281,18 +280,18 @@ export default async function PropertyDetailPage({ params, searchParams }: Prope
             </p>
           </div>
 
-          {/* Interactive Map & Directions */}
-          <div className="space-y-4 pb-8 border-b border-forest/10">
-            <PropertyMapView
-              name={property.name}
-              village={property.village || undefined}
-              district={property.district || undefined}
-              state={property.state || undefined}
-              address={property.address || undefined}
-              latitude={property.latitude}
-              longitude={property.longitude}
-              lowestPrice={rooms[0]?.base_price ? Number(rooms[0].base_price) : undefined}
-            />
+          {/* General Location & Privacy Policy */}
+          <div className="space-y-2 pb-8 border-b border-forest/10">
+            <h2 className="font-serif text-2xl font-bold text-forest flex items-center gap-2">
+              <MapPin className="w-5 h-5 text-ukorange" />
+              <span>Location &amp; Arrival Privacy</span>
+            </h2>
+            <p className="text-sm font-semibold text-charcoal">
+              {[property.village, property.district, property.state].filter(Boolean).join(', ')}
+            </p>
+            <p className="text-xs text-charcoal-muted leading-relaxed">
+              To protect host and guest privacy, the exact property address, local landmarks, and direct Google Maps navigation link are shared exclusively inside your trip itinerary once your booking is confirmed.
+            </p>
           </div>
 
           {/* Stay Rules & Cancellation Policy */}
