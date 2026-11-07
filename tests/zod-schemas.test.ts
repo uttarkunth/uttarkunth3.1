@@ -1,6 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { BookingRequestSchema, HostDecisionSchema, PropertyFormSchema } from '../lib/validations.ts';
+import {
+  BookingRequestSchema,
+  HostDecisionSchema,
+  PropertyFormSchema,
+  HostApplySchema,
+  validateGoogleMapsUrl,
+  isValidGoogleMapsShareUrl,
+} from '../lib/validations.ts';
 
 test('BookingRequestSchema validates valid input', () => {
   const input = {
@@ -74,4 +81,93 @@ test('HostDecisionSchema rejects illegal action', () => {
     action: 'arbitrary_status'
   });
   assert.equal(invalid.success, false);
+});
+
+test('validateGoogleMapsUrl accepts valid HTTPS Google Maps share and place links', () => {
+  const validLinks = [
+    'https://maps.app.goo.gl/7XyZ123abcDEF',
+    'https://maps.app.goo.gl/7XyZ123abcDEF?g_st=ic',
+    'https://goo.gl/maps/9AbCdEfGhIjK',
+    'https://www.google.com/maps/place/Jari,+Himachal+Pradesh/@32.001,77.251,15z',
+    'https://google.com/maps/@30.7268,78.4354,16z',
+    'https://maps.google.com/?q=30.7268,78.4354',
+    'https://www.google.co.in/maps/place/Uttarkashi',
+  ];
+
+  for (const link of validLinks) {
+    const res = validateGoogleMapsUrl(link);
+    assert.equal(res.valid, true, `Expected valid for ${link}`);
+    assert.equal(isValidGoogleMapsShareUrl(link), true);
+  }
+});
+
+test('validateGoogleMapsUrl rejects non-HTTPS, non-Google, javascript/data, and open-redirect URLs', () => {
+  const invalidLinks = [
+    '',
+    '   ',
+    'Near Primary School Jari',
+    'http://maps.app.goo.gl/7XyZ123abcDEF',
+    'http://www.google.com/maps/place/Jari',
+    'https://example.com/maps/place/Jari',
+    'https://evil.com/https://maps.app.goo.gl/7XyZ123abcDEF',
+    'javascript:alert(1)',
+    'data:text/html,<script>alert(1)</script>',
+    'https://www.google.com/url?q=https://evil.com',
+    'https://www.google.com/maps?redirect=https://evil.com',
+    'https://maps.app.goo.gl/abc def',
+  ];
+
+  for (const link of invalidLinks) {
+    const res = validateGoogleMapsUrl(link);
+    assert.equal(res.valid, false, `Expected invalid for ${link}`);
+    assert.equal(isValidGoogleMapsShareUrl(link), false);
+  }
+});
+
+test('HostApplySchema and PropertyFormSchema enforce Google Maps share link and host confirmation', () => {
+  const validApplication = HostApplySchema.safeParse({
+    name: 'Mountain Pine Homestay',
+    property_type: 'homestay',
+    village: 'Harsil',
+    district: 'Uttarkashi',
+    state: 'Uttarakhand',
+    address: 'Near Wilson Cottage, Harsil Village',
+    google_maps_url: 'https://maps.app.goo.gl/7XyZ123abcDEF',
+    location_confirmed: true,
+    description: 'Traditional wooden homestay overlooking the Bhagirathi river and apple orchards.',
+  });
+  assert.equal(validApplication.success, true);
+
+  const unconfirmedApplication = HostApplySchema.safeParse({
+    name: 'Mountain Pine Homestay',
+    property_type: 'homestay',
+    village: 'Harsil',
+    district: 'Uttarkashi',
+    state: 'Uttarakhand',
+    address: 'Near Wilson Cottage, Harsil Village',
+    google_maps_url: 'https://maps.app.goo.gl/7XyZ123abcDEF',
+    location_confirmed: false,
+    description: 'Traditional wooden homestay overlooking the Bhagirathi river and apple orchards.',
+  });
+  assert.equal(unconfirmedApplication.success, false);
+
+  const validPropertyForm = PropertyFormSchema.safeParse({
+    name: 'Mountain Pine Homestay',
+    property_type: 'homestay',
+    village: 'Harsil',
+    district: 'Uttarkashi',
+    state: 'Uttarakhand',
+    address: 'Near Wilson Cottage, Harsil Village',
+    google_maps_url: 'https://www.google.com/maps/place/Harsil',
+    location_confirmed: true,
+    description: 'Traditional wooden homestay overlooking the Bhagirathi river and apple orchards.',
+    rooms: [
+      {
+        room_name: 'Room 1',
+        base_price: 2200,
+        max_guests: 2,
+      },
+    ],
+  });
+  assert.equal(validPropertyForm.success, true);
 });

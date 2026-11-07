@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { checkIsPlatformAdmin } from '@/lib/auth';
+import { attachPrivateLocationToProperty } from '@/lib/host';
+import { validateGoogleMapsUrl } from '@/lib/validations';
 
 export const dynamic = 'force-dynamic';
 
@@ -56,7 +58,7 @@ export async function GET(
 
     const { data: property, error: propErr } = await adminClient
       .from('properties')
-      .select('*, room_units(*)')
+      .select('*, room_units(*), property_private_locations(*)')
       .eq('id', params.id)
       .single();
 
@@ -64,7 +66,11 @@ export async function GET(
       return NextResponse.json({ ok: false, error: 'Property not found' }, { status: 404 });
     }
 
-    return NextResponse.json({ ok: true, property, role: authResult.role });
+    return NextResponse.json({
+      ok: true,
+      property: attachPrivateLocationToProperty(property),
+      role: authResult.role,
+    });
   } catch (err: any) {
     return NextResponse.json({ ok: false, error: err.message }, { status: 500 });
   }
@@ -105,8 +111,8 @@ export async function PATCH(
       village,
       district,
       state,
-      latitude,
-      longitude,
+      google_maps_url,
+      location_confirmed,
       cover_photo,
       property_type,
       amenities,
@@ -122,10 +128,10 @@ export async function PATCH(
       check_out_time,
     } = body;
 
-    // Fetch existing property
+    // Fetch existing property and private location
     const { data: existingProp } = await adminClient
       .from('properties')
-      .select('*')
+      .select('*, property_private_locations(*)')
       .eq('id', params.id)
       .single();
 
@@ -133,14 +139,53 @@ export async function PATCH(
       return NextResponse.json({ ok: false, error: 'Property not found' }, { status: 404 });
     }
 
+    const rawPrivateLoc = existingProp.property_private_locations;
+    const existingPrivateLoc = Array.isArray(rawPrivateLoc) ? rawPrivateLoc[0] : rawPrivateLoc;
+    const currentExactAddress = (existingPrivateLoc?.exact_address ?? existingProp.address ?? '').trim();
+    const currentGoogleMapsUrl = (existingPrivateLoc?.google_maps_url ?? '').trim();
+
+    let normalizedGoogleMapsUrl: string | undefined;
+    if (google_maps_url !== undefined && String(google_maps_url).trim() !== '') {
+      const mapsValidation = validateGoogleMapsUrl(String(google_maps_url));
+      if (!mapsValidation.valid || !mapsValidation.normalizedUrl) {
+        return NextResponse.json(
+          {
+            ok: false,
+            error:
+              mapsValidation.error ||
+              'Please enter a valid Google Maps share link (for example, https://maps.app.goo.gl/... or https://www.google.com/maps/...).',
+          },
+          { status: 400 }
+        );
+      }
+      normalizedGoogleMapsUrl = mapsValidation.normalizedUrl;
+
+      const isChangingMapsUrl = normalizedGoogleMapsUrl !== currentGoogleMapsUrl;
+      if (isChangingMapsUrl && location_confirmed !== true) {
+        return NextResponse.json(
+          {
+            ok: false,
+            error:
+              'Please confirm that your Google Maps link points to your actual property location.',
+          },
+          { status: 400 }
+        );
+      }
+    }
+
     const isLiveApproved = existingProp.published === true && existingProp.moderation_status === 'approved';
+    const isAddressChanged =
+      address !== undefined && address.trim() !== '' && address.trim() !== currentExactAddress;
+    const isMapsUrlChanged =
+      normalizedGoogleMapsUrl !== undefined && normalizedGoogleMapsUrl !== currentGoogleMapsUrl;
 
     // Industry Standard Security Moderation:
     // Only core identity & legal location changes require moderation review.
     // Operational settings (amenities, photos, room rates, description, rules, contact) update directly.
     const isMaterialContentChange =
       (name !== undefined && name.trim() !== '' && name.trim() !== existingProp.name) ||
-      (address !== undefined && address.trim() !== '' && address.trim() !== existingProp.address) ||
+      isAddressChanged ||
+      isMapsUrlChanged ||
       (village !== undefined && village.trim() !== '' && village.trim() !== existingProp.village) ||
       (district !== undefined && district.trim() !== '' && district.trim() !== existingProp.district) ||
       (state !== undefined && state.trim() !== '' && state.trim() !== existingProp.state) ||
@@ -157,14 +202,14 @@ export async function PATCH(
         }, { status: 403 });
       }
 
-      // Stage proposed changes in pending_changes so live listing remains visible
+      // Stage proposed public identity changes in pending_changes (private address/URL are stored in property_private_locations)
       const stagedPayload = {
         name: name !== undefined ? name.trim() : existingProp.name,
-        address: address !== undefined ? address.trim() : existingProp.address,
         village: village !== undefined ? village.trim() : existingProp.village,
         district: district !== undefined ? district.trim() : existingProp.district,
         state: state !== undefined ? state.trim() : existingProp.state,
         property_type: property_type !== undefined ? property_type : existingProp.property_type,
+        location_update_staged: isAddressChanged || isMapsUrlChanged,
       };
 
       const { error: stageErr } = await adminClient
@@ -178,6 +223,30 @@ export async function PATCH(
         .eq('id', params.id);
 
       if (stageErr) throw stageErr;
+
+      if (isAddressChanged || isMapsUrlChanged) {
+        const { error: stageLocErr } = await adminClient
+          .from('property_private_locations')
+          .upsert(
+            {
+              property_id: params.id,
+              exact_address: currentExactAddress,
+              google_maps_url: currentGoogleMapsUrl || null,
+              pending_exact_address: isAddressChanged
+                ? address.trim()
+                : (existingPrivateLoc?.pending_exact_address ?? null),
+              pending_google_maps_url: isMapsUrlChanged
+                ? normalizedGoogleMapsUrl!
+                : (existingPrivateLoc?.pending_google_maps_url ?? null),
+              location_confirmed: Boolean(existingPrivateLoc?.location_confirmed),
+              updated_at: new Date().toISOString(),
+            },
+            { onConflict: 'property_id' }
+          );
+
+        if (stageLocErr) throw stageLocErr;
+      }
+
       stagedForReview = true;
     }
 
@@ -188,20 +257,50 @@ export async function PATCH(
 
     if (!isLiveApproved) {
       // For unapproved draft, apply everything directly
+      const nextVillage = village !== undefined ? village.trim() : existingProp.village;
+      const nextDistrict = district !== undefined ? district.trim() : existingProp.district;
+      const nextState = state !== undefined ? state.trim() : existingProp.state;
+
       if (name !== undefined) directUpdates.name = name.trim();
-      if (address !== undefined) directUpdates.address = address.trim();
-      if (village !== undefined) directUpdates.village = village.trim();
-      if (district !== undefined) directUpdates.district = district.trim();
-      if (state !== undefined) directUpdates.state = state.trim();
+      if (village !== undefined) directUpdates.village = nextVillage;
+      if (district !== undefined) directUpdates.district = nextDistrict;
+      if (state !== undefined) directUpdates.state = nextState;
+      directUpdates.address = [nextVillage, nextDistrict, nextState]
+        .map((p) => (p || '').trim())
+        .filter(Boolean)
+        .join(', ');
       if (property_type !== undefined) directUpdates.property_type = property_type;
+
+      if (address !== undefined || normalizedGoogleMapsUrl !== undefined) {
+        const { error: directLocErr } = await adminClient
+          .from('property_private_locations')
+          .upsert(
+            {
+              property_id: params.id,
+              exact_address: address !== undefined ? address.trim() : currentExactAddress,
+              google_maps_url:
+                normalizedGoogleMapsUrl !== undefined
+                  ? normalizedGoogleMapsUrl
+                  : (currentGoogleMapsUrl || null),
+              location_confirmed:
+                normalizedGoogleMapsUrl !== undefined
+                  ? true
+                  : Boolean(existingPrivateLoc?.location_confirmed),
+              pending_exact_address: null,
+              pending_google_maps_url: null,
+              updated_at: new Date().toISOString(),
+            },
+            { onConflict: 'property_id' }
+          );
+
+        if (directLocErr) throw directLocErr;
+      }
     }
 
     if (description !== undefined) directUpdates.description = description.trim();
     if (amenities !== undefined) directUpdates.amenities = amenities;
     if (photos !== undefined) directUpdates.photos = photos;
     if (cover_photo !== undefined) directUpdates.cover_photo = cover_photo;
-    if (latitude !== undefined) directUpdates.latitude = latitude === null ? null : Number(latitude);
-    if (longitude !== undefined) directUpdates.longitude = longitude === null ? null : Number(longitude);
     if (contact_phone !== undefined) directUpdates.contact_phone = contact_phone.trim();
     if (contact_whatsapp !== undefined) directUpdates.contact_whatsapp = contact_whatsapp.trim();
     if (contact_email !== undefined) directUpdates.contact_email = contact_email.trim();
@@ -267,7 +366,7 @@ export async function PATCH(
     // Fetch refreshed property
     const { data: updatedProperty } = await adminClient
       .from('properties')
-      .select('*, room_units(*)')
+      .select('*, room_units(*), property_private_locations(*)')
       .eq('id', params.id)
       .single();
 
@@ -277,7 +376,7 @@ export async function PATCH(
       message: stagedForReview
         ? 'Public content changes submitted for administrator moderation. Your currently approved listing remains live.'
         : 'Operational settings and room rates successfully updated.',
-      property: updatedProperty
+      property: attachPrivateLocationToProperty(updatedProperty)
     });
   } catch (err: any) {
     console.error('Property update error:', err);

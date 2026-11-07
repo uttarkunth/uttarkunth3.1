@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { HostApplySchema } from '@/lib/validations';
+import { HostApplySchema, validateGoogleMapsUrl } from '@/lib/validations';
 import { notifyHostPropertySubmitted } from '@/lib/notifications';
 
 export const dynamic = 'force-dynamic';
@@ -51,12 +51,29 @@ export async function POST(req: NextRequest) {
     }
 
     const data = validation.data;
+    const mapsValidation = validateGoogleMapsUrl(data.google_maps_url);
+    if (!mapsValidation.valid || !mapsValidation.normalizedUrl) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error:
+            mapsValidation.error ||
+            'Please enter a valid Google Maps share link (for example, https://maps.app.goo.gl/... or https://www.google.com/maps/...).',
+        },
+        { status: 400 }
+      );
+    }
+
     const adminClient = createAdminClient();
     const slug = slugifyProperty(data.name, data.village);
 
     const contactPhone = data.contact_phone || data.host_phone || '';
     const contactWhatsapp = data.contact_whatsapp || contactPhone;
     const contactEmail = data.contact_email || user.email || '';
+    const generalLocality = [data.village, data.district, data.state]
+      .map((part) => (part || '').trim())
+      .filter(Boolean)
+      .join(', ');
 
     const { data: createdProperty, error: propErr } = await adminClient
       .from('properties')
@@ -67,9 +84,7 @@ export async function POST(req: NextRequest) {
         village: data.village,
         district: data.district,
         state: data.state,
-        address: data.address || `${data.village}, ${data.district}, ${data.state}`,
-        latitude: data.latitude ?? null,
-        longitude: data.longitude ?? null,
+        address: generalLocality,
         cover_photo: data.cover_photo || (data.photos && data.photos[0]) || null,
         description: data.description,
         amenities: data.amenities || [],
@@ -96,6 +111,28 @@ export async function POST(req: NextRequest) {
     if (propErr || !createdProperty) {
       return NextResponse.json(
         { ok: false, error: propErr?.message || 'Failed to submit property application.' },
+        { status: 500 }
+      );
+    }
+
+    const { error: privateLocErr } = await adminClient
+      .from('property_private_locations')
+      .upsert(
+        {
+          property_id: createdProperty.id,
+          exact_address: data.address.trim(),
+          google_maps_url: mapsValidation.normalizedUrl,
+          location_confirmed: true,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'property_id' }
+      );
+
+    if (privateLocErr) {
+      console.error('Private location save failed, rolling back draft property:', privateLocErr);
+      await adminClient.from('properties').delete().eq('id', createdProperty.id);
+      return NextResponse.json(
+        { ok: false, error: `Failed to save property location details: ${privateLocErr.message}` },
         { status: 500 }
       );
     }

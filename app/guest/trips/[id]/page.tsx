@@ -6,7 +6,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { formatINR } from '@/lib/utils';
 import { calculateNights } from '@/lib/booking-calculator';
 import { checkIsPlatformAdmin } from '@/lib/auth';
-import { MapPin, Calendar, Users, ArrowLeft, Clock, CheckCircle2, XCircle, AlertCircle, Home } from 'lucide-react';
+import { MapPin, Calendar, Users, ArrowLeft, Clock, CheckCircle2, XCircle, AlertCircle, Home, ExternalLink } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 
@@ -28,7 +28,7 @@ export default async function TripDetailPage({ params }: TripDetailPageProps) {
 
   const { data: booking, error } = await adminClient
     .from('stay_bookings')
-    .select('*, properties(id, name, slug, address, village, district, state, photos, host_id), room_units(id, room_name, base_price)')
+    .select('*, properties(id, name, slug, village, district, state, photos, host_id), room_units(id, room_name, base_price)')
     .eq('id', params.id)
     .single();
 
@@ -38,7 +38,7 @@ export default async function TripDetailPage({ params }: TripDetailPageProps) {
 
   const prop = booking.properties as any;
   const isHost = prop?.host_id === user.id;
-  const isOwner = booking.guest_user_id === user.id || booking.guest_email?.toLowerCase() === user.email?.toLowerCase();
+  const isOwner = booking.guest_user_id === user.id;
   const isAdmin = await checkIsPlatformAdmin(user.id);
 
   if (!isOwner && !isHost && !isAdmin) {
@@ -53,10 +53,29 @@ export default async function TripDetailPage({ params }: TripDetailPageProps) {
     );
   }
 
+  // Strictly fetch private location details ONLY when booking status is 'confirmed'
+  let privateLocation: { exact_address: string; google_maps_url: string | null } | null = null;
+  if (booking.status === 'confirmed' && prop?.id) {
+    const { data: locData } = await adminClient
+      .from('property_private_locations')
+      .select('exact_address, google_maps_url')
+      .eq('property_id', prop.id)
+      .maybeSingle();
+    if (locData) {
+      privateLocation = locData;
+    }
+  }
+
+  const generalLocality = [prop?.village, prop?.district, prop?.state]
+    .map((part) => (part || '').trim())
+    .filter(Boolean)
+    .join(', ');
+
   const nights = calculateNights(booking.check_in, booking.check_out);
   const room = booking.room_units as any;
   const photos = prop?.photos && Array.isArray(prop.photos) ? prop.photos : [];
   const photoUrl = photos[0] || 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=600&q=80';
+
   const isCancellable = booking.status === 'pending' || (booking.status === 'confirmed' && new Date(booking.check_in) > new Date());
 
   return (
@@ -83,7 +102,7 @@ export default async function TripDetailPage({ params }: TripDetailPageProps) {
             </h1>
             <p className="text-xs text-charcoal-muted flex items-center gap-1 mt-1">
               <MapPin className="w-3.5 h-3.5 text-ukorange" />
-              <span>{prop?.address || `${prop?.village}, ${prop?.district}`}</span>
+              <span>{generalLocality}</span>
             </p>
           </div>
 
@@ -164,6 +183,49 @@ export default async function TripDetailPage({ params }: TripDetailPageProps) {
             </div>
           </div>
         </div>
+
+        {/* Confirmed Guest Location & Directions (Strict Confirmed-Only Visibility) */}
+        {booking.status === 'confirmed' && (
+          <div className="p-6 rounded-2xl bg-ivory-warm border border-forest/15 space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="space-y-1.5">
+                <h3 className="font-serif text-xl font-bold text-forest flex items-center gap-2">
+                  <MapPin className="w-5 h-5 text-ukorange" />
+                  <span>Your Stay — Location Details</span>
+                </h3>
+                <p className="text-sm font-semibold text-charcoal">
+                  {prop?.name || 'Uttarkunth Stay'}
+                </p>
+                {privateLocation?.exact_address && (
+                  <p className="text-xs text-charcoal leading-relaxed">
+                    <strong className="text-charcoal-muted">Full Property Address &amp; Landmarks: </strong>
+                    {privateLocation.exact_address}
+                  </p>
+                )}
+                <p className="text-xs text-charcoal-muted">
+                  <strong className="text-charcoal-muted">Locality: </strong>
+                  {generalLocality}
+                </p>
+              </div>
+
+              {privateLocation?.google_maps_url ? (
+                <a
+                  href={privateLocation.google_maps_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-forest hover:bg-forest-hover text-white text-xs font-semibold shadow-xs transition-colors self-start sm:self-center flex-shrink-0"
+                >
+                  <ExternalLink className="w-4 h-4 text-ukorange" />
+                  <span>Get Directions on Google Maps</span>
+                </a>
+              ) : (
+                <div className="p-3 rounded-xl bg-white border border-forest/15 text-xs text-charcoal-muted max-w-sm">
+                  Exact directions are not available yet. Please contact your host for the property location.
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Host Decision Action (if user is host or admin) */}
         {(isHost || isAdmin) && booking.status === 'pending' && (

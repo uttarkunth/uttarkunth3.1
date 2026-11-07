@@ -10,6 +10,27 @@ export interface HostAccessResult {
   property?: any;
 }
 
+export function attachPrivateLocationToProperty(prop: any) {
+  if (!prop) return prop;
+  const rawLoc = prop.property_private_locations;
+  const privateLoc = Array.isArray(rawLoc) ? rawLoc[0] : rawLoc;
+  const generalLocality = [prop.village, prop.district, prop.state]
+    .map((p) => (p || '').trim())
+    .filter(Boolean)
+    .join(', ');
+
+  return {
+    ...prop,
+    public_locality: generalLocality || prop.address || '',
+    exact_address: privateLoc?.exact_address ?? prop.address ?? '',
+    address: privateLoc?.exact_address ?? prop.address ?? '',
+    google_maps_url: privateLoc?.google_maps_url ?? '',
+    pending_exact_address: privateLoc?.pending_exact_address ?? null,
+    pending_google_maps_url: privateLoc?.pending_google_maps_url ?? null,
+    location_confirmed: Boolean(privateLoc?.location_confirmed),
+  };
+}
+
 export async function getHostProperties(userId: string) {
   const adminClient = createAdminClient();
   const isAdmin = await checkIsPlatformAdmin(userId);
@@ -17,12 +38,13 @@ export async function getHostProperties(userId: string) {
   if (isAdmin) {
     const { data: properties } = await adminClient
       .from('properties')
-      .select('*, room_units(*)')
+      .select('*, room_units(*), property_private_locations(*)')
       .order('created_at', { ascending: false });
 
+    const enriched = (properties || []).map(attachPrivateLocationToProperty);
     return {
-      properties: properties || [],
-      isHost: (properties || []).length > 0,
+      properties: enriched,
+      isHost: enriched.length > 0,
       isAdmin: true,
     };
   }
@@ -30,7 +52,7 @@ export async function getHostProperties(userId: string) {
   // Find properties where user is primary host
   const { data: ownedProps } = await adminClient
     .from('properties')
-    .select('*, room_units(*)')
+    .select('*, room_units(*), property_private_locations(*)')
     .eq('host_id', userId)
     .order('created_at', { ascending: false });
 
@@ -49,12 +71,12 @@ export async function getHostProperties(userId: string) {
   if (missingCoHostIds.length > 0) {
     const { data: additional } = await adminClient
       .from('properties')
-      .select('*, room_units(*)')
+      .select('*, room_units(*), property_private_locations(*)')
       .in('id', missingCoHostIds);
     coHostProps = additional || [];
   }
 
-  const allProps = [...(ownedProps || []), ...coHostProps];
+  const allProps = [...(ownedProps || []), ...coHostProps].map(attachPrivateLocationToProperty);
 
   return {
     properties: allProps,
@@ -73,20 +95,20 @@ export async function checkPropertyHostAccess(
   if (isAdmin) {
     const { data: prop } = await adminClient
       .from('properties')
-      .select('*, room_units(*)')
+      .select('*, room_units(*), property_private_locations(*)')
       .eq('id', propertyId)
       .single();
 
     return {
       isAuthorized: !!prop,
       role: 'admin',
-      property: prop || undefined,
+      property: prop ? attachPrivateLocationToProperty(prop) : undefined,
     };
   }
 
   const { data: prop } = await adminClient
     .from('properties')
-    .select('*, room_units(*)')
+    .select('*, room_units(*), property_private_locations(*)')
     .eq('id', propertyId)
     .single();
 
@@ -94,11 +116,13 @@ export async function checkPropertyHostAccess(
     return { isAuthorized: false, role: null };
   }
 
+  const enrichedProp = attachPrivateLocationToProperty(prop);
+
   if (prop.host_id === userId) {
     return {
       isAuthorized: true,
       role: 'owner',
-      property: prop,
+      property: enrichedProp,
     };
   }
 
@@ -114,7 +138,7 @@ export async function checkPropertyHostAccess(
     return {
       isAuthorized: true,
       role: coHost.role as 'co_host' | 'manager',
-      property: prop,
+      property: enrichedProp,
     };
   }
 
