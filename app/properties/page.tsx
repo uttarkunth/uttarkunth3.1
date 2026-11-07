@@ -27,7 +27,7 @@ async function fetchFilteredProperties(params: PropertiesPageProps['searchParams
 
     let query = supabase
       .from('properties')
-      .select('id, slug, name, description, address, village, district, state, property_type, booking_mode, amenities, photos, published, moderation_status')
+      .select('id, slug, name, description, village, district, state, property_type, booking_mode, amenities, photos, published, moderation_status')
       .eq('published', true)
       .eq('moderation_status', 'approved');
 

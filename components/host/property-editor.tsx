@@ -8,10 +8,10 @@ import { formatINR } from '@/lib/utils';
 import {
   Save, AlertTriangle, CheckCircle2, Trash2, PlusCircle,
   Eye, ArrowLeft, Image as ImageIcon, BedDouble, ShieldAlert, Sparkles,
-  Phone, MessageSquare, Mail, Clock, MapPin, ChevronDown, ChevronUp
+  Phone, MessageSquare, Mail, Clock, MapPin, ChevronDown, ChevronUp, ExternalLink
 } from 'lucide-react';
 import { PhotoUploader } from '@/components/host/photo-uploader';
-import { MapLocationPicker } from '@/components/host/map-location-picker';
+import { validateGoogleMapsUrl } from '@/lib/validations';
 
 interface RoomUnit {
   id?: string;
@@ -67,17 +67,18 @@ export function PropertyEditor({ initialProperty }: PropertyEditorProps) {
     initialProperty.cover_photo || (Array.isArray(initialProperty.photos) ? initialProperty.photos[0] : '') || ''
   );
 
-  // Map & Coordinates
-  const [latitude, setLatitude] = useState<number | null>(
-    typeof initialProperty.latitude === 'number' ? initialProperty.latitude : 30.7268
-  );
-  const [longitude, setLongitude] = useState<number | null>(
-    typeof initialProperty.longitude === 'number' ? initialProperty.longitude : 78.4354
-  );
-
-  // Structural State
+  // Structural & Private Location State
   const [name, setName] = useState(initialProperty.name || '');
-  const [address, setAddress] = useState(initialProperty.address || '');
+  const [address, setAddress] = useState(
+    initialProperty.exact_address || initialProperty.address || ''
+  );
+  const [googleMapsUrl, setGoogleMapsUrl] = useState(
+    initialProperty.google_maps_url || ''
+  );
+  const [locationConfirmed, setLocationConfirmed] = useState(
+    Boolean(initialProperty.location_confirmed && initialProperty.google_maps_url)
+  );
+  const [mapsLinkError, setMapsLinkError] = useState<string | null>(null);
   const [village, setVillage] = useState(initialProperty.village || '');
   const [district, setDistrict] = useState(initialProperty.district || 'Uttarkashi');
   const [state, setState] = useState(initialProperty.state || 'Uttarakhand');
@@ -187,10 +188,50 @@ export function PropertyEditor({ initialProperty }: PropertyEditorProps) {
     }
   };
 
+  const handleTestGoogleMapsLink = () => {
+    setMapsLinkError(null);
+    const check = validateGoogleMapsUrl(googleMapsUrl);
+    if (!check.valid || !check.normalizedUrl) {
+      setMapsLinkError(
+        check.error ||
+          'Please enter a valid Google Maps share link (for example, https://maps.app.goo.gl/... or https://www.google.com/maps/...).'
+      );
+      return;
+    }
+    window.open(check.normalizedUrl, '_blank', 'noopener,noreferrer');
+  };
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
     setMessage(null);
+    setMapsLinkError(null);
+
+    const trimmedMapsUrl = googleMapsUrl.trim();
+    const initialMapsUrl = (initialProperty.google_maps_url || '').trim();
+    const isMapsUrlChanged = trimmedMapsUrl !== initialMapsUrl;
+
+    if (trimmedMapsUrl !== '') {
+      const mapsCheck = validateGoogleMapsUrl(trimmedMapsUrl);
+      if (!mapsCheck.valid || !mapsCheck.normalizedUrl) {
+        const errMsg =
+          mapsCheck.error ||
+          'Please enter a valid Google Maps share link (for example, https://maps.app.goo.gl/... or https://www.google.com/maps/...).';
+        setMapsLinkError(errMsg);
+        setMessage({ type: 'error', text: errMsg });
+        setSaving(false);
+        return;
+      }
+
+      if (isMapsUrlChanged && !locationConfirmed) {
+        const confirmErr =
+          'Please confirm that your Google Maps link points to your actual property location.';
+        setMapsLinkError(confirmErr);
+        setMessage({ type: 'error', text: confirmErr });
+        setSaving(false);
+        return;
+      }
+    }
 
     try {
       const payload = {
@@ -200,8 +241,8 @@ export function PropertyEditor({ initialProperty }: PropertyEditorProps) {
         village,
         district,
         state,
-        latitude,
-        longitude,
+        google_maps_url: trimmedMapsUrl || undefined,
+        location_confirmed: locationConfirmed,
         cover_photo: coverPhoto || photos[0] || null,
         property_type: propertyType,
         amenities,
@@ -567,31 +608,6 @@ export function PropertyEditor({ initialProperty }: PropertyEditorProps) {
         />
       </div>
 
-      {/* Section 3: Interactive Map Pinning */}
-      <div className="bg-white rounded-3xl p-6 sm:p-8 border border-forest/15 shadow-soft space-y-6">
-        <div>
-          <h2 className="font-serif text-2xl font-bold text-forest flex items-center gap-2">
-            <MapPin className="w-5 h-5 text-ukorange" />
-            <span>Map Pinning &amp; Exact Guest Navigation</span>
-          </h2>
-          <p className="text-xs text-charcoal-muted">
-            Set your exact coordinates so travelers can see the pin on the map and get Google Maps turn-by-turn directions.
-          </p>
-        </div>
-
-        <MapLocationPicker
-          latitude={latitude}
-          longitude={longitude}
-          onChange={(coordsOrLat: any, maybeLng?: any) => {
-            const finalLat = typeof coordsOrLat === 'object' && coordsOrLat !== null ? coordsOrLat.latitude : coordsOrLat;
-            const finalLng = typeof coordsOrLat === 'object' && coordsOrLat !== null ? coordsOrLat.longitude : maybeLng;
-            if (typeof finalLat === 'number' && !isNaN(finalLat)) setLatitude(finalLat);
-            if (typeof finalLng === 'number' && !isNaN(finalLng)) setLongitude(finalLng);
-          }}
-          addressHint={address || village}
-        />
-      </div>
-
       {/* Section 4: Operational Details & Amenities */}
       <div className="bg-white rounded-3xl p-6 sm:p-8 border border-forest/15 shadow-soft space-y-6">
         <div>
@@ -821,7 +837,7 @@ export function PropertyEditor({ initialProperty }: PropertyEditorProps) {
             />
           </div>
 
-          <div>
+          <div className="sm:col-span-2">
             <label className="block text-xs font-semibold text-charcoal-muted mb-1">
               Detailed Address
             </label>
@@ -829,8 +845,89 @@ export function PropertyEditor({ initialProperty }: PropertyEditorProps) {
               type="text"
               value={address}
               onChange={(e) => setAddress(e.target.value)}
+              placeholder="e.g. Near Primary School, Upper Village Road"
               className="w-full p-2.5 text-xs bg-ivory-warm border border-forest/20 rounded-xl focus:outline-none"
             />
+            {initialProperty.pending_exact_address && (
+              <p className="text-[11px] text-amber-800 mt-1">
+                Staged address awaiting admin review: <strong>{initialProperty.pending_exact_address}</strong>
+              </p>
+            )}
+          </div>
+
+          <div className="sm:col-span-2 p-4 rounded-2xl bg-ivory-warm border border-forest/15 space-y-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <label className="block text-xs font-semibold text-charcoal flex items-center gap-1.5">
+                <MapPin className="w-4 h-4 text-ukorange" />
+                <span>Google Maps Location Link</span>
+              </label>
+              <button
+                type="button"
+                onClick={handleTestGoogleMapsLink}
+                disabled={!googleMapsUrl.trim()}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-forest/20 text-xs font-semibold text-forest hover:bg-forest hover:text-white disabled:opacity-50 transition-colors self-start sm:self-auto"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+                <span>Test Link</span>
+              </button>
+            </div>
+
+            <input suppressHydrationWarning
+              type="url"
+              value={googleMapsUrl}
+              onChange={(e) => {
+                setGoogleMapsUrl(e.target.value);
+                setMapsLinkError(null);
+                setLocationConfirmed(false);
+              }}
+              placeholder="Paste your Google Maps share link here"
+              className="w-full p-2.5 text-xs bg-white border border-forest/20 rounded-xl focus:outline-none focus:border-forest font-mono"
+            />
+
+            {initialProperty.pending_google_maps_url && (
+              <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-[11px] text-amber-900 flex items-center justify-between gap-2">
+                <span className="truncate">
+                  Staged Google Maps link awaiting admin review: <strong>{initialProperty.pending_google_maps_url}</strong>
+                </span>
+                <a
+                  href={initialProperty.pending_google_maps_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-amber-900 underline font-semibold flex-shrink-0"
+                >
+                  Open Staged
+                </a>
+              </div>
+            )}
+
+            {mapsLinkError && (
+              <p className="text-xs text-red-700 font-medium flex items-center gap-1.5">
+                <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
+                <span>{mapsLinkError}</span>
+              </p>
+            )}
+
+            <div className="text-[11px] text-charcoal-muted space-y-1 bg-white/80 p-3 rounded-xl border border-forest/10">
+              <p className="font-semibold text-charcoal">How to update your Google Maps link:</p>
+              <ol className="list-decimal list-inside space-y-0.5">
+                <li>Open Google Maps on your phone or computer</li>
+                <li>Find your exact property location</li>
+                <li>Tap <strong>Share</strong></li>
+                <li>Copy the link and paste it here</li>
+              </ol>
+            </div>
+
+            <label className="flex items-start gap-2.5 pt-1 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={locationConfirmed}
+                onChange={(e) => setLocationConfirmed(e.target.checked)}
+                className="mt-0.5 rounded border-forest/30 text-forest focus:ring-forest"
+              />
+              <span className="text-xs font-medium text-charcoal leading-relaxed">
+                I have checked this Google Maps link and confirm that it points to my actual property location.
+              </span>
+            </label>
           </div>
         </div>
       </div>

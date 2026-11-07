@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
   CheckCircle2, XCircle, AlertTriangle, Eye, Shield, Clock,
-  ArrowRight, Sparkles, Image as ImageIcon, MapPin, BedDouble, RefreshCw
+  ArrowRight, Sparkles, Image as ImageIcon, MapPin, BedDouble, RefreshCw, ExternalLink
 } from 'lucide-react';
 
 interface Property {
@@ -14,6 +14,10 @@ interface Property {
   slug: string;
   description?: string | null;
   address?: string | null;
+  exact_address?: string | null;
+  google_maps_url?: string | null;
+  pending_exact_address?: string | null;
+  pending_google_maps_url?: string | null;
   village?: string | null;
   district?: string | null;
   state?: string | null;
@@ -46,8 +50,19 @@ export function PropertyModerationEngine({ initialProperties }: PropertyModerati
   const [submittingId, setSubmittingId] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  const stagedProperties = initialProperties.filter((p) => p.pending_changes !== null && p.pending_changes !== undefined);
-  const pendingApplications = initialProperties.filter((p) => p.moderation_status === 'pending' && !p.pending_changes);
+  const stagedProperties = initialProperties.filter(
+    (p) =>
+      (p.pending_changes !== null && p.pending_changes !== undefined) ||
+      Boolean(p.pending_exact_address) ||
+      Boolean(p.pending_google_maps_url)
+  );
+  const pendingApplications = initialProperties.filter(
+    (p) =>
+      p.moderation_status === 'pending' &&
+      !p.pending_changes &&
+      !p.pending_exact_address &&
+      !p.pending_google_maps_url
+  );
   const allProperties = initialProperties;
 
   const handleModeration = async (propertyId: string, action: string) => {
@@ -200,6 +215,26 @@ export function PropertyModerationEngine({ initialProperties }: PropertyModerati
                         <span>{p.village}, {p.district}, {p.state}</span>
                       </div>
                       <div>
+                        <strong className="block text-charcoal-muted">Exact Address:</strong>
+                        <span>{p.exact_address || p.address || '—'}</span>
+                      </div>
+                      <div>
+                        <strong className="block text-charcoal-muted mb-1">Google Maps Location:</strong>
+                        {p.google_maps_url ? (
+                          <a
+                            href={p.google_maps_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white border border-forest/20 text-forest font-semibold hover:bg-forest hover:text-white transition-colors"
+                          >
+                            <ExternalLink className="w-3 h-3" />
+                            <span>Open in Google Maps</span>
+                          </a>
+                        ) : (
+                          <span className="text-charcoal-muted italic">Not provided yet</span>
+                        )}
+                      </div>
+                      <div>
                         <strong className="block text-charcoal-muted">Description:</strong>
                         <p className="line-clamp-4 text-charcoal-muted leading-relaxed">{p.description}</p>
                       </div>
@@ -235,6 +270,33 @@ export function PropertyModerationEngine({ initialProperties }: PropertyModerati
                       <div>
                         <strong className="block text-charcoal-muted">Proposed Location:</strong>
                         <span>{staged.village || p.village}, {staged.district || p.district}, {staged.state || p.state}</span>
+                      </div>
+                      <div>
+                        <strong className="block text-charcoal-muted">Proposed Exact Address:</strong>
+                        <span className="font-medium text-charcoal">
+                          {p.pending_exact_address || p.exact_address || p.address || '—'}
+                        </span>
+                      </div>
+                      <div>
+                        <strong className="block text-charcoal-muted mb-1">Proposed Google Maps Link:</strong>
+                        {p.pending_google_maps_url || p.google_maps_url ? (
+                          <div className="flex flex-wrap items-center gap-2">
+                            <a
+                              href={p.pending_google_maps_url || p.google_maps_url || '#'}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-forest text-white font-semibold hover:bg-forest-hover transition-colors"
+                            >
+                              <ExternalLink className="w-3 h-3" />
+                              <span>Open in Google Maps</span>
+                            </a>
+                            <span className="font-mono text-[11px] text-charcoal-muted truncate max-w-xs">
+                              {p.pending_google_maps_url || p.google_maps_url}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-charcoal-muted italic">No Google Maps link submitted</span>
+                        )}
                       </div>
                       <div>
                         <strong className="block text-charcoal-muted">Proposed Description:</strong>
@@ -334,6 +396,34 @@ export function PropertyModerationEngine({ initialProperties }: PropertyModerati
                     <span className="px-2.5 py-1 text-xs font-bold uppercase rounded-full bg-ukorange/15 text-ukorange">
                       Application Pending
                     </span>
+                  </div>
+
+                  {/* Exact Location & Google Maps Verification */}
+                  <div className="p-3.5 bg-ivory-warm rounded-xl border border-forest/15 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                    <div className="space-y-1">
+                      <div>
+                        <strong className="text-charcoal-muted">Exact Address &amp; Landmarks: </strong>
+                        <span className="font-semibold text-charcoal">{p.exact_address || p.address || '—'}</span>
+                      </div>
+                      {p.google_maps_url && (
+                        <div className="font-mono text-[11px] text-charcoal-muted truncate max-w-lg">
+                          {p.google_maps_url}
+                        </div>
+                      )}
+                    </div>
+                    {p.google_maps_url ? (
+                      <a
+                        href={p.google_maps_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-forest text-white font-semibold hover:bg-forest-hover transition-colors self-start sm:self-auto flex-shrink-0"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5" />
+                        <span>Open in Google Maps</span>
+                      </a>
+                    ) : (
+                      <span className="text-amber-800 font-semibold">No Google Maps link attached</span>
+                    )}
                   </div>
 
                   {/* Contact & Notification Details */}
