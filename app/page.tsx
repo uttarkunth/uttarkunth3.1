@@ -274,7 +274,7 @@ export default async function HomePage() {
           >
             <div className="relative aspect-[4/3] w-full bg-forest-dark overflow-hidden">
               <Image
-                src="https://images.unsplash.com/photo-1546868871-7041f2a55e12?auto=format&fit=crop&w=800&q=80"
+                src="/assets/products%20home%20page.webp"
                 alt="Uttarkunth Products"
                 fill
                 className="object-cover group-hover:scale-105 transition-transform duration-700"
@@ -309,7 +309,7 @@ export default async function HomePage() {
           >
             <div className="relative aspect-[4/3] w-full bg-forest-dark overflow-hidden">
               <Image
-                src="https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=800&q=80"
+                src="/assets/productions%20home.webp"
                 alt="Uttarkunth Productions"
                 fill
                 className="object-cover group-hover:scale-105 transition-transform duration-700"
@@ -344,7 +344,7 @@ export default async function HomePage() {
           >
             <div className="relative aspect-[4/3] w-full bg-forest-dark overflow-hidden">
               <Image
-                src="https://images.unsplash.com/photo-1517411032315-54ef2cb783bb?auto=format&fit=crop&w=800&q=80"
+                src="/assets/community%20home%20page.webp"
                 alt="Uttarkunth Community"
                 fill
                 className="object-cover group-hover:scale-105 transition-transform duration-700"
