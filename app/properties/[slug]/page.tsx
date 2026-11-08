@@ -1,4 +1,5 @@
 import React from 'react';
+import { PropertyImage } from '@/components/property-image';
 import { PropertyPhotoGallery, RoomPhotoCarousel, type PropertyGalleryPhoto } from '@/components/stays/property-photo-gallery';
 import { getPropertyPhotoList } from '@/lib/property-images';
 import Link from 'next/link';
@@ -7,7 +8,7 @@ import { createPublicServerSupabaseClient, createServerSupabaseClient } from '@/
 import { BRAND } from '@/lib/constants';
 import { BookingWidget } from '@/components/booking-widget';
 import { RoomAvailabilityCalendar } from '@/components/stays/room-availability-calendar';
-import { MapPin, Users, CheckCircle2, ShieldCheck, Clock, Home, Sparkles, ChevronLeft, Wifi, Coffee, Utensils, Car } from 'lucide-react';
+import { MapPin, Users, CheckCircle2, ShieldCheck, Clock, Home, Sparkles, ChevronLeft, Wifi, Coffee, Utensils, Car, Image as ImageIcon } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 
