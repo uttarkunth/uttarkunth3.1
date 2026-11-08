@@ -947,10 +947,10 @@ export default function HostNewPropertyApplicationPage() {
             </div>
             <div>
               <h2 className="font-serif text-xl font-bold text-forest">
-                5. Main Homestay Photography &amp; Exterior Views
+                5. Other Property Photos — Guest Gallery
               </h2>
               <p className="text-xs text-charcoal-muted">
-                Upload exterior, outdoor spaces, views, common areas, dining spaces, garden and entrance. Bedroom and washroom images have separate sections.
+                Upload exterior, outdoor spaces, mountain views, common areas, dining spaces, gardens and entrance. Guests can browse these in the property photo gallery. Keep bedroom and washroom photos in their dedicated sections.
               </p>
             </div>
           </div>
@@ -970,8 +970,8 @@ export default function HostNewPropertyApplicationPage() {
 
           {rooms.some((room) => !room.attached_washroom) && (
             <div className="pt-5 border-t border-forest/10 space-y-3">
-              <div><h3 className="font-serif text-lg font-bold text-forest">Shared Washroom Photos</h3><p className="text-xs text-charcoal-muted">Upload the common bathroom photos once here. Guests booking rooms marked as shared washroom will see this gallery.</p></div>
-              <PhotoUploader label="Shared Bathroom & Facilities" description="Show the shared washroom, shower, geyser and facilities available to guests." photos={sharedWashroomPhotos} onChange={setSharedWashroomPhotos} category="washroom" maxPhotos={8} excludePhotos={[...photoUrls, ...allRoomPhotoUrls]} />
+              <div><h3 className="font-serif text-lg font-bold text-forest">Shared Washroom Photos — One Gallery</h3><p className="text-xs text-charcoal-muted">Upload the common bathroom photos once here, not inside each room. This gallery is shown to guests booking any room marked Shared Washroom.</p></div>
+              <PhotoUploader label="Upload Shared Washroom Photos" description="One shared gallery for all rooms marked Shared Washroom. Do not upload bedroom photos here." photos={sharedWashroomPhotos} onChange={setSharedWashroomPhotos} category="washroom" maxPhotos={8} excludePhotos={[...photoUrls, ...allRoomPhotoUrls]} />
             </div>
           )}
         </div>
