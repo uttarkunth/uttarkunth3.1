@@ -45,6 +45,12 @@ export async function POST(req: NextRequest) {
 
     // 1. Staged Changes Review Actions
     if (action === 'approve_staged' || action === 'reject_staged') {
+      if (action === 'reject_staged' && (!admin_notes || typeof admin_notes !== 'string' || !admin_notes.trim())) {
+        return NextResponse.json(
+          { ok: false, error: 'Please specify what was rejected and what corrections the host must make before returning this request.' },
+          { status: 400 }
+        );
+      }
       const rpcAction = action === 'approve_staged' ? 'approve' : 'reject';
       const { error: rpcErr } = await (adminClient.rpc as any)('admin_review_property_changes', {
         p_property_id: property_id,
@@ -79,8 +85,8 @@ export async function POST(req: NextRequest) {
           await notifyHostPropertyModeration({
             hostUserId: propData.host_id,
             propertyName: propData.name,
-            status: action === 'approve_staged' ? 'approved' : 'rejected',
-            moderationNotes: admin_notes?.trim() || (action === 'approve_staged' ? 'Your proposed homestay updates have been approved and published.' : 'Your proposed homestay updates were declined.'),
+            status: action === 'approve_staged' ? 'approved' : 'corrections_requested',
+            moderationNotes: admin_notes?.trim() || (action === 'approve_staged' ? 'Your proposed updates have been approved and published.' : 'Please review the administrator feedback and correct your proposed updates.'),
             hostEmail,
             hostPhone: propData.contact_phone,
             hostWhatsapp: propData.contact_whatsapp,

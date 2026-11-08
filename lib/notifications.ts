@@ -313,7 +313,7 @@ Uttarkunth Stays Team`,
 export async function notifyHostPropertyModeration(params: {
   hostUserId: string;
   propertyName: string;
-  status: 'approved' | 'rejected' | 'changes_requested';
+  status: 'approved' | 'rejected' | 'changes_requested' | 'corrections_requested';
   moderationNotes?: string | null;
   hostEmail?: string | null;
   hostPhone?: string | null;
@@ -333,6 +333,10 @@ export async function notifyHostPropertyModeration(params: {
     title = `Updates Required: ${params.propertyName}`;
     message = `The curation team reviewed "${params.propertyName}" and requested changes before publishing.${params.moderationNotes ? ` Feedback: ${params.moderationNotes}` : ''}`;
     whatsappBody = `*Uttarkunth Stays*: The curation team reviewed *${params.propertyName}* and requested updates before publishing.${params.moderationNotes ? ` Feedback: ${params.moderationNotes}` : ''} Please update your listing at: https://uttarkunth.com/account/stays/host`;
+  } else if (params.status === 'corrections_requested') {
+    title = `Corrections Requested: ${params.propertyName}`;
+    message = `The proposed updates to your existing listing "${params.propertyName}" have been returned for corrections. Your currently approved listing remains live and unchanged. Please review the administrator's feedback and edit the same proposal before resubmitting.${params.moderationNotes ? ` Administrator feedback: ${params.moderationNotes}` : ''}`;
+    whatsappBody = `*Uttarkunth Stays*: Your proposed changes for *${params.propertyName}* need corrections. Your existing approved listing remains live and unchanged. Please edit the same proposal and resubmit it for approval.${params.moderationNotes ? `\n\nAdministrator feedback: ${params.moderationNotes}` : ''}\n\nOpen your host dashboard: https://uttarkunth.com/account/stays/host`;
   } else {
     title = `Listing Application Status: ${params.propertyName}`;
     message = `Your application for "${params.propertyName}" could not be approved at this time.${params.moderationNotes ? ` Reason: ${params.moderationNotes}` : ''}`;

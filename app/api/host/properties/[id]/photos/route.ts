@@ -168,8 +168,10 @@ export async function POST(
         .from('properties')
         .update({
           pending_changes: stagedPayload,
+          pending_changes_status: 'pending',
+          pending_changes_admin_notes: null,
           pending_changes_submitted_at: new Date().toISOString(),
-          moderation_notes: 'New property photographs staged for administrative review.',
+          moderation_notes: 'New property photographs staged for administrative review. The approved photos remain live until approval.',
           updated_at: new Date().toISOString()
         })
         .eq('id', property.id);

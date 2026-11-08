@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
   CheckCircle2, XCircle, AlertTriangle, Eye, Shield, Clock,
-  ArrowRight, Sparkles, Image as ImageIcon, MapPin, BedDouble, RefreshCw, ExternalLink
+  ArrowRight, Sparkles, Image as ImageIcon, MapPin, BedDouble, RefreshCw, ExternalLink, X
 } from 'lucide-react';
 
 interface Property {
@@ -28,6 +28,8 @@ interface Property {
   moderation_status: string;
   moderation_notes?: string | null;
   pending_changes?: any;
+  pending_changes_status?: string | null;
+  pending_changes_admin_notes?: string | null;
   pending_changes_submitted_at?: string | null;
   contact_phone?: string | null;
   contact_whatsapp?: string | null;
@@ -49,12 +51,16 @@ export function PropertyModerationEngine({ initialProperties }: PropertyModerati
   const [adminNotes, setAdminNotes] = useState<{ [id: string]: string }>({});
   const [submittingId, setSubmittingId] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<{ url: string; alt: string } | null>(null);
 
   const stagedProperties = initialProperties.filter(
     (p) =>
-      (p.pending_changes !== null && p.pending_changes !== undefined) ||
-      Boolean(p.pending_exact_address) ||
-      Boolean(p.pending_google_maps_url)
+      p.pending_changes_status === 'pending' ||
+      (p.pending_changes_status !== 'rejected' && (
+        (p.pending_changes !== null && p.pending_changes !== undefined) ||
+        Boolean(p.pending_exact_address) ||
+        Boolean(p.pending_google_maps_url)
+      ))
   );
   const pendingApplications = initialProperties.filter(
     (p) =>
@@ -67,6 +73,10 @@ export function PropertyModerationEngine({ initialProperties }: PropertyModerati
 
   const handleModeration = async (propertyId: string, action: string) => {
     setErrorMsg(null);
+    if (action === 'reject_staged' && !adminNotes[propertyId]?.trim()) {
+      setErrorMsg('Please explain what was rejected and what corrections the host must make.');
+      return;
+    }
     setSubmittingId(propertyId);
 
     try {
@@ -251,8 +261,10 @@ export function PropertyModerationEngine({ initialProperties }: PropertyModerati
                       <div>
                         <strong className="block text-charcoal-muted mb-1">Photos ({currentPhotos.length}):</strong>
                         <div className="flex gap-2 overflow-x-auto no-scrollbar py-1">
-                          {currentPhotos.slice(0, 4).map((url: string, i: number) => (
-                            <img key={i} src={url} alt="Current" className="w-16 h-12 rounded object-cover border border-forest/10" />
+                          {currentPhotos.map((url: string, i: number) => (
+                            <button key={i} type="button" onClick={() => setPhotoPreview({ url, alt: `Current approved property photo ${i + 1}` })} className="shrink-0 rounded focus:outline-none focus:ring-2 focus:ring-forest" title="Click to enlarge">
+                              <img src={url} alt={`Current approved photo ${i + 1}`} className="w-20 h-16 rounded object-cover border border-forest/10" />
+                            </button>
                           ))}
                         </div>
                       </div>
@@ -274,15 +286,15 @@ export function PropertyModerationEngine({ initialProperties }: PropertyModerati
                       <div>
                         <strong className="block text-charcoal-muted">Proposed Exact Address:</strong>
                         <span className="font-medium text-charcoal">
-                          {p.pending_exact_address || p.exact_address || p.address || '—'}
+                          {staged.location?.exact_address || p.pending_exact_address || p.exact_address || '—'}
                         </span>
                       </div>
                       <div>
                         <strong className="block text-charcoal-muted mb-1">Proposed Google Maps Link:</strong>
-                        {p.pending_google_maps_url || p.google_maps_url ? (
+                        {staged.location?.google_maps_url || p.pending_google_maps_url || p.google_maps_url ? (
                           <div className="flex flex-wrap items-center gap-2">
                             <a
-                              href={p.pending_google_maps_url || p.google_maps_url || '#'}
+                              href={staged.location?.google_maps_url || p.pending_google_maps_url || p.google_maps_url || '#'}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-forest text-white font-semibold hover:bg-forest-hover transition-colors"
@@ -291,7 +303,7 @@ export function PropertyModerationEngine({ initialProperties }: PropertyModerati
                               <span>Open in Google Maps</span>
                             </a>
                             <span className="font-mono text-[11px] text-charcoal-muted truncate max-w-xs">
-                              {p.pending_google_maps_url || p.google_maps_url}
+                              {staged.location?.google_maps_url || p.pending_google_maps_url || p.google_maps_url}
                             </span>
                           </div>
                         ) : (
@@ -314,24 +326,68 @@ export function PropertyModerationEngine({ initialProperties }: PropertyModerati
                       </div>
                       <div>
                         <strong className="block text-charcoal-muted mb-1">Proposed Photos ({proposedPhotos.length}):</strong>
+                        <p className="text-[10px] text-charcoal-muted mb-1">Click any photo to inspect it at full size.</p>
                         <div className="flex gap-2 overflow-x-auto no-scrollbar py-1">
                           {proposedPhotos.map((url: string, i: number) => (
-                            <img key={i} src={url} alt="Proposed" className="w-16 h-12 rounded object-cover border border-amber-300 shadow-xs" />
+                            <button key={i} type="button" onClick={() => setPhotoPreview({ url, alt: `Proposed property photo ${i + 1}` })} className="shrink-0 rounded focus:outline-none focus:ring-2 focus:ring-forest" title="Click to enlarge">
+                              <img src={url} alt={`Proposed property photo ${i + 1}`} className="w-24 h-16 rounded object-cover border border-amber-300 shadow-xs" />
+                            </button>
                           ))}
                         </div>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-amber-200">
+                        <div><strong className="block text-charcoal-muted">Shared Washroom Photos:</strong><span>{Array.isArray(staged.shared_washroom_photos) ? staged.shared_washroom_photos.length : 0} photos</span>
+                          <div className="flex gap-2 overflow-x-auto py-1">
+                            {(Array.isArray(staged.shared_washroom_photos) ? staged.shared_washroom_photos : []).map((url: string, i: number) => (
+                              <button key={i} type="button" onClick={() => setPhotoPreview({ url, alt: `Proposed common washroom photo ${i + 1}` })} className="shrink-0 rounded focus:outline-none focus:ring-2 focus:ring-forest" title="Click to enlarge"><img src={url} alt={`Common washroom ${i + 1}`} className="w-20 h-16 rounded object-cover border border-amber-300" /></button>
+                            ))}
+                          </div>
+                        </div>
+                        <div><strong className="block text-charcoal-muted">Contact / WhatsApp / Email:</strong><span>{staged.contact_phone || '—'} / {staged.contact_whatsapp || '—'}</span><p>{staged.contact_email || '—'}</p></div>
+                      </div>
+                      <div className="pt-3 border-t border-amber-200 space-y-3">
+                        <strong className="block text-charcoal-muted">Proposed Room Inventory ({Array.isArray(staged.rooms) ? staged.rooms.length : 0} submitted):</strong>
+                        {Array.isArray(staged.rooms) && staged.rooms.length > 0 ? staged.rooms.map((room: any, roomIndex: number) => (
+                          <div key={room.id || `new-room-${roomIndex}`} className="rounded-xl border border-amber-200 bg-white/80 p-3 space-y-2">
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                              <div className="font-semibold text-forest">{room.room_name || `Room ${roomIndex + 1}`}</div>
+                              <span className={`text-[10px] font-bold rounded px-2 py-1 ${room.deleted || room.active === false ? 'bg-red-100 text-red-800' : 'bg-emerald-100 text-emerald-800'}`}>{room.deleted || room.active === false ? 'Will be removed / paused' : 'Active'}</span>
+                            </div>
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px]">
+                              <span>Rate: <strong>₹{Number(room.base_price || 0).toLocaleString('en-IN')}</strong> / night</span>
+                              <span>Guests: <strong>{room.max_guests || 2}</strong></span>
+                              <span>Washroom: <strong>{room.attached_washroom ? 'Private attached' : 'Shared common'}</strong></span>
+                              <span>Bedding: <strong>{room.bed_type || '—'}</strong></span>
+                            </div>
+                            {room.description && <p className="text-[11px] text-charcoal-muted">{room.description}</p>}
+                            <div className="flex gap-2 overflow-x-auto py-1">
+                              {(Array.isArray(room.photos) ? room.photos : []).map((url: string, i: number) => (
+                                <button key={i} type="button" onClick={() => setPhotoPreview({ url, alt: `${room.room_name} bedroom photo ${i + 1}` })} className="shrink-0 rounded focus:outline-none focus:ring-2 focus:ring-forest" title="Click to enlarge"><img src={url} alt={`${room.room_name} bedroom ${i + 1}`} className="w-24 h-16 rounded object-cover border border-amber-300" /></button>
+                              ))}
+                              {(Array.isArray(room.washroom_photos) ? room.washroom_photos : []).map((url: string, i: number) => (
+                                <button key={`washroom-${i}`} type="button" onClick={() => setPhotoPreview({ url, alt: `${room.room_name} private washroom photo ${i + 1}` })} className="shrink-0 rounded focus:outline-none focus:ring-2 focus:ring-forest" title="Click to enlarge"><img src={url} alt={`${room.room_name} private washroom ${i + 1}`} className="w-24 h-16 rounded object-cover border border-sky-300" /></button>
+                              ))}
+                            </div>
+                          </div>
+                        )) : <p className="text-[11px] text-charcoal-muted">No room inventory changes included.</p>}
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-amber-200 text-[11px]">
+                        <div><strong className="block text-charcoal-muted">Check-in / Check-out:</strong>{staged.check_in_time || '—'} / {staged.check_out_time || '—'}</div>
+                        <div><strong className="block text-charcoal-muted">House Rules:</strong><span className="whitespace-pre-wrap">{staged.house_rules || '—'}</span></div>
                       </div>
                     </div>
                   </div>
 
                   {/* Decision Actions */}
                   <div className="pt-4 border-t border-forest/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <div className="flex-1 max-w-md">
-                      <input suppressHydrationWarning
-                        type="text"
+                    <div className="flex-1 max-w-xl space-y-1">
+                      <label className="block text-[11px] font-semibold text-charcoal">Corrections / feedback for the host <span className="text-red-700">Required when requesting corrections</span></label>
+                      <textarea suppressHydrationWarning
+                        rows={3}
                         value={adminNotes[p.id] || ''}
                         onChange={(e) => setAdminNotes({ ...adminNotes, [p.id]: e.target.value })}
-                        placeholder="Optional feedback / admin note for host..."
-                        className="w-full p-2 text-xs bg-ivory-warm border border-forest/20 rounded-xl focus:outline-none"
+                        placeholder="Specify exactly which changes or photos are not acceptable, what is missing, and what the host must correct before resubmitting..."
+                        className="w-full p-3 text-xs bg-ivory-warm border border-forest/20 rounded-xl focus:outline-none resize-y"
                       />
                     </div>
 
@@ -342,7 +398,7 @@ export function PropertyModerationEngine({ initialProperties }: PropertyModerati
                         onClick={() => handleModeration(p.id, 'reject_staged')}
                         className="px-4 py-2 border border-red-300 text-red-700 hover:bg-red-50 text-xs font-semibold rounded-xl transition-all disabled:opacity-50"
                       >
-                        {isSubmitting ? 'Processing...' : 'Reject Staged Updates'}
+                        {isSubmitting ? 'Processing...' : 'Request Corrections & Return to Host'}
                       </button>
 
                       <button suppressHydrationWarning
@@ -603,6 +659,16 @@ export function PropertyModerationEngine({ initialProperties }: PropertyModerati
                 ))}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+      {photoPreview && (
+        <div className="fixed inset-0 z-[100] bg-black/90 p-4 sm:p-8 flex items-center justify-center" role="dialog" aria-modal="true" aria-label="Photo preview" onClick={() => setPhotoPreview(null)}>
+          <button type="button" onClick={() => setPhotoPreview(null)} className="absolute top-4 right-4 z-10 rounded-full bg-white/15 hover:bg-white/25 text-white p-3" aria-label="Close photo preview"><X className="w-6 h-6" /></button>
+          <div className="max-w-6xl w-full max-h-full flex flex-col items-center gap-3" onClick={(e) => e.stopPropagation()}>
+            <img src={photoPreview.url} alt={photoPreview.alt} className="max-w-full max-h-[82vh] object-contain rounded-lg shadow-2xl" />
+            <p className="text-sm text-white/90">{photoPreview.alt}</p>
+            <a href={photoPreview.url} target="_blank" rel="noopener noreferrer" className="text-xs text-white underline">Open original image</a>
           </div>
         </div>
       )}

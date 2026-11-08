@@ -54,53 +54,57 @@ interface PropertyEditorProps {
 
 export function PropertyEditor({ initialProperty }: PropertyEditorProps) {
   const router = useRouter();
+  const pendingChanges = initialProperty.pending_changes && typeof initialProperty.pending_changes === 'object' ? initialProperty.pending_changes : {};
+  const stagedValue = (key: string, fallback: any) => Object.prototype.hasOwnProperty.call(pendingChanges, key) ? pendingChanges[key] : fallback;
+  const stagedLocation = pendingChanges.location && typeof pendingChanges.location === 'object' ? pendingChanges.location : {};
+  const roomSource = Array.isArray(pendingChanges.rooms) ? pendingChanges.rooms : initialProperty.room_units;
 
   // Operational State
-  const [description, setDescription] = useState(initialProperty.description || '');
+  const [description, setDescription] = useState(stagedValue('description', initialProperty.description || '') || '');
   const [amenities, setAmenities] = useState<string[]>(
-    Array.isArray(initialProperty.amenities) ? initialProperty.amenities : []
+    Array.isArray(stagedValue('amenities', initialProperty.amenities)) ? stagedValue('amenities', initialProperty.amenities) : []
   );
   const [photos, setPhotos] = useState<string[]>(
-    Array.isArray(initialProperty.photos) ? initialProperty.photos : []
+    Array.isArray(stagedValue('photos', initialProperty.photos)) ? stagedValue('photos', initialProperty.photos) : []
   );
   const [sharedWashroomPhotos, setSharedWashroomPhotos] = useState<string[]>(
-    Array.isArray(initialProperty.shared_washroom_photos) ? initialProperty.shared_washroom_photos : []
+    Array.isArray(stagedValue('shared_washroom_photos', initialProperty.shared_washroom_photos)) ? stagedValue('shared_washroom_photos', initialProperty.shared_washroom_photos) : []
   );
   const [coverPhoto, setCoverPhoto] = useState<string>(
-    initialProperty.cover_photo || (Array.isArray(initialProperty.photos) ? initialProperty.photos[0] : '') || ''
+    stagedValue('cover_photo', initialProperty.cover_photo || (Array.isArray(initialProperty.photos) ? initialProperty.photos[0] : '') || '') || ''
   );
 
   // Structural & Private Location State
-  const [name, setName] = useState(initialProperty.name || '');
+  const [name, setName] = useState(stagedValue('name', initialProperty.name || '') || '');
   const [address, setAddress] = useState(
-    initialProperty.exact_address || initialProperty.address || ''
+    stagedLocation.exact_address ?? initialProperty.pending_exact_address ?? initialProperty.exact_address ?? initialProperty.address ?? ''
   );
   const [googleMapsUrl, setGoogleMapsUrl] = useState(
-    initialProperty.google_maps_url || ''
+    stagedLocation.google_maps_url ?? initialProperty.pending_google_maps_url ?? initialProperty.google_maps_url ?? ''
   );
   const [locationConfirmed, setLocationConfirmed] = useState(
-    Boolean(initialProperty.location_confirmed && initialProperty.google_maps_url)
+    Boolean(stagedLocation.location_confirmed ?? (initialProperty.location_confirmed && initialProperty.google_maps_url))
   );
   const [mapsLinkError, setMapsLinkError] = useState<string | null>(null);
-  const [village, setVillage] = useState(initialProperty.village || '');
-  const [district, setDistrict] = useState(initialProperty.district || 'Uttarkashi');
-  const [state, setState] = useState(initialProperty.state || 'Uttarakhand');
-  const [propertyType, setPropertyType] = useState(initialProperty.property_type || 'homestay');
+  const [village, setVillage] = useState(stagedValue('village', initialProperty.village || '') || '');
+  const [district, setDistrict] = useState(stagedValue('district', initialProperty.district || 'Uttarkashi') || '');
+  const [state, setState] = useState(stagedValue('state', initialProperty.state || 'Uttarakhand') || '');
+  const [propertyType, setPropertyType] = useState(stagedValue('property_type', initialProperty.property_type || 'homestay') || 'homestay');
 
   // Contact & Notifications State
-  const [contactPhone, setContactPhone] = useState(initialProperty.contact_phone || '');
-  const [contactWhatsapp, setContactWhatsapp] = useState(initialProperty.contact_whatsapp || '');
-  const [contactEmail, setContactEmail] = useState(initialProperty.contact_email || '');
-  const [notifyEmail, setNotifyEmail] = useState(initialProperty.notify_email ?? true);
-  const [notifyWhatsapp, setNotifyWhatsapp] = useState(initialProperty.notify_whatsapp ?? false);
-  const [houseRules, setHouseRules] = useState(initialProperty.house_rules || '');
-  const [checkInTime, setCheckInTime] = useState(initialProperty.check_in_time || '12:00 PM');
-  const [checkOutTime, setCheckOutTime] = useState(initialProperty.check_out_time || '11:00 AM');
+  const [contactPhone, setContactPhone] = useState(stagedValue('contact_phone', initialProperty.contact_phone || '') || '');
+  const [contactWhatsapp, setContactWhatsapp] = useState(stagedValue('contact_whatsapp', initialProperty.contact_whatsapp || '') || '');
+  const [contactEmail, setContactEmail] = useState(stagedValue('contact_email', initialProperty.contact_email || '') || '');
+  const [notifyEmail, setNotifyEmail] = useState(stagedValue('notify_email', initialProperty.notify_email ?? true));
+  const [notifyWhatsapp, setNotifyWhatsapp] = useState(stagedValue('notify_whatsapp', initialProperty.notify_whatsapp ?? false));
+  const [houseRules, setHouseRules] = useState(stagedValue('house_rules', initialProperty.house_rules || '') || '');
+  const [checkInTime, setCheckInTime] = useState(stagedValue('check_in_time', initialProperty.check_in_time || '12:00 PM') || '');
+  const [checkOutTime, setCheckOutTime] = useState(stagedValue('check_out_time', initialProperty.check_out_time || '11:00 AM') || '');
 
   // Room Units State
   const [rooms, setRooms] = useState<RoomUnit[]>(
-    Array.isArray(initialProperty.room_units) && initialProperty.room_units.length > 0
-      ? initialProperty.room_units.map((r: any) => ({
+    Array.isArray(roomSource) && roomSource.length > 0
+      ? roomSource.map((r: any) => ({
           id: r.id,
           room_name: r.room_name || 'Room',
           description: r.description || '',
@@ -112,6 +116,7 @@ export function PropertyEditor({ initialProperty }: PropertyEditorProps) {
           photos: Array.isArray(r.photos) ? r.photos : [],
           washroom_photos: Array.isArray(r.washroom_photos) ? r.washroom_photos : [],
           active: r.active !== undefined ? Boolean(r.active) : true,
+          deleted: Boolean(r.deleted),
         }))
       : [
           {
@@ -281,7 +286,9 @@ export function PropertyEditor({ initialProperty }: PropertyEditorProps) {
 
       setMessage({
         type: 'success',
-        text: data.message || 'Property details, room rates, and photos updated successfully.',
+        text: data.staged_for_review
+          ? 'Your complete changes are submitted for Uttarkunth approval. The existing live listing has not been changed.'
+          : (data.message || 'Unpublished application changes saved. The listing remains hidden until approved.'),
       });
       router.refresh();
     } catch (err: any) {
@@ -337,6 +344,20 @@ export function PropertyEditor({ initialProperty }: PropertyEditorProps) {
             </button>
           </div>
         </div>
+
+        {initialProperty.pending_changes_status === 'rejected' && initialProperty.pending_changes && (
+          <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-xs text-red-900 space-y-2">
+            <strong className="block">Administrator corrections requested</strong>
+            <p className="leading-relaxed whitespace-pre-wrap">{initialProperty.pending_changes_admin_notes || initialProperty.moderation_notes || 'Please review the administrator feedback and update your proposal.'}</p>
+            <p className="font-medium">Your rejected proposal has been kept here for editing. Make the requested corrections and select Save All Changes to send it back for approval. Nothing changes on the live listing until approved.</p>
+          </div>
+        )}
+        {initialProperty.pending_changes_status === 'pending' && initialProperty.pending_changes && (
+          <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-xs text-amber-900 space-y-1">
+            <strong>Changes awaiting Uttarkunth approval</strong>
+            <p>Your proposed property, room, rate and photo updates are staged for review. Your currently approved listing remains live and unchanged until approval.</p>
+          </div>
+        )}
 
         {message && (
           <div
