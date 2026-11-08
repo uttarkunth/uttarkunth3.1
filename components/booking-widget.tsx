@@ -16,8 +16,8 @@ interface RoomUnit {
   base_price: number | string;
   active: boolean;
   attached_washroom?: boolean;
-  photos?: string[];
-  washroom_photos?: string[];
+  photos?: unknown;
+  washroom_photos?: unknown;
 }
 
 interface BookingWidgetProps {
@@ -95,8 +95,10 @@ export function BookingWidget({
 
   const basePrice = Number(selectedRoom?.base_price || 0);
   const selectedRoomPhotos = getPropertyPhotoList(null, [
-    ...(selectedRoom?.photos || []),
-    ...(selectedRoom?.attached_washroom ? (selectedRoom?.washroom_photos || []) : sharedWashroomPhotos),
+    ...(Array.isArray(selectedRoom?.photos) ? selectedRoom.photos : []),
+    ...(selectedRoom?.attached_washroom && Array.isArray(selectedRoom?.washroom_photos)
+      ? selectedRoom.washroom_photos
+      : selectedRoom?.attached_washroom ? [] : sharedWashroomPhotos),
   ]);
 
   const priceCalculation = useMemo(() => {
