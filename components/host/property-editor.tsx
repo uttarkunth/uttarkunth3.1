@@ -402,7 +402,23 @@ export function PropertyEditor({ initialProperty }: PropertyEditorProps) {
 
         <div className="space-y-6">
           {rooms.map((room, idx) => {
-            if (room.deleted) return null;
+            if (room.deleted) {
+              return (
+                <div key={room.id || idx} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl border border-amber-200 bg-amber-50/70 p-4">
+                  <div>
+                    <p className="text-xs font-semibold text-amber-950">{room.room_name} — proposed for removal</p>
+                    <p className="mt-1 text-[11px] text-amber-900/80">This room is part of your pending proposal and has not been removed from the live listing. Restore it here if you need to correct the proposal.</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => updateRoomField(idx, 'deleted', false)}
+                    className="shrink-0 rounded-lg border border-forest/20 bg-white px-3 py-2 text-xs font-semibold text-forest hover:bg-forest/5"
+                  >
+                    Restore this room
+                  </button>
+                </div>
+              );
+            }
             const isExpanded = expandedRoomIndices.includes(idx);
 
             return (

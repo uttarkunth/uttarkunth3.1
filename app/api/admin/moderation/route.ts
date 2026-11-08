@@ -114,7 +114,7 @@ export async function POST(req: NextRequest) {
         message:
           action === 'approve_staged'
             ? 'Proposed changes approved and published to the live listing.'
-            : 'Proposed changes rejected. Current approved listing remains live.',
+            : 'Corrections requested. The proposal has been returned to the host; the approved listing remains live and unchanged.',
       });
     }
 
