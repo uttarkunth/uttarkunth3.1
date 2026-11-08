@@ -2,7 +2,7 @@
 
 **Platform:** Uttarkunth (`uttarkunth.com` & `team.uttarkunth.com`)  
 **Repository:** `uttarkunth/uttarkunth3.1`  
-**Working Branch:** `uttarkunthmain2` (Release Candidate)  
+**Working Branch:** `main` (single development and production branch)  
 **Supabase Project:** `xyplgugxpmlnjsvlosdg`  
 **Deployment Target:** Cloudflare Workers via `@opennextjs/cloudflare`
 
@@ -37,18 +37,20 @@ npm run preview
 ## 2. Cloudflare Workers Builds Configuration (When Approved)
 
 1. In the **Cloudflare Dashboard**, go to **Workers & Pages > Create Application > Workers > Connect to Git**.
-2. Select repository `uttarkunth/uttarkunth3.1` and branch `uttarkunthmain2`.
+2. Select repository `uttarkunth/uttarkunth3.1` and branch `main`.
 3. Configure build settings:
    - **Root directory:** `/`
-   - **Build command:** `npx @opennextjs/cloudflare build --dangerouslyUseUnsupportedNextVersion` (or `npm run build:worker`)
-   - **Deploy command:** `npx wrangler deploy`
+   - **Build command:** `node scripts/cloudflare-build.mjs`
+   - **Deploy command:** `npx @opennextjs/cloudflare deploy`
+
+   The build script deliberately runs `npx next build` first with the same standalone/tracing environment flags OpenNext normally supplies, then runs `npx @opennextjs/cloudflare build --skipNextBuild --dangerouslyUseUnsupportedNextVersion`. The `--skipNextBuild` flag prevents OpenNext from starting a second Next.js build and re-entering a recursive build command. Do not replace this with a direct OpenNext build command in Workers Builds unless this two-step sequence is preserved.
 4. Verify `wrangler.jsonc` at the repository root:
    - `name`: `"uttarkunth3-1"`
    - `main`: `".open-next/worker.js"`
    - `assets.directory`: `".open-next/assets"` (`binding: "ASSETS"`)
    - `compatibility_date`: `"2024-12-30"`
    - `compatibility_flags`: `["nodejs_compat"]`
-   - *Note:* Do not define a `"build": { "command": "..." }` block in `wrangler.jsonc`. OpenNext generates `.open-next/worker.js` and `.open-next/assets` directly. Having a build block in `wrangler.jsonc` causes Wrangler to trigger a redundant/recursive build loop during `wrangler deploy`.
+   - *Note:* Do not define a `"build": { "command": "..." }` block in `wrangler.jsonc`. Workers Builds owns the build and deploy sequence. OpenNext generates `.open-next/worker.js` and `.open-next/assets`; a second build hook can cause duplicate build execution.
 
 ---
 
