@@ -122,7 +122,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     }
 
     const isLiveApproved = existingProp.published === true && existingProp.moderation_status === 'approved';
-    const isHostSubmission = isLiveApproved && authResult.role !== 'admin';
+    const isHostSubmission = isLiveApproved;
 
     if (isHostSubmission) {
       const currentRooms = Array.isArray(existingProp.room_units) ? existingProp.room_units : [];
@@ -188,7 +188,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       });
     }
 
-    // Draft applications stay unpublished, and approved platform administrators may maintain records directly.
+    // Unpublished applications remain editable while hidden; approved live listings always use the moderation queue.
     const nextVillage = village !== undefined ? String(village).trim() : existingProp.village;
     const nextDistrict = district !== undefined ? String(district).trim() : existingProp.district;
     const nextState = state !== undefined ? String(state).trim() : existingProp.state;
