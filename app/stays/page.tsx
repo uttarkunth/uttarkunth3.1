@@ -1,6 +1,6 @@
 import React from 'react';
 import Link from 'next/link';
-import { PropertyImage } from '@/components/property-image';
+import { PropertyImage, getPropertyPhotoList } from '@/components/property-image';
 import { SearchBar } from '@/components/search-bar';
 import { BRAND } from '@/lib/constants';
 import { getActiveDestinations, filterPropertiesForDestination, CURATED_DESTINATIONS, Destination } from '@/lib/destinations.server';
@@ -181,7 +181,7 @@ export default async function StaysPage({ searchParams }: StaysPageProps) {
         {filteredProperties.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {filteredProperties.map((property: any) => {
-              const coverPhoto = property.cover_photo || property.photos?.[0];
+              const coverPhoto = getPropertyPhotoList(property.cover_photo, property.photos)[0] || null;
               const startingPrice = property.rooms?.[0]?.base_price || 900;
               const locationText = `${property.village || 'Jari'}, ${property.district || 'Kullu'}`;
               const amenities = property.amenities || [];

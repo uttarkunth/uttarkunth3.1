@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { PropertyImage } from '@/components/property-image';
+import { PropertyImage, getPropertyPhotoList } from '@/components/property-image';
 import { formatINR } from '@/lib/utils';
 import { MapPin, Sparkles, CheckCircle2, Heart, ArrowRight, Image as ImageIcon } from 'lucide-react';
 
@@ -31,10 +31,7 @@ export function AestheticPropertyCard({ property }: { property: AestheticPropert
   const [photoIndex, setPhotoIndex] = useState(0);
   const [isSaved, setIsSaved] = useState(false);
 
-  const sourcePhotos = Array.isArray(property.photos) ? property.photos : [];
-  const photos = Array.from(new Set([property.cover_photo, ...sourcePhotos]
-    .filter((url): url is string => typeof url === 'string' && url.trim().length > 0)))
-    .slice(0, 4);
+  const photos = getPropertyPhotoList(property.cover_photo, property.photos).slice(0, 4);
 
   const lowestPrice = property.rooms && property.rooms.length > 0
     ? Math.min(...property.rooms.map(r => Number(r.base_price)))

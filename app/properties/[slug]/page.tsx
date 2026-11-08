@@ -1,5 +1,5 @@
 import React from 'react';
-import { PropertyImage } from '@/components/property-image';
+import { PropertyImage, getPropertyPhotoList } from '@/components/property-image';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { createPublicServerSupabaseClient, createServerSupabaseClient } from '@/lib/supabase/server';
@@ -91,9 +91,9 @@ export default async function PropertyDetailPage({ params, searchParams }: Prope
 
   const relatedStays = await getRelatedStays(property.id);
 
-  const photos = Array.isArray(property.photos) ? (property.photos as unknown as string[]) : [];
-  const primaryPhoto = String(property.cover_photo || photos[0] || '');
-  const secondaryPhotos = photos.map(String).filter((photo) => photo !== primaryPhoto);
+  const photos = getPropertyPhotoList(property.cover_photo, property.photos);
+  const primaryPhoto = photos[0] || '';
+  const secondaryPhotos = photos.slice(1);
   const amenitiesList = Array.isArray(property.amenities) ? (property.amenities as unknown as string[]) : [];
   const rooms = property.rooms || [];
 
@@ -353,7 +353,7 @@ export default async function PropertyDetailPage({ params, searchParams }: Prope
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {relatedStays.map((rel: any) => {
-              const relPhoto = rel.cover_photo || rel.photos?.[0] || null;
+              const relPhoto = getPropertyPhotoList(rel.cover_photo, rel.photos)[0] || null;
               return (
                 <div
                   key={rel.id}
