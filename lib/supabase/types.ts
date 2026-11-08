@@ -894,6 +894,7 @@ export type Database = {
           pending_changes: Json | null
           pending_changes_submitted_at: string | null
           photos: Json
+          shared_washroom_photos: Json
           property_type: string
           published: boolean
           reviewed_at: string | null
@@ -927,6 +928,7 @@ export type Database = {
           pending_changes?: Json | null
           pending_changes_submitted_at?: string | null
           photos?: Json
+          shared_washroom_photos?: Json
           property_type?: string
           published?: boolean
           reviewed_at?: string | null
@@ -1176,6 +1178,7 @@ export type Database = {
           id: string
           max_guests: number
           photos: Json
+          washroom_photos: Json
           property_id: string
           room_name: string
           sort_order: number
@@ -1192,6 +1195,7 @@ export type Database = {
           id?: string
           max_guests?: number
           photos?: Json
+          washroom_photos?: Json
           property_id: string
           room_name: string
           sort_order?: number
@@ -1208,6 +1212,7 @@ export type Database = {
           id?: string
           max_guests?: number
           photos?: Json
+          washroom_photos?: Json
           property_id?: string
           room_name?: string
           sort_order?: number

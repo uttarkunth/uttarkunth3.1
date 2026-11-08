@@ -32,8 +32,8 @@ export function PropertyPhotoGallery({ propertyName, photos }: { propertyName: s
     if (!isOpen) return;
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') setIsOpen(false);
-      if (event.key === 'ArrowLeft' && filteredPhotos.length > 1) showPrevious();
-      if (event.key === 'ArrowRight' && filteredPhotos.length > 1) showNext();
+      if (event.key === 'ArrowLeft' && filteredPhotos.length > 1) setActiveIndex((index) => (index - 1 + filteredPhotos.length) % filteredPhotos.length);
+      if (event.key === 'ArrowRight' && filteredPhotos.length > 1) setActiveIndex((index) => (index + 1) % filteredPhotos.length);
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);

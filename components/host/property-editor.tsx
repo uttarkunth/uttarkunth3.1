@@ -603,12 +603,12 @@ export function PropertyEditor({ initialProperty }: PropertyEditorProps) {
             <span>Main Property Exterior &amp; Grounds Gallery</span>
           </h2>
           <p className="text-xs text-charcoal-muted">
-            Upload landscape photographs of the homestay exterior, orchard, terrace, and entrance. Tap &apos;Make Cover&apos; on your hero image.
+            Upload the property exterior, outdoor spaces, mountain views, common areas, dining spaces, garden and entrance. Bedroom and washroom images belong in their own sections.
           </p>
         </div>
 
         <PhotoUploader
-          label="Exterior &amp; Common Area Photos"
+          label="Property Exterior, Views &amp; Common Areas"
           photos={photos}
           onChange={setPhotos}
           coverPhoto={coverPhoto}

@@ -950,13 +950,13 @@ export default function HostNewPropertyApplicationPage() {
                 5. Main Homestay Photography &amp; Exterior Views
               </h2>
               <p className="text-xs text-charcoal-muted">
-                Exterior building facade, mountain vistas, garden sit-outs, and entrance from your device gallery
+                Upload exterior, outdoor spaces, views, common areas, dining spaces, garden and entrance. Bedroom and washroom images have separate sections.
               </p>
             </div>
           </div>
 
           <PhotoUploader
-            label="Homestay Exterior &amp; Grounds Photos"
+            label="Property Exterior, Views &amp; Common Areas"
             description="Select multiple landscape photos from your phone or camera gallery. Tap 'Make Cover' on your best exterior shot."
             photos={photoUrls}
             onChange={setPhotoUrls}
