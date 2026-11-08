@@ -1,6 +1,7 @@
 import React from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
+import { PropertyImage } from '@/components/property-image';
+import { getPropertyPhotoList } from '@/lib/property-images';
 import { notFound } from 'next/navigation';
 import {
   getDestinationBySlug,
@@ -39,7 +40,7 @@ async function getPropertiesForDestination(slug: string) {
     const supabase = createPublicServerSupabaseClient();
     const { data: properties, error } = await supabase
       .from('properties')
-      .select('id, slug, name, description, village, district, state, property_type, booking_mode, amenities, photos, published, moderation_status')
+      .select('id, slug, name, description, village, district, state, property_type, booking_mode, amenities, photos, cover_photo, published, moderation_status')
       .eq('published', true)
       .eq('moderation_status', 'approved');
 
@@ -160,7 +161,7 @@ export default async function DestinationDetailPage({ params }: DestinationPageP
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {properties.map((property: any) => {
-                const coverPhoto = property.photos?.[0];
+                const coverPhoto = getPropertyPhotoList(property.cover_photo, property.photos)[0] || null;
                 const startingPrice = property.rooms?.[0]?.base_price || 900;
                 const locationText = `${property.village || destination.name}, ${property.district || destination.region}`;
 
@@ -169,12 +170,15 @@ export default async function DestinationDetailPage({ params }: DestinationPageP
                     key={property.id}
                     className="bg-white rounded-3xl border border-forest/15 overflow-hidden shadow-soft hover:shadow-lifted transition-all flex flex-col group"
                   >
-                    <div className="relative aspect-[16/10] w-full bg-forest-dark overflow-hidden">
+                    <div className="relative aspect-[3/2] w-full bg-forest-dark overflow-hidden">
                       {coverPhoto ? (
-                        <Image
+                        <PropertyImage
                           src={coverPhoto}
                           alt={property.name}
                           fill
+                          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                          transformWidth={600}
+                          transformHeight={400}
                           className="object-cover group-hover:scale-105 transition-transform duration-700"
                         />
                       ) : (
@@ -256,7 +260,7 @@ export default async function DestinationDetailPage({ params }: DestinationPageP
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 {nearbyProperties.map((property: any) => {
-                  const coverPhoto = property.photos?.[0];
+                  const coverPhoto = getPropertyPhotoList(property.cover_photo, property.photos)[0] || null;
                   const startingPrice = property.rooms?.[0]?.base_price || 900;
 
                   return (
@@ -264,14 +268,22 @@ export default async function DestinationDetailPage({ params }: DestinationPageP
                       key={property.id}
                       className="bg-white rounded-3xl border border-forest/15 overflow-hidden shadow-soft hover:shadow-lifted transition-all flex flex-col group"
                     >
-                      <div className="relative aspect-[16/10] w-full bg-forest-dark overflow-hidden">
-                        {coverPhoto && (
-                          <Image
+                      <div className="relative aspect-[3/2] w-full bg-forest-dark overflow-hidden">
+                        {coverPhoto ? (
+                          <PropertyImage
                             src={coverPhoto}
                             alt={property.name}
                             fill
+                            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                            transformWidth={600}
+                            transformHeight={400}
                             className="object-cover group-hover:scale-105 transition-transform duration-700"
                           />
+                        ) : (
+                          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-forest-dark text-ivory/70">
+                            <Building2 className="w-9 h-9" />
+                            <span className="text-xs">Property photographs coming soon</span>
+                          </div>
                         )}
 
                         <div className="absolute top-4 left-4 bg-forest/90 text-ivory text-xs font-semibold px-3 py-1 rounded-full backdrop-blur-sm">
