@@ -164,8 +164,7 @@ export async function POST(
         photos: stagedPhotos,
       };
 
-      const { error: updatePropErr } = await adminClient
-        .from('properties')
+      const { error: updatePropErr } = await (adminClient.from('properties') as any)
         .update({
           pending_changes: stagedPayload,
           pending_changes_status: 'pending',
@@ -187,8 +186,7 @@ export async function POST(
       });
     } else {
       // Draft property or administrator upload: updates photos directly
-      const { error: updatePropErr } = await adminClient
-        .from('properties')
+      const { error: updatePropErr } = await (adminClient.from('properties') as any)
         .update({
           photos: updatedPhotos,
           updated_at: new Date().toISOString()

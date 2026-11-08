@@ -11,7 +11,6 @@ interface PropertyImageProps extends Omit<ImageProps, 'src'> {
 
 const PROPERTY_PHOTO_HOST = 'xyplgugxpmlnjsvlosdg.supabase.co';
 
-
 function getTransformedPropertyImageUrl(source: string, width: number, height: number): string {
   try {
     const url = new URL(source);
@@ -51,6 +50,7 @@ export function PropertyImage({
   return (
     <Image
       {...imageProps}
+      alt={imageProps.alt || ''}
       src={useOriginal ? src : transformedSrc}
       unoptimized
       onError={(event) => {
