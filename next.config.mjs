@@ -7,7 +7,14 @@ try {
   const destDir = path.resolve(process.cwd(), 'public', 'assets');
   if (fs.existsSync(srcDir)) {
     fs.mkdirSync(destDir, { recursive: true });
-    for (const file of ['gaurav-negi-founder.webp', 'uttarkunth-hero-video.webm']) {
+    for (const file of [
+      'gaurav-negi-founder.webp',
+      'uttarkunth-hero-video.webm',
+      'uttarkunth-stays-homepage-card.webp',
+      'products-home-page.webp',
+      'productions-home.webp',
+      'community-home-page.webp'
+    ]) {
       const srcFile = path.join(srcDir, file);
       const destFile = path.join(destDir, file);
       if (fs.existsSync(srcFile) && !fs.existsSync(destFile)) {
