@@ -5,6 +5,8 @@ import { calculateNights, calculateBookingPrice, validateStayDates } from '@/lib
 import { formatINR } from '@/lib/utils';
 import { Calendar, Users, ShieldCheck, Clock, CheckCircle2, AlertCircle, Sparkles, UserCheck } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
+import { RoomPhotoCarousel } from '@/components/stays/property-photo-gallery';
+import { getPropertyPhotoList } from '@/lib/property-images';
 
 interface RoomUnit {
   id: string;
@@ -13,12 +15,16 @@ interface RoomUnit {
   max_guests: number;
   base_price: number | string;
   active: boolean;
+  attached_washroom?: boolean;
+  photos?: string[];
+  washroom_photos?: string[];
 }
 
 interface BookingWidgetProps {
   propertyId: string;
   propertyName: string;
   rooms: RoomUnit[];
+  sharedWashroomPhotos?: string[];
   initialCheckIn?: string;
   initialCheckOut?: string;
   initialGuests?: number;
@@ -33,6 +39,7 @@ export function BookingWidget({
   propertyId,
   propertyName,
   rooms,
+  sharedWashroomPhotos = [],
   initialCheckIn = '',
   initialCheckOut = '',
   initialGuests = 2,
@@ -87,6 +94,10 @@ export function BookingWidget({
   }, [rooms, selectedRoomId]);
 
   const basePrice = Number(selectedRoom?.base_price || 0);
+  const selectedRoomPhotos = getPropertyPhotoList(null, [
+    ...(selectedRoom?.photos || []),
+    ...(selectedRoom?.attached_washroom ? (selectedRoom?.washroom_photos || []) : sharedWashroomPhotos),
+  ]);
 
   const priceCalculation = useMemo(() => {
     if (!checkIn || !checkOut) return null;
@@ -254,10 +265,18 @@ export function BookingWidget({
             >
               {rooms.map(r => (
                 <option key={r.id} value={r.id}>
-                  {r.room_name} — {formatINR(Number(r.base_price))}/night (Max {r.max_guests} guests)
+                  {r.room_name} — {formatINR(Number(r.base_price))}/night ({r.attached_washroom ? 'Private washroom' : 'Shared washroom'})
                 </option>
               ))}
             </select>
+          </div>
+        )}
+
+        {selectedRoom && (
+          <div className="space-y-2 rounded-xl border border-forest/10 bg-ivory-warm/60 p-3">
+            <div className="flex items-center justify-between gap-2"><p className="text-sm font-semibold text-forest">{selectedRoom.room_name}</p><span className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${selectedRoom.attached_washroom ? 'bg-emerald-100 text-emerald-800' : 'bg-stone-200 text-stone-700'}`}>{selectedRoom.attached_washroom ? 'Private washroom' : 'Shared washroom'}</span></div>
+            <RoomPhotoCarousel photos={selectedRoomPhotos} alt={selectedRoom.room_name} />
+            {selectedRoomPhotos.length === 0 && <p className="text-[11px] text-charcoal-muted">Room photographs will be added by the host.</p>}
           </div>
         )}
 

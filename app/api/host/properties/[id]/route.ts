@@ -117,6 +117,7 @@ export async function PATCH(
       property_type,
       amenities,
       photos,
+      shared_washroom_photos,
       rooms,
       contact_phone,
       contact_whatsapp,
@@ -300,6 +301,7 @@ export async function PATCH(
     if (description !== undefined) directUpdates.description = description.trim();
     if (amenities !== undefined) directUpdates.amenities = amenities;
     if (photos !== undefined) directUpdates.photos = photos;
+    if (shared_washroom_photos !== undefined) directUpdates.shared_washroom_photos = shared_washroom_photos;
     if (cover_photo !== undefined) directUpdates.cover_photo = cover_photo;
     if (contact_phone !== undefined) directUpdates.contact_phone = contact_phone.trim();
     if (contact_whatsapp !== undefined) directUpdates.contact_whatsapp = contact_whatsapp.trim();
@@ -337,6 +339,7 @@ export async function PATCH(
           if (room.bed_type !== undefined) roomUpdates.bed_type = room.bed_type.trim();
           if (room.features !== undefined) roomUpdates.features = room.features;
           if (room.photos !== undefined) roomUpdates.photos = room.photos;
+          if (room.washroom_photos !== undefined) roomUpdates.washroom_photos = room.attached_washroom ? room.washroom_photos : [];
 
           await adminClient
             .from('room_units')
@@ -357,6 +360,7 @@ export async function PATCH(
               bed_type: room.bed_type?.trim() || 'King / Double Bed',
               features: room.features || [],
               photos: room.photos || [],
+              washroom_photos: room.attached_washroom ? (room.washroom_photos || []) : [],
               active: true
             });
         }

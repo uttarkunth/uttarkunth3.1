@@ -13,6 +13,7 @@ interface PhotoUploaderProps {
   category?: 'general' | 'room' | 'washroom' | 'cover';
   maxPhotos?: number;
   showGuidelines?: boolean;
+  excludePhotos?: string[];
 }
 
 export function PhotoUploader({
@@ -25,6 +26,7 @@ export function PhotoUploader({
   category = 'general',
   maxPhotos = 12,
   showGuidelines = false,
+  excludePhotos = [],
 }: PhotoUploaderProps) {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -40,6 +42,8 @@ export function PhotoUploader({
     setIsUploading(true);
 
     const uploadedUrls: string[] = [];
+    const usedUrls = new Set([...photos, ...excludePhotos]);
+    let skippedDuplicateCount = 0;
 
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
@@ -78,7 +82,12 @@ export function PhotoUploader({
           throw new Error(data.error || `Upload failed for ${file.name}`);
         }
 
-        uploadedUrls.push(data.url);
+        if (usedUrls.has(data.url)) {
+          skippedDuplicateCount += 1;
+        } else {
+          uploadedUrls.push(data.url);
+          usedUrls.add(data.url);
+        }
       } catch (err: any) {
         setUploadError(err.message || `Failed to upload ${file.name}`);
         setIsUploading(false);
@@ -95,7 +104,13 @@ export function PhotoUploader({
       onCoverChange(updated[0]);
     }
 
-    setUploadSuccess(`Successfully uploaded ${uploadedUrls.length} photo${uploadedUrls.length > 1 ? 's' : ''}!`);
+    setUploadSuccess(
+      uploadedUrls.length > 0
+        ? `Added ${uploadedUrls.length} new photo${uploadedUrls.length > 1 ? 's' : ''}.${skippedDuplicateCount ? ` Skipped ${skippedDuplicateCount} duplicate photo${skippedDuplicateCount > 1 ? 's' : ''} already used in another section.` : ''}`
+        : skippedDuplicateCount > 0
+          ? 'These photos are already used in another photo section, so they were skipped.'
+          : 'No new photos were added.'
+    );
     setIsUploading(false);
     if (fileInputRef.current) fileInputRef.current.value = '';
 

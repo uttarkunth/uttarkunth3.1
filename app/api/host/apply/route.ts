@@ -89,6 +89,7 @@ export async function POST(req: NextRequest) {
         description: data.description,
         amenities: data.amenities || [],
         photos: data.photos || [],
+        shared_washroom_photos: data.shared_washroom_photos || [],
         contact_phone: contactPhone || null,
         contact_whatsapp: contactWhatsapp || null,
         contact_email: contactEmail || null,
@@ -142,8 +143,7 @@ export async function POST(req: NextRequest) {
     if (Array.isArray(data.rooms) && data.rooms.length > 0) {
       data.rooms.forEach((r, idx) => {
         const roomPhotos = Array.isArray(r.photos) ? r.photos : [];
-        const washroomPhotos = Array.isArray(r.washroom_photos) ? r.washroom_photos : [];
-        const allPhotos = [...roomPhotos, ...washroomPhotos];
+        const washroomPhotos = r.attached_washroom && Array.isArray(r.washroom_photos) ? r.washroom_photos : [];
 
         roomsToInsert.push({
           property_id: createdProperty.id,
@@ -155,7 +155,8 @@ export async function POST(req: NextRequest) {
           view_type: r.view_type || 'mountain',
           bed_type: r.bed_type || 'King / Double Bed',
           features: r.features || [],
-          photos: allPhotos,
+          photos: roomPhotos,
+          washroom_photos: washroomPhotos,
           sort_order: idx + 1,
           active: r.active ?? true,
         });
@@ -172,6 +173,7 @@ export async function POST(req: NextRequest) {
         bed_type: 'King / Double Bed',
         features: [],
         photos: [],
+        washroom_photos: [],
         sort_order: 1,
         active: true,
       });

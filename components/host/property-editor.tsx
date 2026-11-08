@@ -63,6 +63,9 @@ export function PropertyEditor({ initialProperty }: PropertyEditorProps) {
   const [photos, setPhotos] = useState<string[]>(
     Array.isArray(initialProperty.photos) ? initialProperty.photos : []
   );
+  const [sharedWashroomPhotos, setSharedWashroomPhotos] = useState<string[]>(
+    Array.isArray(initialProperty.shared_washroom_photos) ? initialProperty.shared_washroom_photos : []
+  );
   const [coverPhoto, setCoverPhoto] = useState<string>(
     initialProperty.cover_photo || (Array.isArray(initialProperty.photos) ? initialProperty.photos[0] : '') || ''
   );
@@ -148,7 +151,7 @@ export function PropertyEditor({ initialProperty }: PropertyEditorProps) {
   const updateRoomField = (idx: number, field: keyof RoomUnit, value: any) => {
     setRooms((prev) => {
       const copy = [...prev];
-      copy[idx] = { ...copy[idx], [field]: value };
+      copy[idx] = { ...copy[idx], [field]: value, ...(field === 'attached_washroom' && !value ? { washroom_photos: [] } : {}) };
       return copy;
     });
   };
@@ -247,11 +250,13 @@ export function PropertyEditor({ initialProperty }: PropertyEditorProps) {
         property_type: propertyType,
         amenities,
         photos,
+        shared_washroom_photos: sharedWashroomPhotos,
         rooms: rooms.map((r) => ({
           ...r,
           base_price: Number(r.base_price),
           max_guests: Number(r.max_guests),
-          photos: [...(r.photos || []), ...(r.washroom_photos || [])],
+          photos: r.photos || [],
+          washroom_photos: r.attached_washroom ? (r.washroom_photos || []) : [],
         })),
         contact_phone: contactPhone,
         contact_whatsapp: contactWhatsapp,
@@ -287,6 +292,8 @@ export function PropertyEditor({ initialProperty }: PropertyEditorProps) {
   };
 
   const visibleRooms = rooms.filter((r) => !r.deleted);
+  const getOtherRoomPhotoUrls = (roomIndex: number) => rooms.filter((r, index) => index !== roomIndex && !r.deleted).flatMap((r) => [...(r.photos || []), ...(r.attached_washroom ? (r.washroom_photos || []) : [])]);
+  const allRoomPhotoUrls = rooms.filter((r) => !r.deleted).flatMap((r) => [...(r.photos || []), ...(r.attached_washroom ? (r.washroom_photos || []) : [])]);
 
   return (
     <form onSubmit={handleSave} className="space-y-8">
@@ -565,16 +572,20 @@ export function PropertyEditor({ initialProperty }: PropertyEditorProps) {
                         onChange={(urls) => updateRoomField(idx, 'photos', urls)}
                         category="room"
                         maxPhotos={6}
+                        excludePhotos={[...photos, ...sharedWashroomPhotos, ...(room.washroom_photos || []), ...getOtherRoomPhotoUrls(idx)]}
                       />
 
-                      <PhotoUploader
-                        label={`Room #${idx + 1} Washroom Photos`}
-                        description="Direct gallery upload of attached washroom, geyser, and sanitary amenities."
-                        photos={room.washroom_photos || []}
-                        onChange={(urls) => updateRoomField(idx, 'washroom_photos', urls)}
-                        category="washroom"
-                        maxPhotos={4}
-                      />
+                      {room.attached_washroom && (
+                        <PhotoUploader
+                          label={`Room #${idx + 1} Private Washroom Photos`}
+                          description="Upload photos of this room’s own attached private bathroom, geyser and fittings."
+                          photos={room.washroom_photos || []}
+                          onChange={(urls) => updateRoomField(idx, 'washroom_photos', urls)}
+                          category="washroom"
+                          maxPhotos={4}
+                          excludePhotos={[...photos, ...sharedWashroomPhotos, ...(room.photos || []), ...getOtherRoomPhotoUrls(idx)]}
+                        />
+                      )}
                     </div>
                   </div>
                 )}
@@ -605,7 +616,18 @@ export function PropertyEditor({ initialProperty }: PropertyEditorProps) {
           category="general"
           maxPhotos={14}
           showGuidelines={true}
+          excludePhotos={[...sharedWashroomPhotos, ...allRoomPhotoUrls]}
         />
+
+        {visibleRooms.some((room) => !room.attached_washroom) && (
+          <div className="pt-5 border-t border-forest/10 space-y-3">
+            <div>
+              <h3 className="font-serif text-lg font-bold text-forest">Shared Washroom Photos</h3>
+              <p className="text-xs text-charcoal-muted">Upload the common bathroom photos once here. Guests booking rooms marked as shared washroom will see this gallery.</p>
+            </div>
+            <PhotoUploader label="Shared Bathroom & Facilities" description="Show the shared washroom, shower, geyser and facilities available to guests." photos={sharedWashroomPhotos} onChange={setSharedWashroomPhotos} category="washroom" maxPhotos={8} excludePhotos={[...photos, ...allRoomPhotoUrls]} />
+          </div>
+        )}
       </div>
 
       {/* Section 4: Operational Details & Amenities */}

@@ -128,6 +128,7 @@ export default function HostNewPropertyApplicationPage() {
 
   // Step 5: General Property Photos & Cover
   const [photoUrls, setPhotoUrls] = useState<string[]>([]);
+  const [sharedWashroomPhotos, setSharedWashroomPhotos] = useState<string[]>([]);
   const [coverPhoto, setCoverPhoto] = useState<string>('');
 
   // Operational State
@@ -179,10 +180,13 @@ export default function HostNewPropertyApplicationPage() {
   const handleRoomFieldChange = (index: number, field: keyof RoomDraft, value: any) => {
     setRooms((prev) => {
       const copy = [...prev];
-      copy[index] = { ...copy[index], [field]: value };
+      copy[index] = { ...copy[index], [field]: value, ...(field === 'attached_washroom' && !value ? { washroom_photos: [] } : {}) };
       return copy;
     });
   };
+
+  const getOtherRoomPhotoUrls = (roomIndex: number) => rooms.filter((r, index) => index !== roomIndex).flatMap((r) => [...(r.photos || []), ...(r.attached_washroom ? (r.washroom_photos || []) : [])]);
+  const allRoomPhotoUrls = rooms.flatMap((r) => [...(r.photos || []), ...(r.attached_washroom ? (r.washroom_photos || []) : [])]);
 
   const handleTestGoogleMapsLink = () => {
     setMapsLinkError(null);
@@ -246,6 +250,7 @@ export default function HostNewPropertyApplicationPage() {
         notify_email: notifyEmail,
         amenities,
         photos: photoUrls,
+        shared_washroom_photos: sharedWashroomPhotos,
         cover_photo: coverPhoto || photoUrls[0] || undefined,
         house_rules: houseRules.trim(),
         check_in_time: checkInTime.trim(),
@@ -258,8 +263,8 @@ export default function HostNewPropertyApplicationPage() {
           view_type: r.view_type,
           bed_type: r.bed_type,
           description: r.description.trim(),
-          photos: [...(r.photos || []), ...(r.washroom_photos || [])],
-          washroom_photos: r.washroom_photos || [],
+          photos: r.photos || [],
+          washroom_photos: r.attached_washroom ? (r.washroom_photos || []) : [],
           active: true,
         })),
       };
@@ -860,16 +865,20 @@ export default function HostNewPropertyApplicationPage() {
                     onChange={(urls) => handleRoomFieldChange(idx, 'photos', urls)}
                     category="room"
                     maxPhotos={6}
+                    excludePhotos={[...photoUrls, ...sharedWashroomPhotos, ...(room.washroom_photos || []), ...getOtherRoomPhotoUrls(idx)]}
                   />
 
-                  <PhotoUploader
-                    label={`Room #${idx + 1} Washroom Photos`}
-                    description="Upload clear photos of the bathroom, hot water geyser, shower, and sanitary fittings."
-                    photos={room.washroom_photos}
-                    onChange={(urls) => handleRoomFieldChange(idx, 'washroom_photos', urls)}
-                    category="washroom"
-                    maxPhotos={4}
-                  />
+                  {room.attached_washroom && (
+                    <PhotoUploader
+                      label={`Room #${idx + 1} Private Washroom Photos`}
+                      description="Upload photos of this room’s own attached private bathroom, geyser and fittings."
+                      photos={room.washroom_photos || []}
+                      onChange={(urls) => handleRoomFieldChange(idx, 'washroom_photos', urls)}
+                      category="washroom"
+                      maxPhotos={4}
+                      excludePhotos={[...photoUrls, ...sharedWashroomPhotos, ...(room.photos || []), ...getOtherRoomPhotoUrls(idx)]}
+                    />
+                  )}
                 </div>
               </div>
             ))}
@@ -956,7 +965,15 @@ export default function HostNewPropertyApplicationPage() {
             category="general"
             maxPhotos={12}
             showGuidelines={true}
+            excludePhotos={[...sharedWashroomPhotos, ...allRoomPhotoUrls]}
           />
+
+          {rooms.some((room) => !room.attached_washroom) && (
+            <div className="pt-5 border-t border-forest/10 space-y-3">
+              <div><h3 className="font-serif text-lg font-bold text-forest">Shared Washroom Photos</h3><p className="text-xs text-charcoal-muted">Upload the common bathroom photos once here. Guests booking rooms marked as shared washroom will see this gallery.</p></div>
+              <PhotoUploader label="Shared Bathroom & Facilities" description="Show the shared washroom, shower, geyser and facilities available to guests." photos={sharedWashroomPhotos} onChange={setSharedWashroomPhotos} category="washroom" maxPhotos={8} excludePhotos={[...photoUrls, ...allRoomPhotoUrls]} />
+            </div>
+          )}
         </div>
 
         {/* SUBMIT BUTTON */}

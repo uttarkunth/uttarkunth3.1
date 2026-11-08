@@ -1,5 +1,5 @@
 import React from 'react';
-import { PropertyImage } from '@/components/property-image';
+import { PropertyPhotoGallery, RoomPhotoCarousel, type PropertyGalleryPhoto } from '@/components/stays/property-photo-gallery';
 import { getPropertyPhotoList } from '@/lib/property-images';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
@@ -7,7 +7,7 @@ import { createPublicServerSupabaseClient, createServerSupabaseClient } from '@/
 import { BRAND } from '@/lib/constants';
 import { BookingWidget } from '@/components/booking-widget';
 import { RoomAvailabilityCalendar } from '@/components/stays/room-availability-calendar';
-import { MapPin, Users, CheckCircle2, ShieldCheck, Clock, Home, Sparkles, ChevronLeft, Wifi, Coffee, Utensils, Car, Image as ImageIcon } from 'lucide-react';
+import { MapPin, Users, CheckCircle2, ShieldCheck, Clock, Home, Sparkles, ChevronLeft, Wifi, Coffee, Utensils, Car } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 
@@ -40,7 +40,7 @@ async function getPropertyBySlug(slug: string) {
     const supabase = createPublicServerSupabaseClient();
     const { data: property, error } = await supabase
       .from('properties')
-      .select('id, slug, name, description, village, district, state, property_type, booking_mode, amenities, photos, cover_photo, published, moderation_status')
+      .select('id, slug, name, description, village, district, state, property_type, booking_mode, amenities, photos, cover_photo, shared_washroom_photos, published, moderation_status')
       .eq('slug', slug)
       .eq('published', true)
       .eq('moderation_status', 'approved')
@@ -52,7 +52,7 @@ async function getPropertyBySlug(slug: string) {
 
     const { data: rooms } = await supabase
       .from('room_units')
-      .select('id, property_id, room_name, description, max_guests, base_price, attached_washroom, view_type, bed_type, features, photos, active')
+      .select('id, property_id, room_name, description, max_guests, base_price, attached_washroom, view_type, bed_type, features, photos, washroom_photos, active')
       .eq('property_id', property.id)
       .eq('active', true)
       .order('sort_order', { ascending: true });
@@ -92,11 +92,23 @@ export default async function PropertyDetailPage({ params, searchParams }: Prope
 
   const relatedStays = await getRelatedStays(property.id);
 
-  const photos = getPropertyPhotoList(property.cover_photo, property.photos);
-  const primaryPhoto = photos[0] || '';
-  const secondaryPhotos = photos.slice(1);
   const amenitiesList = Array.isArray(property.amenities) ? (property.amenities as unknown as string[]) : [];
   const rooms = property.rooms || [];
+  const galleryPhotos: PropertyGalleryPhoto[] = [];
+  const seenGalleryUrls = new Set<string>();
+  const addGalleryPhotos = (urls: string[], category: PropertyGalleryPhoto['category'], label: string) => {
+    urls.forEach((url, index) => {
+      if (!url || seenGalleryUrls.has(url)) return;
+      seenGalleryUrls.add(url);
+      galleryPhotos.push({ url, category, label, alt: `${property.name} — ${label} photo ${index + 1}` });
+    });
+  };
+  addGalleryPhotos(getPropertyPhotoList(property.cover_photo, property.photos), 'property', 'Property');
+  rooms.forEach((room: any) => {
+    addGalleryPhotos(getPropertyPhotoList(null, room.photos), 'room', room.room_name || 'Room');
+    if (room.attached_washroom) addGalleryPhotos(getPropertyPhotoList(null, room.washroom_photos), 'washroom', `${room.room_name || 'Room'} private washroom`);
+  });
+  if (rooms.some((room: any) => !room.attached_washroom)) addGalleryPhotos(getPropertyPhotoList(null, property.shared_washroom_photos), 'washroom', 'Shared washroom');
 
   let currentUser = null;
   try {
@@ -148,51 +160,8 @@ export default async function PropertyDetailPage({ params, searchParams }: Prope
         </p>
       </div>
 
-      {/* Photo Gallery Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 rounded-3xl overflow-hidden shadow-soft max-h-[500px]">
-        {/* Main Photo */}
-        <div className="md:col-span-2 relative h-80 sm:h-96 md:h-[480px]">
-          {primaryPhoto ? (
-            <PropertyImage
-              src={primaryPhoto}
-              alt={property.name}
-              fill
-              sizes="(max-width: 768px) 100vw, 66vw"
-              transformWidth={1200}
-              transformHeight={800}
-              className="object-cover"
-              priority
-            />
-          ) : (
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-forest-dark text-ivory/70">
-              <ImageIcon className="w-12 h-12" />
-              <span className="text-sm">Property photographs coming soon</span>
-            </div>
-          )}
-        </div>
-
-        {/* Side Photos */}
-        <div className="hidden md:flex flex-col gap-3 h-[480px]">
-          {secondaryPhotos.slice(0, 2).map((photoUrl, idx) => (
-            <div key={idx} className="relative flex-1 overflow-hidden">
-              <PropertyImage
-                src={photoUrl}
-                alt={property.name + ' view ' + (idx + 2)}
-                fill
-                sizes="33vw"
-                transformWidth={600}
-                transformHeight={400}
-                className="object-cover hover:scale-105 transition-transform duration-500"
-              />
-            </div>
-          ))}
-          {secondaryPhotos.length === 0 && (
-            <div className="relative flex-1 bg-ivory-warm flex items-center justify-center p-6 text-center text-xs text-charcoal-muted">
-              <span>Serene mountain surroundings in Jari</span>
-            </div>
-          )}
-        </div>
-      </div>
+      {/* Single-frame photo carousel with a full gallery view. */}
+      <PropertyPhotoGallery propertyName={property.name} photos={galleryPhotos} />
 
       {/* Content & Booking Widget Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 pt-4">
@@ -214,6 +183,7 @@ export default async function PropertyDetailPage({ params, searchParams }: Prope
                 const room = roomItem as any;
                 return (
                   <div key={room.id} className="p-5 bg-white rounded-2xl border border-forest/15 shadow-sm space-y-3 flex flex-col justify-between">
+                    <RoomPhotoCarousel photos={getPropertyPhotoList(null, room.photos)} alt={room.room_name} />
                     <div className="space-y-2">
                       <div className="flex items-start justify-between gap-2">
                         <div>
@@ -225,7 +195,7 @@ export default async function PropertyDetailPage({ params, searchParams }: Prope
                             </span>
                             {room.attached_washroom !== undefined && (
                               <span className={`px-2 py-0.5 text-[10px] font-bold rounded-full ${room.attached_washroom ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-100 text-gray-700'}`}>
-                                {room.attached_washroom ? 'Attached Washroom' : 'Shared Washroom'}
+                                {room.attached_washroom ? 'Private attached washroom' : 'Shared washroom'}
                               </span>
                             )}
                             {room.view_type && room.view_type !== 'none' && (
@@ -324,6 +294,7 @@ export default async function PropertyDetailPage({ params, searchParams }: Prope
             propertyId={property.id}
             propertyName={property.name}
             rooms={rooms}
+            sharedWashroomPhotos={getPropertyPhotoList(null, property.shared_washroom_photos)}
             initialCheckIn={searchParams.checkIn}
             initialCheckOut={searchParams.checkOut}
             initialGuests={searchParams.guests ? parseInt(searchParams.guests, 10) : 2}

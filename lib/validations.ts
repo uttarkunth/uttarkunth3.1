@@ -131,6 +131,7 @@ export const PropertyFormSchema = z.object({
   property_type: z.enum(["homestay", "hotel", "resort", "villa", "guesthouse", "cottage", "other"]),
   amenities: z.array(z.string()).default([]),
   photos: z.array(z.string()).default([]),
+  shared_washroom_photos: z.array(z.string()).optional().default([]),
   contact_phone: z.string().trim().max(20).optional().or(z.literal('')),
   contact_whatsapp: z.string().trim().max(20).optional().or(z.literal('')),
   contact_email: z.string().trim().email().optional().or(z.literal('')),
@@ -172,6 +173,7 @@ export const HostApplySchema = z.object({
   host_phone: z.string().trim().optional(),
   amenities: z.array(z.string()).optional().default([]),
   photos: z.array(z.string()).optional().default([]),
+  shared_washroom_photos: z.array(z.string()).optional().default([]),
   rooms: z.array(HostRoomSchema).optional(),
   // Backward compatibility with single-room setup
   initial_room_name: z.string().trim().optional().default('Mountain View Room'),

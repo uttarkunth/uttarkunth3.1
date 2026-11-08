@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto';
+import { createHash } from 'node:crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
@@ -64,19 +64,17 @@ export async function POST(req: NextRequest) {
     }
 
     const adminClient = createAdminClient();
-    const lastDot = file.name.lastIndexOf('.');
-    const originalBaseName = lastDot > 0 ? file.name.slice(0, lastDot) : file.name;
-    const safeBaseName = originalBaseName.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 60) || 'property-photo';
     const extension = MIME_EXTENSIONS[magicCheck.detectedMime];
-    const storagePath = 'host-uploads/' + user.id + '/' + category + '/' +
-      Date.now() + '-' + randomUUID() + '-' + safeBaseName + '.' + extension;
+    // One stable URL per host and original file, independent of photo section.
+    const contentHash = createHash('sha256').update(buffer).digest('hex');
+    const storagePath = 'host-uploads/' + user.id + '/deduplicated/' + contentHash + '.' + extension;
 
     const { error: uploadError } = await adminClient.storage
       .from('property-photos')
       .upload(storagePath, buffer, {
         contentType: magicCheck.detectedMime,
         cacheControl: '31536000',
-        upsert: false,
+        upsert: true,
       });
 
     if (uploadError) {
