@@ -40,7 +40,7 @@ npm run preview
 2. Select repository `uttarkunth/uttarkunth3.1` and branch `uttarkunthmain2`.
 3. Configure build settings:
    - **Root directory:** `/`
-   - **Build command:** `npm run build:worker`
+   - **Build command:** `npx @opennextjs/cloudflare build --dangerouslyUseUnsupportedNextVersion` (or `npm run build:worker`)
    - **Deploy command:** `npx wrangler deploy`
 4. Verify `wrangler.jsonc` at the repository root:
    - `name`: `"uttarkunth3-1"`
@@ -48,6 +48,7 @@ npm run preview
    - `assets.directory`: `".open-next/assets"` (`binding: "ASSETS"`)
    - `compatibility_date`: `"2024-12-30"`
    - `compatibility_flags`: `["nodejs_compat"]`
+   - *Note:* Do not define a `"build": { "command": "..." }` block in `wrangler.jsonc`. OpenNext generates `.open-next/worker.js` and `.open-next/assets` directly. Having a build block in `wrangler.jsonc` causes Wrangler to trigger a redundant/recursive build loop during `wrangler deploy`.
 
 ---
 
