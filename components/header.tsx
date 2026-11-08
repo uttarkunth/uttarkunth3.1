@@ -202,6 +202,18 @@ export function Header() {
             <span>{contextualCTA.label}</span>
           </Link>
 
+          {/* Global Notifications Shortcut — vertically centred with the account control */}
+          <Link
+            href={user ? "/account/notifications" : `/login?returnUrl=${encodeURIComponent(pathname)}`}
+            className={`w-10 h-10 inline-flex shrink-0 items-center justify-center rounded-full border border-beige bg-warm-card hover:border-forest/40 transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-terracotta ${
+              pathname.startsWith('/account/notifications') ? 'text-forest' : 'text-charcoal'
+            }`}
+            aria-label="Notifications"
+            title="Notifications"
+          >
+            <Bell className="block w-5 h-5" aria-hidden="true" />
+          </Link>
+
           {/* Canonical Account / Profile Icon with Dropdown */}
           <div className="relative" ref={dropdownRef}>
             <button
@@ -307,8 +319,20 @@ export function Header() {
           </div>
         </div>
 
-        {/* Mobile Menu Button */}
+        {/* Mobile Header Actions — equal-size controls keep all icons on one vertical centre line */}
         <div className="flex items-center gap-3 lg:hidden">
+          {/* Global Notifications Shortcut */}
+          <Link
+            href={user ? "/account/notifications" : `/login?returnUrl=${encodeURIComponent(pathname)}`}
+            className={`relative w-9 h-9 inline-flex shrink-0 items-center justify-center rounded-full border border-beige bg-warm-card hover:border-forest/40 transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-terracotta ${
+              pathname.startsWith('/account/notifications') ? 'text-forest' : 'text-charcoal'
+            }`}
+            aria-label="Notifications"
+            title="Notifications"
+          >
+            <Bell className="block w-5 h-5" aria-hidden="true" />
+          </Link>
+
           {/* Direct Account Shortcut for Mobile */}
           <Link
             href={user ? "/account" : `/login?returnUrl=${encodeURIComponent(pathname)}`}
@@ -321,7 +345,7 @@ export function Header() {
           <button
             suppressHydrationWarning
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="p-2 rounded-lg text-charcoal hover:text-forest hover:bg-forest/5 focus:outline-none focus:ring-2 focus:ring-terracotta"
+            className="w-9 h-9 inline-flex shrink-0 items-center justify-center rounded-lg text-charcoal hover:text-forest hover:bg-forest/5 focus:outline-none focus:ring-2 focus:ring-terracotta"
             aria-label={mobileMenuOpen ? "Close Menu" : "Open Menu"}
             aria-expanded={mobileMenuOpen}
           >
