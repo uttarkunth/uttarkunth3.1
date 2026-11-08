@@ -142,15 +142,22 @@ SELECT
 - Property-card presentation uses a consistent 3:2 crop. The original image remains stored unchanged.
 
 ### Cloudflare image delivery
-The website requests one standard card rendition per original: **600 × 400 pixels**, `fit=cover`, `gravity=auto`, `quality=82`, `format=auto`. Cloudflare caches the optimized response and the component falls back to the original Supabase URL if a transformation cannot be served.
+The website uses two fixed renditions from the original Supabase photo:
+
+- **Property cards and gallery thumbnails:** 600 × 400 pixels (3:2).
+- **Property detail hero:** 1200 × 800 pixels (3:2).
+
+Both use `fit=cover`, `gravity=auto`, `quality=82`, and `format=auto`. Cloudflare caches transformed responses. The component falls back to the original Supabase URL if a transformation request fails. A source photo used in both sizes can count as two distinct transformations in a calendar month; repeat requests for the same source and parameters count once.
 
 To enable remote image transformations for `uttarkunth.com`:
 
 1. Open **Cloudflare Dashboard → Images → Transformations** and select the `uttarkunth.com` zone.
 2. Enable image transformations for the zone.
-3. Under **Sources**, allow the exact Supabase origin: `https://xyplgugxpmlnjsvlosdg.supabase.co`.
-4. Save the settings. No Cloudflare Images storage migration is required; originals remain in Supabase Storage.
+3. Under **Sources**, add the Supabase image host as an allowed origin:
+   - **Domain:** `xyplgugxpmlnjsvlosdg.supabase.co`
+   - **Path (recommended):** `/storage/v1/object/public/property-photos/`
+4. Save the settings. No Cloudflare Images storage migration is required; original photographs remain in Supabase Storage.
 
-Cloudflare Images Free includes up to 5,000 unique remote-image transformations per month. The implementation intentionally uses one standard card transformation per photo and falls back to the original when Cloudflare cannot transform it. Check current Cloudflare Images usage before adding multiple image variants.
+Cloudflare Images Free includes up to 5,000 unique transformations per month. Once that limit is reached, existing cached transformations continue to work, while new ones can fail; the website falls back to the original source where the browser can access it. Review Cloudflare Images usage before introducing additional image sizes. <https://developers.cloudflare.com/images/pricing/>
 
-Do not enable Supabase Storage image transformations for this workflow; they require a Supabase Pro plan. Cloudflare handles delivery resizing instead.
+Do not enable Supabase Storage image transformations for this workflow; Cloudflare performs delivery resizing instead.
