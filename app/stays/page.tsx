@@ -1,6 +1,6 @@
 import React from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
+import { PropertyImage } from '@/components/property-image';
 import { SearchBar } from '@/components/search-bar';
 import { BRAND } from '@/lib/constants';
 import { getActiveDestinations, filterPropertiesForDestination, CURATED_DESTINATIONS, Destination } from '@/lib/destinations.server';
@@ -36,7 +36,7 @@ async function getStaysData() {
     const supabase = createPublicServerSupabaseClient();
     const { data: properties, error } = await supabase
       .from('properties')
-      .select('id, slug, name, description, village, district, state, property_type, booking_mode, amenities, photos, published, moderation_status')
+      .select('id, slug, name, description, village, district, state, property_type, booking_mode, amenities, photos, cover_photo, published, moderation_status')
       .eq('published', true)
       .eq('moderation_status', 'approved');
 
@@ -181,7 +181,7 @@ export default async function StaysPage({ searchParams }: StaysPageProps) {
         {filteredProperties.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {filteredProperties.map((property: any) => {
-              const coverPhoto = property.photos?.[0];
+              const coverPhoto = property.cover_photo || property.photos?.[0];
               const startingPrice = property.rooms?.[0]?.base_price || 900;
               const locationText = `${property.village || 'Jari'}, ${property.district || 'Kullu'}`;
               const amenities = property.amenities || [];
@@ -192,12 +192,15 @@ export default async function StaysPage({ searchParams }: StaysPageProps) {
                   href={`/stays/${property.slug}`}
                   className="bg-white rounded-3xl border border-forest/15 overflow-hidden shadow-soft hover:shadow-lifted transition-all flex flex-col group cursor-pointer"
                 >
-                  <div className="relative aspect-[16/10] w-full bg-forest-dark overflow-hidden">
+                  <div className="relative aspect-[3/2] w-full bg-forest-dark overflow-hidden">
                     {coverPhoto ? (
-                      <Image
+                      <PropertyImage
                         src={coverPhoto}
                         alt={property.name}
                         fill
+                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                        transformWidth={600}
+                        transformHeight={400}
                         className="object-cover group-hover:scale-105 transition-transform duration-700"
                       />
                     ) : (

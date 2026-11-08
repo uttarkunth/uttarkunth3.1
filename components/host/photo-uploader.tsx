@@ -44,19 +44,20 @@ export function PhotoUploader({
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
 
-      // Format check: JPEG only
+      // Accept common web image formats. The API verifies actual file bytes.
       const lowerName = file.name.toLowerCase();
-      const isJpeg = file.type === 'image/jpeg' || file.type === 'image/jpg' || lowerName.endsWith('.jpg') || lowerName.endsWith('.jpeg');
-      if (!isJpeg) {
-        setUploadError(`"${file.name}" is not a JPEG. Please upload .jpg/.jpeg images only (PNG and RAW files are not supported).`);
+      const allowedMimeTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+      const allowedExtensions = /\.(jpe?g|png|webp)$/i.test(lowerName);
+      if (!allowedMimeTypes.includes(file.type.toLowerCase()) && !allowedExtensions) {
+        setUploadError('"' + file.name + '" is not a supported image. Please upload a JPEG, PNG or WebP photo.');
         setIsUploading(false);
         if (fileInputRef.current) fileInputRef.current.value = '';
         return;
       }
 
-      // Size check: < 5MB
-      if (file.size > 5 * 1024 * 1024) {
-        setUploadError(`"${file.name}" exceeds 5 MB (${(file.size / (1024 * 1024)).toFixed(1)} MB). Compress via TinyJPG.com or export at 75-80% quality.`);
+      // Match the existing Supabase property-photos bucket limit (10 MB).
+      if (file.size <= 0 || file.size > 10 * 1024 * 1024) {
+        setUploadError('"' + file.name + '" exceeds 10 MB (' + (file.size / (1024 * 1024)).toFixed(1) + ' MB). Maximum upload size is 10 MB.');
         setIsUploading(false);
         if (fileInputRef.current) fileInputRef.current.value = '';
         return;
@@ -131,16 +132,16 @@ export function PhotoUploader({
             <div className="bg-white/80 p-2.5 rounded-lg border border-amber-100">
               <p className="font-semibold text-stone-900 mb-1">1. File Specifications</p>
               <ul className="list-disc list-inside space-y-0.5 text-stone-600">
-                <li><strong>Format:</strong> JPEG (.jpg) only (no PNG/RAW).</li>
-                <li><strong>Orientation:</strong> Landscape (Horizontal) layout only.</li>
-                <li><strong>Resolution:</strong> ~4000×3000px for crystal-clear 4K view.</li>
+                <li><strong>Format:</strong> JPEG, PNG or WebP (no RAW files).</li>
+                <li><strong>Orientation:</strong> Landscape is recommended; portrait photos are accepted.</li>
+                <li><strong>Resolution:</strong> Aim for at least 1800×1200px (3:2) for property photography.</li>
               </ul>
             </div>
             <div className="bg-white/80 p-2.5 rounded-lg border border-amber-100">
               <p className="font-semibold text-stone-900 mb-1">2. Compression & Size</p>
               <ul className="list-disc list-inside space-y-0.5 text-stone-600">
-                <li><strong>Limit:</strong> Under 5 MB (ideally 1–3 MB).</li>
-                <li><strong>Tip:</strong> Run through TinyJPG.com or export at 75%–80% quality before upload.</li>
+                <li><strong>Limit:</strong> 10 MB per original photo.</li>
+                <li><strong>Tip:</strong> Upload the original photograph; Uttarkunth serves smaller optimized card images automatically.</li>
               </ul>
             </div>
             <div className="bg-white/80 p-2.5 rounded-lg border border-amber-100">
@@ -167,7 +168,7 @@ export function PhotoUploader({
         <input
           ref={fileInputRef}
           type="file"
-          accept="image/jpeg,image/jpg,.jpg,.jpeg"
+          accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
           multiple
           disabled={isUploading || photos.length >= maxPhotos}
           onChange={handleFileSelect}
@@ -186,7 +187,7 @@ export function PhotoUploader({
             {isUploading ? 'Uploading to Uttarkunth Gallery...' : 'Tap to select photos from your device / gallery'}
           </p>
           <p className="text-xs text-stone-500 mt-1">
-            Direct JPEG (.jpg) upload • Max 5 MB each • Landscape orientation recommended
+            Original JPEG / PNG / WebP upload • Max 10 MB each • 1800 × 1200 px recommended
           </p>
         </div>
       </div>
@@ -213,7 +214,7 @@ export function PhotoUploader({
             return (
               <div
                 key={url + idx}
-                className="group relative aspect-[4/3] rounded-lg overflow-hidden border border-stone-200 bg-stone-100 shadow-sm"
+                className="group relative aspect-[3/2] rounded-lg overflow-hidden border border-stone-200 bg-stone-100 shadow-sm"
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img

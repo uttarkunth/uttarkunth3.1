@@ -1,12 +1,12 @@
 import React from 'react';
-import Image from 'next/image';
+import { PropertyImage } from '@/components/property-image';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { createPublicServerSupabaseClient, createServerSupabaseClient } from '@/lib/supabase/server';
 import { BRAND } from '@/lib/constants';
 import { BookingWidget } from '@/components/booking-widget';
 import { RoomAvailabilityCalendar } from '@/components/stays/room-availability-calendar';
-import { MapPin, Users, CheckCircle2, ShieldCheck, Clock, Home, Sparkles, ChevronLeft, Wifi, Coffee, Utensils, Car } from 'lucide-react';
+import { MapPin, Users, CheckCircle2, ShieldCheck, Clock, Home, Sparkles, ChevronLeft, Wifi, Coffee, Utensils, Car, Image as ImageIcon } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 
@@ -39,7 +39,7 @@ async function getPropertyBySlug(slug: string) {
     const supabase = createPublicServerSupabaseClient();
     const { data: property, error } = await supabase
       .from('properties')
-      .select('id, slug, name, description, village, district, state, property_type, booking_mode, amenities, photos, published, moderation_status')
+      .select('id, slug, name, description, village, district, state, property_type, booking_mode, amenities, photos, cover_photo, published, moderation_status')
       .eq('slug', slug)
       .eq('published', true)
       .eq('moderation_status', 'approved')
@@ -70,7 +70,7 @@ async function getRelatedStays(currentId: string) {
     const supabase = createPublicServerSupabaseClient();
     const { data: properties } = await supabase
       .from('properties')
-      .select('id, slug, name, description, village, district, state, property_type, amenities, photos')
+      .select('id, slug, name, description, village, district, state, property_type, amenities, photos, cover_photo')
       .eq('published', true)
       .eq('moderation_status', 'approved')
       .neq('id', currentId)
@@ -92,8 +92,8 @@ export default async function PropertyDetailPage({ params, searchParams }: Prope
   const relatedStays = await getRelatedStays(property.id);
 
   const photos = Array.isArray(property.photos) ? (property.photos as unknown as string[]) : [];
-  const primaryPhoto = String(photos[0] || 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=1200&q=80');
-  const secondaryPhotos = photos.slice(1).map(String);
+  const primaryPhoto = String(property.cover_photo || photos[0] || '');
+  const secondaryPhotos = photos.map(String).filter((photo) => photo !== primaryPhoto);
   const amenitiesList = Array.isArray(property.amenities) ? (property.amenities as unknown as string[]) : [];
   const rooms = property.rooms || [];
 
@@ -151,25 +151,36 @@ export default async function PropertyDetailPage({ params, searchParams }: Prope
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3 rounded-3xl overflow-hidden shadow-soft max-h-[500px]">
         {/* Main Photo */}
         <div className="md:col-span-2 relative h-80 sm:h-96 md:h-[480px]">
-          <Image
-            src={primaryPhoto}
-            alt={property.name}
-            fill
-            sizes="(max-width: 768px) 100vw, 66vw"
-            className="object-cover"
-            priority
-          />
+          {primaryPhoto ? (
+            <PropertyImage
+              src={primaryPhoto}
+              alt={property.name}
+              fill
+              sizes="(max-width: 768px) 100vw, 66vw"
+              transformWidth={1200}
+              transformHeight={800}
+              className="object-cover"
+              priority
+            />
+          ) : (
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-forest-dark text-ivory/70">
+              <ImageIcon className="w-12 h-12" />
+              <span className="text-sm">Property photographs coming soon</span>
+            </div>
+          )}
         </div>
 
         {/* Side Photos */}
         <div className="hidden md:flex flex-col gap-3 h-[480px]">
           {secondaryPhotos.slice(0, 2).map((photoUrl, idx) => (
             <div key={idx} className="relative flex-1 overflow-hidden">
-              <Image
+              <PropertyImage
                 src={photoUrl}
-                alt={`${property.name} view ${idx + 2}`}
+                alt={property.name + ' view ' + (idx + 2)}
                 fill
                 sizes="33vw"
+                transformWidth={600}
+                transformHeight={400}
                 className="object-cover hover:scale-105 transition-transform duration-500"
               />
             </div>
@@ -342,19 +353,29 @@ export default async function PropertyDetailPage({ params, searchParams }: Prope
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {relatedStays.map((rel: any) => {
-              const relPhoto = rel.photos?.[0] || 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=800&q=80';
+              const relPhoto = rel.cover_photo || rel.photos?.[0] || null;
               return (
                 <div
                   key={rel.id}
                   className="bg-white rounded-3xl border border-forest/15 overflow-hidden shadow-soft hover:shadow-lifted transition-all flex flex-col group"
                 >
-                  <div className="relative aspect-[16/10] bg-forest-dark overflow-hidden">
-                    <Image
-                      src={relPhoto}
-                      alt={rel.name}
-                      fill
-                      className="object-cover group-hover:scale-105 transition-transform duration-500"
-                    />
+                  <div className="relative aspect-[3/2] bg-forest-dark overflow-hidden">
+                    {relPhoto ? (
+                      <PropertyImage
+                        src={relPhoto}
+                        alt={rel.name}
+                        fill
+                        sizes="(max-width: 768px) 100vw, 50vw"
+                        transformWidth={600}
+                        transformHeight={400}
+                        className="object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                    ) : (
+                      <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-forest-dark text-ivory/70">
+                        <ImageIcon className="w-9 h-9" />
+                        <span className="text-xs">Property photographs coming soon</span>
+                      </div>
+                    )}
                     <span className="absolute top-3 left-3 bg-forest/90 text-ivory text-xs font-semibold px-2.5 py-0.5 rounded-full">
                       {rel.property_type || 'Homestay'}
                     </span>

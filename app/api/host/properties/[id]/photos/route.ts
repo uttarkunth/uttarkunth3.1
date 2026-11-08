@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
@@ -88,12 +89,12 @@ export async function POST(
       );
     }
 
-    const MAX_SIZE = 5 * 1024 * 1024; // 5 MB
+    const MAX_SIZE = 10 * 1024 * 1024; // Matches the property-photos bucket's 10 MB limit
     if (file.size <= 0 || file.size > MAX_SIZE) {
       return NextResponse.json(
         {
           ok: false,
-          error: 'File size exceeds maximum allowed limit of 5MB.',
+          error: 'File size exceeds maximum allowed limit of 10MB.',
         },
         { status: 400 }
       );
@@ -118,13 +119,13 @@ export async function POST(
       .replace(/\.\.+/g, '_')
       .replace(/[^a-zA-Z0-9._-]/g, '_')
       .slice(0, 80);
-    const storagePath = `properties/${property.id}/${Date.now()}-${safeName}`;
+    const storagePath = `properties/${property.id}/${Date.now()}-${randomUUID()}-${safeName}`;
 
     const { error: uploadErr } = await adminClient.storage
       .from('property-photos')
       .upload(storagePath, buffer, {
         contentType: file.type,
-        cacheControl: '3600',
+        cacheControl: '31536000',
         upsert: false,
       });
 

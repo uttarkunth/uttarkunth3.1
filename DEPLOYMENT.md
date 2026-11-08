@@ -130,3 +130,27 @@ SELECT
 - `anon_can_exec`: `false`
 - `auth_can_exec`: `false`
 - `service_role_can_exec`: `true`
+
+
+## 6. Property Photography & Image Delivery
+
+### Original uploads
+- Keep original photographs in the existing Supabase Storage bucket: `property-photos`.
+- Accepted formats: JPEG, PNG and WebP.
+- Maximum upload size: 10 MB per photograph (matches the existing bucket limit).
+- Recommended source quality: at least 1800 × 1200 pixels, landscape where practical. Hosts do not need to crop or resize originals before upload.
+- Property-card presentation uses a consistent 3:2 crop. The original image remains stored unchanged.
+
+### Cloudflare image delivery
+The website requests one standard card rendition per original: **600 × 400 pixels**, `fit=cover`, `gravity=auto`, `quality=82`, `format=auto`. Cloudflare caches the optimized response and the component falls back to the original Supabase URL if a transformation cannot be served.
+
+To enable remote image transformations for `uttarkunth.com`:
+
+1. Open **Cloudflare Dashboard → Images → Transformations** and select the `uttarkunth.com` zone.
+2. Enable image transformations for the zone.
+3. Under **Sources**, allow the exact Supabase origin: `https://xyplgugxpmlnjsvlosdg.supabase.co`.
+4. Save the settings. No Cloudflare Images storage migration is required; originals remain in Supabase Storage.
+
+Cloudflare Images Free includes up to 5,000 unique remote-image transformations per month. The implementation intentionally uses one standard card transformation per photo and falls back to the original when Cloudflare cannot transform it. Check current Cloudflare Images usage before adding multiple image variants.
+
+Do not enable Supabase Storage image transformations for this workflow; they require a Supabase Pro plan. Cloudflare handles delivery resizing instead.

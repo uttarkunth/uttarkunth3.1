@@ -2,9 +2,9 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
+import { PropertyImage } from '@/components/property-image';
 import { formatINR } from '@/lib/utils';
-import { MapPin, Sparkles, CheckCircle2, Heart, ArrowRight } from 'lucide-react';
+import { MapPin, Sparkles, CheckCircle2, Heart, ArrowRight, Image as ImageIcon } from 'lucide-react';
 
 export interface AestheticPropertyProps {
   id: string;
@@ -16,6 +16,7 @@ export interface AestheticPropertyProps {
   description: string | null;
   amenities: string[] | any;
   photos: string[] | any;
+  cover_photo?: string | null;
   property_type: string;
   rooms?: Array<{
     id: string;
@@ -30,11 +31,10 @@ export function AestheticPropertyCard({ property }: { property: AestheticPropert
   const [photoIndex, setPhotoIndex] = useState(0);
   const [isSaved, setIsSaved] = useState(false);
 
-  const rawPhotos = Array.isArray(property.photos) && property.photos.length > 0
-    ? property.photos
-    : ['https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=800&q=80'];
-
-  const photos = rawPhotos.slice(0, 4);
+  const sourcePhotos = Array.isArray(property.photos) ? property.photos : [];
+  const photos = Array.from(new Set([property.cover_photo, ...sourcePhotos]
+    .filter((url): url is string => typeof url === 'string' && url.trim().length > 0)))
+    .slice(0, 4);
 
   const lowestPrice = property.rooms && property.rooms.length > 0
     ? Math.min(...property.rooms.map(r => Number(r.base_price)))
@@ -45,16 +45,25 @@ export function AestheticPropertyCard({ property }: { property: AestheticPropert
       
       {/* Photo Scrubber Container */}
       <div 
-        className="relative h-72 sm:h-80 w-full overflow-hidden bg-forest-dark"
+        className="relative aspect-[3/2] w-full overflow-hidden bg-forest-dark"
         onMouseLeave={() => setPhotoIndex(0)}
       >
-        <Image
-          src={photos[photoIndex] || photos[0]}
-          alt={property.name}
-          fill
-          sizes="(max-width: 768px) 100vw, 50vw"
-          className="object-cover transition-transform duration-700 group-hover:scale-105"
-        />
+        {photos.length > 0 ? (
+          <PropertyImage
+            src={photos[photoIndex] || photos[0]}
+            alt={property.name}
+            fill
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            transformWidth={600}
+            transformHeight={400}
+            className="object-cover transition-transform duration-700 group-hover:scale-105"
+          />
+        ) : (
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-forest-dark text-ivory/70">
+            <ImageIcon className="w-9 h-9" />
+            <span className="text-xs font-medium">Property photographs coming soon</span>
+          </div>
+        )}
         <div className="absolute inset-0 bg-gradient-to-t from-charcoal/85 via-charcoal/15 to-black/20" />
 
         {/* Pinterest-Style Photo Scrubber Hover Zones */}
