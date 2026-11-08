@@ -1,6 +1,7 @@
 import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import staysPillarImage from '../assets/Uttarkunth-Stays-Homepage-Card.webp';
 import { SearchBar } from '@/components/search-bar';
 import { HeroVideo } from '@/components/hero-video';
 import { PartnershipChooser } from '@/components/partnership-chooser';
@@ -239,7 +240,7 @@ export default async function HomePage() {
           >
             <div className="relative aspect-[4/3] w-full bg-forest-dark overflow-hidden">
               <Image
-                src="https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=800&q=80"
+                src={staysPillarImage}
                 alt="Uttarkunth Stays"
                 fill
                 className="object-cover group-hover:scale-105 transition-transform duration-700"
