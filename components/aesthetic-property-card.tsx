@@ -2,7 +2,8 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { PropertyImage, getPropertyPhotoList } from '@/components/property-image';
+import { PropertyImage } from '@/components/property-image';
+import { getPropertyPhotoList } from '@/lib/property-images';
 import { formatINR } from '@/lib/utils';
 import { MapPin, Sparkles, CheckCircle2, Heart, ArrowRight, Image as ImageIcon } from 'lucide-react';
 

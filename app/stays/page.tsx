@@ -1,6 +1,7 @@
 import React from 'react';
 import Link from 'next/link';
-import { PropertyImage, getPropertyPhotoList } from '@/components/property-image';
+import { PropertyImage } from '@/components/property-image';
+import { getPropertyPhotoList } from '@/lib/property-images';
 import { SearchBar } from '@/components/search-bar';
 import { BRAND } from '@/lib/constants';
 import { getActiveDestinations, filterPropertiesForDestination, CURATED_DESTINATIONS, Destination } from '@/lib/destinations.server';

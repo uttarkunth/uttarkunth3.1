@@ -1,5 +1,6 @@
 import React from 'react';
-import { PropertyImage, getPropertyPhotoList } from '@/components/property-image';
+import { PropertyImage } from '@/components/property-image';
+import { getPropertyPhotoList } from '@/lib/property-images';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { createPublicServerSupabaseClient, createServerSupabaseClient } from '@/lib/supabase/server';
