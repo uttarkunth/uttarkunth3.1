@@ -964,8 +964,11 @@ export type Database = {
           notify_email?: boolean
           notify_whatsapp?: boolean
           pending_changes?: Json | null
+          pending_changes_status?: string | null
+          pending_changes_admin_notes?: string | null
           pending_changes_submitted_at?: string | null
           photos?: Json
+          shared_washroom_photos?: Json
           property_type?: string
           published?: boolean
           reviewed_at?: string | null
