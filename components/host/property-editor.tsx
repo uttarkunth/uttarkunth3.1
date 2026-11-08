@@ -525,28 +525,44 @@ export function PropertyEditor({ initialProperty }: PropertyEditorProps) {
                         </select>
                       </div>
 
-                      {/* Attached Washroom Toggle */}
-                      <div className="sm:col-span-3 flex items-center justify-between p-3 bg-white rounded-xl border border-forest/15">
+                      {/* Washroom type controls whether this room needs a private washroom gallery. */}
+                      <div className="sm:col-span-3 rounded-xl border border-forest/15 bg-white p-4 space-y-3">
                         <div>
-                          <span className="text-xs font-bold text-forest block">
-                            Attached Private Washroom
-                          </span>
-                          <span className="text-[11px] text-charcoal-muted">
-                            Ensuite private bathroom with running hot water geyser.
+                          <span className="block text-sm font-bold text-forest">Does this room have a private attached washroom?</span>
+                          <span className="mt-1 block text-xs text-charcoal-muted">
+                            Choose Yes only when the bathroom is exclusively attached to this room. Choose No when guests use the property’s common washroom.
                           </span>
                         </div>
-
-                        <label className="flex items-center gap-2 cursor-pointer">
-                          <input suppressHydrationWarning
-                            type="checkbox"
-                            checked={room.attached_washroom}
-                            onChange={(e) => updateRoomField(idx, 'attached_washroom', e.target.checked)}
-                            className="w-4 h-4 rounded text-forest focus:ring-forest"
-                          />
-                          <span className="text-xs font-semibold text-charcoal">
-                            {room.attached_washroom ? 'Yes (Attached)' : 'No (Shared)'}
-                          </span>
-                        </label>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          <label className={`flex items-start gap-2.5 rounded-lg border p-3 cursor-pointer transition-colors ${room.attached_washroom ? 'border-forest bg-forest/5' : 'border-forest/15 hover:border-forest/35'}`}>
+                            <input suppressHydrationWarning
+                              type="radio"
+                              name={`attached-washroom-${room.id || idx}`}
+                              value="yes"
+                              checked={Boolean(room.attached_washroom)}
+                              onChange={() => updateRoomField(idx, 'attached_washroom', true)}
+                              className="mt-0.5 h-4 w-4 text-forest focus:ring-forest"
+                            />
+                            <span>
+                              <span className="block text-xs font-semibold text-forest">Yes — private attached washroom</span>
+                              <span className="mt-0.5 block text-[11px] text-charcoal-muted">A private bathroom belongs to this room.</span>
+                            </span>
+                          </label>
+                          <label className={`flex items-start gap-2.5 rounded-lg border p-3 cursor-pointer transition-colors ${!room.attached_washroom ? 'border-forest bg-forest/5' : 'border-forest/15 hover:border-forest/35'}`}>
+                            <input suppressHydrationWarning
+                              type="radio"
+                              name={`attached-washroom-${room.id || idx}`}
+                              value="no"
+                              checked={!room.attached_washroom}
+                              onChange={() => updateRoomField(idx, 'attached_washroom', false)}
+                              className="mt-0.5 h-4 w-4 text-forest focus:ring-forest"
+                            />
+                            <span>
+                              <span className="block text-xs font-semibold text-forest">No — shared common washroom</span>
+                              <span className="mt-0.5 block text-[11px] text-charcoal-muted">Guests use the shared bathroom shown in the property-level section.</span>
+                            </span>
+                          </label>
+                        </div>
                       </div>
 
                       <div className="sm:col-span-3">
@@ -595,7 +611,32 @@ export function PropertyEditor({ initialProperty }: PropertyEditorProps) {
         </div>
       </div>
 
-      {/* Section 2: Property Photography Gallery */}
+      {/* Section 2: One property-level gallery for every room that uses a shared washroom. */}
+      <div className="bg-white rounded-3xl p-6 sm:p-8 border border-forest/15 shadow-soft space-y-5">
+        <div>
+          <h2 className="font-serif text-2xl font-bold text-forest">Common Washroom Photos</h2>
+          <p className="mt-1 text-xs text-charcoal-muted">
+            Upload shared bathroom photos once for the whole property. These photos are used by every room marked “No — shared common washroom”. Do not upload common-washroom photos inside individual room editors.
+          </p>
+        </div>
+        {visibleRooms.some((room) => !room.attached_washroom) ? (
+          <PhotoUploader
+            label="Upload Common Washroom Photos"
+            description="Show the sink, toilet, shower, hot-water facility and the overall shared bathroom. These photos are shared across all rooms without a private attached washroom."
+            photos={sharedWashroomPhotos}
+            onChange={setSharedWashroomPhotos}
+            category="washroom"
+            maxPhotos={8}
+            excludePhotos={[...photos, ...allRoomPhotoUrls]}
+          />
+        ) : (
+          <div className="rounded-xl border border-dashed border-forest/20 bg-ivory-warm/60 p-4 text-xs text-charcoal-muted">
+            No room currently uses a common washroom. Select “No — shared common washroom” in at least one room above to enable this photo uploader.
+          </div>
+        )}
+      </div>
+
+      {/* Section 3: Property Photography Gallery */}
       <div className="bg-white rounded-3xl p-6 sm:p-8 border border-forest/15 shadow-soft space-y-6">
         <div>
           <h2 className="font-serif text-2xl font-bold text-forest flex items-center gap-2">
@@ -619,18 +660,10 @@ export function PropertyEditor({ initialProperty }: PropertyEditorProps) {
           excludePhotos={[...sharedWashroomPhotos, ...allRoomPhotoUrls]}
         />
 
-        {visibleRooms.some((room) => !room.attached_washroom) && (
-          <div className="pt-5 border-t border-forest/10 space-y-3">
-            <div>
-              <h3 className="font-serif text-lg font-bold text-forest">Shared Washroom Photos — One Gallery</h3>
-              <p className="text-xs text-charcoal-muted">Upload the common bathroom photos once here, not inside each room. This gallery is shown to guests booking any room marked Shared Washroom.</p>
-            </div>
-            <PhotoUploader label="Upload Shared Washroom Photos" description="One shared gallery for all rooms marked Shared Washroom. Do not upload bedroom photos here." photos={sharedWashroomPhotos} onChange={setSharedWashroomPhotos} category="washroom" maxPhotos={8} excludePhotos={[...photos, ...allRoomPhotoUrls]} />
-          </div>
-        )}
+
       </div>
 
-      {/* Section 4: Operational Details & Amenities */}
+      {/* Section 5: Operational Details & Amenities */}
       <div className="bg-white rounded-3xl p-6 sm:p-8 border border-forest/15 shadow-soft space-y-6">
         <div>
           <h2 className="font-serif text-2xl font-bold text-forest">
