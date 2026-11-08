@@ -274,7 +274,7 @@ export default async function HomePage() {
           >
             <div className="relative aspect-[4/3] w-full bg-forest-dark overflow-hidden">
               <Image
-                src="/assets/products%20home%20page.webp?v=20261108-2"
+                src="/assets/products-home%20page.webp?v=20261108-3"
                 alt="Uttarkunth Products"
                 fill
                 className="object-cover group-hover:scale-105 transition-transform duration-700"
@@ -309,7 +309,7 @@ export default async function HomePage() {
           >
             <div className="relative aspect-[4/3] w-full bg-forest-dark overflow-hidden">
               <Image
-                src="/assets/productions%20home.webp?v=20261108-2"
+                src="/assets/productions-home.webp?v=20261108-3"
                 alt="Uttarkunth Productions"
                 fill
                 className="object-cover group-hover:scale-105 transition-transform duration-700"
@@ -344,7 +344,7 @@ export default async function HomePage() {
           >
             <div className="relative aspect-[4/3] w-full bg-forest-dark overflow-hidden">
               <Image
-                src="/assets/community%20home%20page.webp?v=20261108-2"
+                src="/assets/community-home-page.webp?v=20261108-3"
                 alt="Uttarkunth Community"
                 fill
                 className="object-cover group-hover:scale-105 transition-transform duration-700"
