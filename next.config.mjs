@@ -22,6 +22,13 @@ try {
       }
     }
   }
+
+  // Ensure favicon.ico is present in /public from /public/logo.png at build time
+  const logoFile = path.resolve(process.cwd(), 'public', 'logo.png');
+  const faviconFile = path.resolve(process.cwd(), 'public', 'favicon.ico');
+  if (fs.existsSync(logoFile) && !fs.existsSync(faviconFile)) {
+    fs.copyFileSync(logoFile, faviconFile);
+  }
 } catch {
   // Ignore filesystem write errors in read-only edge environments
 }
@@ -61,6 +68,7 @@ const nextConfig = {
   },
   async rewrites() {
     return [
+      { source: '/favicon.ico', destination: '/logo.png' },
       { source: '/trips/:id', destination: '/guest/trips/:id' },
       { source: '/stays/:slug', destination: '/properties/:slug' },
     ];
