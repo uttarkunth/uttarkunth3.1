@@ -23,6 +23,9 @@ export const dynamic = 'force-dynamic';
 export const metadata = {
   title: `Stays — Find Your Place in the Mountains — ${BRAND.name}`,
   description: 'Explore welcoming timber homestays, riverside retreats, and comfortable bases in the Himalayas. 100% direct host payment.',
+  alternates: {
+    canonical: '/stays',
+  },
 };
 
 async function getStaysData() {
