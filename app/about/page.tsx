@@ -21,6 +21,9 @@ export const metadata = {
   title: `About Uttarkunth — Himalayan Entrepreneurial Ecosystem`,
   description:
     'Ideas born in the Himalayas. Built through people. Uttarkunth is a Himalayan-born entrepreneurial ecosystem built on one conviction: people working together can become a powerful force for community development.',
+  alternates: {
+    canonical: '/about',
+  },
 };
 
 export default function AboutPage() {
