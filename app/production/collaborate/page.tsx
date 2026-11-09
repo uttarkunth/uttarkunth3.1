@@ -11,6 +11,9 @@ export const dynamic = 'force-dynamic';
 export const metadata = {
   title: `Collaborate on Mountain Films — ${BRAND.name} Productions`,
   description: `Pitch independent documentaries, ethnographic visual essays, and Himalayan cultural stories to ${BRAND.name} Productions.`,
+  alternates: {
+    canonical: '/production/collaborate',
+  },
 };
 
 export default async function CollaboratePage() {

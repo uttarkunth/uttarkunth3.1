@@ -30,6 +30,9 @@ export function generateMetadata({ params }: { params: { slug: string } }) {
   return {
     title: `${init.title} — ${BRAND.name} Community`,
     description: init.description,
+    alternates: {
+      canonical: `/community/initiatives/${params.slug}`,
+    },
   };
 }
 
