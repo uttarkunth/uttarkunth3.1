@@ -6,13 +6,20 @@ import { BRAND } from '@/lib/constants';
 import { BrandIntroSplash } from '@/components/brand-intro-splash';
 
 export const metadata: Metadata = {
+  metadataBase: new URL(BRAND.officialDomain),
+  alternates: {
+    canonical: '/',
+  },
   title: `${BRAND.name} — Authentic Himalayan Homestays & Retreats`,
   description: 'Experience genuine local hospitality in Jari, Kasol, Kullu, and Parvati Valley, Himachal Pradesh. Community-rooted stays with verified local hosts.',
   keywords: ['Uttarkunth Stays', 'Jari homestay', 'Kasol stays', 'Parvati Valley', 'Himachal Pradesh accommodation', 'Himalayan retreats', 'Yash Home Stay', 'Wonderway Retreat'],
   authors: [{ name: BRAND.founder }],
   icons: {
-    icon: '/logo.png',
-    shortcut: '/logo.png',
+    icon: [
+      { url: '/favicon.ico', sizes: 'any' },
+      { url: '/logo.png', type: 'image/png' },
+    ],
+    shortcut: '/favicon.ico',
     apple: '/logo.png',
   },
   openGraph: {
