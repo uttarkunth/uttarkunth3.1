@@ -22,6 +22,9 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   return {
     title: `${property.name} — Mountain Stay in ${property.village || 'Jari'}, ${property.district || 'Kullu'} — ${BRAND.name}`,
     description: property.description?.slice(0, 160) || `Stay at ${property.name} in Himachal Pradesh. No online payment is currently collected by Uttarkunth. Guests pay their hosts directly at the property.`,
+    alternates: {
+      canonical: `/stays/${params.slug}`,
+    },
   };
 }
 
