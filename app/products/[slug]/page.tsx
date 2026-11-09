@@ -24,6 +24,16 @@ interface ProductDetailPageProps {
   };
 }
 
+export async function generateMetadata({ params }: ProductDetailPageProps) {
+  return {
+    title: `Himalayan Product — ${BRAND.name}`,
+    description: `Authentic mountain product from independent makers in Himachal Pradesh.`,
+    alternates: {
+      canonical: `/products/${params.slug}`,
+    },
+  };
+}
+
 export default async function ProductDetailPage({ params }: ProductDetailPageProps) {
   let product: any = null;
   try {
@@ -79,7 +89,7 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
             Upcoming Batch • Coming Soon
           </span>
         );
-    }
+      }
   };
 
   return (

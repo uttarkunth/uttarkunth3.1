@@ -16,6 +16,9 @@ export const dynamic = 'force-dynamic';
 export const metadata = {
   title: `Himalayan Products & Artisan Goods — ${BRAND.name}`,
   description: `Pure regional harvests, handloom shawls, wild honey, and traditional handicrafts direct from Himalayan village makers.`,
+  alternates: {
+    canonical: '/products',
+  },
 };
 
 export default async function ProductsPage() {
