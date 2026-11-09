@@ -52,10 +52,10 @@ const nextConfig = {
   },
   async redirects() {
     return [
-      { source: '/properties', destination: '/stays', permanent: false },
-      { source: '/properties/:slug', destination: '/stays/:slug', permanent: false },
-      { source: '/productions', destination: '/production', permanent: false },
-      { source: '/productions/:slug', destination: '/production/:slug', permanent: false },
+      { source: '/properties', destination: '/stays', permanent: true },
+      { source: '/properties/:slug', destination: '/stays/:slug', permanent: true },
+      { source: '/productions', destination: '/production', permanent: true },
+      { source: '/productions/:slug', destination: '/production/:slug', permanent: true },
       { source: '/guest/trips', destination: '/trips', permanent: false },
     ];
   },
