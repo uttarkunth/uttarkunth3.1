@@ -87,6 +87,9 @@ export async function generateMetadata({ params }: DestinationPageProps) {
   return {
     title: `${destination.name}, ${destination.region} Stays — ${BRAND.name}`,
     description: destination.description,
+    alternates: {
+      canonical: `/stays/destinations/${params.slug}`,
+    },
   };
 }
 
@@ -330,7 +333,7 @@ export default async function DestinationDetailPage({ params }: DestinationPageP
         )}
 
         {/* ── CASE 3: NO PROPERTIES (Mandated Authentic Empty State) ── */}
-        {properties.length === 0 && nearbyProperties.length === 0 && (
+        {properties.length === 0 && nearbyProperties.length > 0 && (
           <div className="bg-white rounded-3xl p-8 sm:p-14 border border-forest/15 shadow-soft text-center space-y-6 max-w-3xl mx-auto my-8">
             <div className="w-16 h-16 rounded-full bg-forest/10 text-forest mx-auto flex items-center justify-center">
               <Compass className="w-8 h-8 text-ukorange" />
