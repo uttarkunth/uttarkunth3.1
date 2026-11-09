@@ -7,6 +7,9 @@ import { Store, CheckCircle2, ArrowRight, ShieldCheck, Mail, Sparkles } from 'lu
 export const metadata = {
   title: `Sell Your Products — ${BRAND.name}`,
   description: `Partner with ${BRAND.name} to distribute Himalayan artisanal goods, honey, oils, and handicrafts.`,
+  alternates: {
+    canonical: '/products/sell',
+  },
 };
 
 export default function SellProductsPage() {
