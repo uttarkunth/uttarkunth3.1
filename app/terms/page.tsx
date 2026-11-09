@@ -5,6 +5,9 @@ import { FileText, Scale, ShieldAlert } from 'lucide-react';
 export const metadata = {
   title: `Terms and Conditions — ${BRAND.name}`,
   description: `Official terms of service and platform rules for ${BRAND.name}.`,
+  alternates: {
+    canonical: '/terms',
+  },
 };
 
 export default function TermsPage() {

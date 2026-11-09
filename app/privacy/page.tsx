@@ -5,6 +5,9 @@ import { ShieldCheck, Lock, Eye, FileText } from 'lucide-react';
 export const metadata = {
   title: `Privacy Policy — ${BRAND.name}`,
   description: `Official Privacy Policy and data protection disclosures for ${BRAND.name}.`,
+  alternates: {
+    canonical: '/privacy',
+  },
 };
 
 export default function PrivacyPage() {
