@@ -15,9 +15,14 @@ export async function GET(
     const from = searchParams.get('from') || today;
     const to = searchParams.get('to') || threeMonthsLater;
 
+    const canonicalPropertyId =
+      params.id === 'd9bba1a1-23bc-4844-a70b-aebcc820cf37'
+        ? '7fab8bb8-a04a-462a-8124-26eb100d172f'
+        : params.id;
+
     const supabase = createPublicServerSupabaseClient();
     const { data, error } = await (supabase.rpc as any)('get_public_room_occupancy', {
-      p_property_id: params.id,
+      p_property_id: canonicalPropertyId,
       p_from: from,
       p_to: to,
     });
