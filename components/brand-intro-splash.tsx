@@ -8,24 +8,46 @@ interface BrandIntroSplashProps {
 }
 
 export function BrandIntroSplash({ forceShow = false }: BrandIntroSplashProps) {
-  const [visible, setVisible] = useState(false);
+  // Default visible=true on initial SSR render so the splash is present in HTML
+  // BEFORE the homepage ever paints (eliminating the homepage-first flash).
+  const [visible, setVisible] = useState(true);
   const [closing, setClosing] = useState(false);
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {
-    // Check if user already saw the intro in this session or prefers reduced motion
-    const alreadySeen = typeof window !== 'undefined' && sessionStorage.getItem('uk_splash_seen');
-    const prefersReducedMotion = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const params = new URLSearchParams(window.location.search);
+    const skipForAutostart = params.get('autostart') === '1';
+    const alreadySeen =
+      typeof window !== 'undefined' && sessionStorage.getItem('uk_splash_seen');
+    const prefersReducedMotion =
+      typeof window !== 'undefined' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-    if (!forceShow && (alreadySeen || prefersReducedMotion)) {
+    if (!forceShow && (alreadySeen || prefersReducedMotion || skipForAutostart)) {
+      document.documentElement.setAttribute('data-uk-intro-gate', 'completed');
+      setVisible(false);
       return;
     }
 
+    document.documentElement.setAttribute('data-uk-intro-gate', 'active');
     setVisible(true);
 
     const startTime = performance.now();
     const duration = 2200; // 2.2s elegant loading
     let animationFrameId: number;
+    let closeTimeoutId: number | undefined;
+
+    const finish = () => {
+      setClosing(true);
+      document.documentElement.setAttribute('data-uk-intro-gate', 'revealing');
+      try {
+        sessionStorage.setItem('uk_splash_seen', '1');
+      } catch (e) {}
+      closeTimeoutId = window.setTimeout(() => {
+        document.documentElement.setAttribute('data-uk-intro-gate', 'completed');
+        setVisible(false);
+      }, 950);
+    };
 
     const tick = (now: number) => {
       const elapsed = now - startTime;
@@ -42,16 +64,6 @@ export function BrandIntroSplash({ forceShow = false }: BrandIntroSplashProps) {
       }
     };
 
-    const finish = () => {
-      setClosing(true);
-      try {
-        sessionStorage.setItem('uk_splash_seen', '1');
-      } catch (e) {}
-      setTimeout(() => {
-        setVisible(false);
-      }, 950);
-    };
-
     animationFrameId = requestAnimationFrame(tick);
 
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -61,6 +73,9 @@ export function BrandIntroSplash({ forceShow = false }: BrandIntroSplashProps) {
 
     return () => {
       cancelAnimationFrame(animationFrameId);
+      if (closeTimeoutId !== undefined) {
+        clearTimeout(closeTimeoutId);
+      }
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [forceShow]);
@@ -69,8 +84,10 @@ export function BrandIntroSplash({ forceShow = false }: BrandIntroSplashProps) {
 
   return (
     <div
+      data-uk-intro-root
+      data-testid="brand-intro-splash"
       className={`fixed inset-0 z-[100] overflow-hidden pointer-events-auto transition-opacity duration-700 ${
-        closing ? 'pointer-events-none' : ''
+        closing ? 'pointer-events-none' : 'bg-forest'
       }`}
       aria-label="Uttarkunth Introduction"
     >
@@ -132,10 +149,14 @@ export function BrandIntroSplash({ forceShow = false }: BrandIntroSplashProps) {
         <button
           onClick={() => {
             setClosing(true);
+            document.documentElement.setAttribute('data-uk-intro-gate', 'revealing');
             try {
               sessionStorage.setItem('uk_splash_seen', '1');
             } catch (e) {}
-            setTimeout(() => setVisible(false), 950);
+            setTimeout(() => {
+              document.documentElement.setAttribute('data-uk-intro-gate', 'completed');
+              setVisible(false);
+            }, 950);
           }}
           className="absolute bottom-8 right-8 text-xs uppercase tracking-widest text-ivory/60 hover:text-ivory transition-colors px-4 py-2 rounded-full border border-ivory/20 hover:border-ivory/50"
         >

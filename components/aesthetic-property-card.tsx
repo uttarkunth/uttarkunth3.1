@@ -1,10 +1,15 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { PropertyImage } from '@/components/property-image';
 import { getPropertyPhotoList } from '@/lib/property-images';
 import { formatINR } from '@/lib/utils';
+import {
+  FAVOURITES_UPDATED_EVENT,
+  isEcosystemItemSaved,
+  toggleSavedEcosystemItem,
+} from '@/lib/favourites';
 import { MapPin, Sparkles, CheckCircle2, Heart, ArrowRight, Image as ImageIcon } from 'lucide-react';
 
 export interface AestheticPropertyProps {
@@ -37,6 +42,15 @@ export function AestheticPropertyCard({ property }: { property: AestheticPropert
   const lowestPrice = property.rooms && property.rooms.length > 0
     ? Math.min(...property.rooms.map(r => Number(r.base_price)))
     : 900;
+
+  useEffect(() => {
+    const syncSaved = () => {
+      setIsSaved(isEcosystemItemSaved('stays', property.slug || property.id));
+    };
+    syncSaved();
+    window.addEventListener(FAVOURITES_UPDATED_EVENT, syncSaved);
+    return () => window.removeEventListener(FAVOURITES_UPDATED_EVENT, syncSaved);
+  }, [property.id, property.slug]);
 
   return (
     <div className="group bg-white rounded-3xl overflow-hidden border border-forest/15 hover:border-forest/40 shadow-soft hover:shadow-2xl transition-all duration-500 flex flex-col justify-between">
@@ -106,7 +120,16 @@ export function AestheticPropertyCard({ property }: { property: AestheticPropert
         <button suppressHydrationWarning
           onClick={(e) => {
             e.preventDefault();
-            setIsSaved(!isSaved);
+            e.stopPropagation();
+            const result = toggleSavedEcosystemItem({
+              id: property.slug || property.id,
+              category: 'stays',
+              title: property.name,
+              subtitle: `${property.village || 'Jari'}, ${property.district || 'Kullu'}`,
+              href: `/stays/${property.slug}`,
+              meta: `${formatINR(lowestPrice)} / night`,
+            });
+            setIsSaved(result.saved);
           }}
           className="absolute top-7 right-4 w-9 h-9 rounded-full bg-black/40 backdrop-blur-md text-white flex items-center justify-center hover:bg-black/60 transition-colors z-30"
           aria-label="Save stay"

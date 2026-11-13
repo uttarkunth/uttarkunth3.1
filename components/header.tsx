@@ -1,43 +1,259 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Logo } from './logo';
 import { createClient } from '@/lib/supabase/client';
-import { PILLARS } from '@/lib/constants';
-import { 
-  Menu, X, User, ChevronDown, LogOut, Shield, 
-  Luggage, Compass, Sparkles, Layers, Settings, Home, Search, Bell
+import {
+  getProfileMenuItems,
+  hasUnreadNotifications,
+  resolveUserAvatarDisplay,
+  type ProfileMenuIconName,
+  type UserIdentityInput,
+} from '@/lib/mobile-navigation';
+import {
+  ArrowUp,
+  User,
+  LogOut,
+  Bell,
+  Handshake,
+  Mail,
+  Home,
+  Package,
+  Film,
+  Users,
+  Compass,
+  Briefcase,
+  ShoppingBag,
+  Clapperboard,
+  Settings,
+  Info,
 } from 'lucide-react';
+
+const READ_NOTIFICATIONS_STORAGE_KEY = 'uttarkunth_read_notification_ids';
+
+const ARROW_NAV_ITEMS = [
+  {
+    label: 'Stays',
+    href: '/stays',
+    icon: Home,
+    iconColor: 'text-forest',
+    match: (p: string) => p.startsWith('/stays') || p.startsWith('/properties'),
+  },
+  {
+    label: 'Products',
+    href: '/products',
+    icon: Package,
+    iconColor: 'text-terracotta',
+    match: (p: string) => p.startsWith('/products'),
+  },
+  {
+    label: 'Productions',
+    href: '/production',
+    icon: Film,
+    iconColor: 'text-terracotta',
+    match: (p: string) => p.startsWith('/production'),
+  },
+  {
+    label: 'Community',
+    href: '/community',
+    icon: Users,
+    iconColor: 'text-forest',
+    match: (p: string) => p.startsWith('/community'),
+  },
+  {
+    label: 'About',
+    href: '/about',
+    icon: Compass,
+    iconColor: 'text-terracotta',
+    match: (p: string) => p === '/about',
+  },
+];
+
+function renderProfileMenuIcon(iconName: ProfileMenuIconName) {
+  switch (iconName) {
+    case 'user':
+      return <User strokeWidth={1.75} className="w-4 h-4 text-forest shrink-0" />;
+    case 'bell':
+      return <Bell strokeWidth={1.75} className="w-4 h-4 text-terracotta shrink-0" />;
+    case 'briefcase':
+      return <Briefcase strokeWidth={1.75} className="w-4 h-4 text-forest shrink-0" />;
+    case 'shopping-bag':
+      return <ShoppingBag strokeWidth={1.75} className="w-4 h-4 text-terracotta shrink-0" />;
+    case 'clapperboard':
+      return <Clapperboard strokeWidth={1.75} className="w-4 h-4 text-terracotta shrink-0" />;
+    case 'settings':
+      return <Settings strokeWidth={1.75} className="w-4 h-4 text-forest shrink-0" />;
+    case 'info':
+      return <Info strokeWidth={1.75} className="w-4 h-4 text-forest shrink-0" />;
+    case 'handshake':
+      return <Handshake strokeWidth={1.75} className="w-4 h-4 text-terracotta shrink-0" />;
+    case 'mail':
+      return <Mail strokeWidth={1.75} className="w-4 h-4 text-terracotta shrink-0" />;
+    case 'log-out':
+      return <LogOut strokeWidth={1.75} className="w-4 h-4 text-charcoal-muted shrink-0" />;
+  }
+}
 
 export function Header() {
   const pathname = usePathname();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [navExpanded, setNavExpanded] = useState(false);
   const [accountDropdownOpen, setAccountDropdownOpen] = useState(false);
-  const [user, setUser] = useState<{ id: string; email?: string } | null>(null);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const [headerHidden, setHeaderHidden] = useState(false);
+  const [user, setUser] = useState<UserIdentityInput | null>(null);
+  const [notifications, setNotifications] = useState<Array<{ id?: string; read?: boolean }>>([]);
+  const [locallyReadIds, setLocallyReadIds] = useState<string[]>([]);
+  const headerRef = useRef<HTMLElement>(null);
+  const lastScrollYRef = useRef(0);
 
-  // Close dropdown when clicking outside
+  const loadLocallyReadIds = useCallback((): string[] => {
+    if (typeof window === 'undefined') return [];
+    try {
+      const raw = window.localStorage.getItem(READ_NOTIFICATIONS_STORAGE_KEY);
+      if (!raw) return [];
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed.map(String) : [];
+    } catch {
+      return [];
+    }
+  }, []);
+
+  useEffect(() => {
+    setLocallyReadIds(loadLocallyReadIds());
+  }, [loadLocallyReadIds]);
+
+  // Hide logo and side medallions on scroll down; reveal on scroll up
+  useEffect(() => {
+    lastScrollYRef.current = window.scrollY;
+
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      const delta = currentScrollY - lastScrollYRef.current;
+
+      if (currentScrollY <= 16) {
+        setHeaderHidden(false);
+      } else if (delta > 6) {
+        setHeaderHidden(true);
+        setNavExpanded(false);
+        setAccountDropdownOpen(false);
+      } else if (delta < -6) {
+        setHeaderHidden(false);
+      }
+
+      lastScrollYRef.current = currentScrollY;
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Global passive pointermove listener to update --mouse-x and --mouse-y on all lantern buttons & cards
+  useEffect(() => {
+    const handlePointerMove = (e: PointerEvent) => {
+      const el = (e.target as HTMLElement | null)?.closest<HTMLElement>(
+        '.lantern-btn, .lantern-card, .btn-primary, .btn-secondary, .btn-terracotta, .btn-outline'
+      );
+      if (el) {
+        const rect = el.getBoundingClientRect();
+        el.style.setProperty('--mouse-x', `${e.clientX - rect.left}px`);
+        el.style.setProperty('--mouse-y', `${e.clientY - rect.top}px`);
+      }
+    };
+    window.addEventListener('pointermove', handlePointerMove, { passive: true });
+    return () => window.removeEventListener('pointermove', handlePointerMove);
+  }, []);
+
+  // Close menus when clicking outside the header or pressing Escape
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      if (headerRef.current && !headerRef.current.contains(event.target as Node)) {
         setAccountDropdownOpen(false);
+        setNavExpanded(false);
+      }
+    }
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        setAccountDropdownOpen(false);
+        setNavExpanded(false);
       }
     }
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
   }, []);
 
-  // Close mobile drawer on route change
+  // Close dropdown and expanded nav on route change
   useEffect(() => {
-    setMobileMenuOpen(false);
     setAccountDropdownOpen(false);
+    setNavExpanded(false);
   }, [pathname]);
 
-  // Auth session tracking with server-authoritative admin verification
+  // Fetch notifications from existing /api/account/notifications endpoint
+  const fetchUserNotifications = useCallback(async (activeUser: UserIdentityInput | null) => {
+    if (typeof window !== 'undefined' && (window as any).__uttarkunthTestAuth?.notifications) {
+      setNotifications((window as any).__uttarkunthTestAuth.notifications);
+      return;
+    }
+    if (!activeUser) {
+      setNotifications([]);
+      return;
+    }
+    try {
+      const res = await fetch('/api/account/notifications', { cache: 'no-store' });
+      if (res.ok) {
+        const data = await res.json();
+        if (data?.ok && Array.isArray(data.notifications)) {
+          setNotifications(data.notifications);
+        }
+      }
+    } catch {
+      // Ignore network errors cleanly
+    }
+  }, []);
+
+  // When visiting /account/notifications, mark currently loaded notifications as read in local read-status sync
   useEffect(() => {
+    if (pathname === '/account/notifications' && notifications.length > 0) {
+      const allIds = Array.from(
+        new Set([
+          ...loadLocallyReadIds(),
+          ...notifications.map((n) => (n.id ? String(n.id) : '')).filter(Boolean),
+        ])
+      );
+      setLocallyReadIds(allIds);
+      try {
+        window.localStorage.setItem(READ_NOTIFICATIONS_STORAGE_KEY, JSON.stringify(allIds));
+      } catch {
+        // Ignore storage errors
+      }
+    }
+  }, [pathname, notifications, loadLocallyReadIds]);
+
+  // Auth session tracking + optional profile enrichment from profiles table
+  useEffect(() => {
+    const syncTestAuthOverride = () => {
+      const testAuth = typeof window !== 'undefined' ? (window as any).__uttarkunthTestAuth : undefined;
+      if (testAuth && 'user' in testAuth) {
+        setUser(testAuth.user);
+        setNotifications(Array.isArray(testAuth.notifications) ? testAuth.notifications : []);
+        return true;
+      }
+      return false;
+    };
+
+    if (syncTestAuthOverride()) {
+      const handleOverrideEvent = () => {
+        syncTestAuthOverride();
+        setLocallyReadIds(loadLocallyReadIds());
+      };
+      window.addEventListener('uttarkunth-auth-override-changed', handleOverrideEvent);
+      return () => window.removeEventListener('uttarkunth-auth-override-changed', handleOverrideEvent);
+    }
+
     let supabase: ReturnType<typeof createClient>;
     try {
       supabase = createClient();
@@ -45,396 +261,348 @@ export function Header() {
       return;
     }
 
-    const verifyAdmin = async (currentUser: any) => {
-      if (!currentUser) {
-        setIsAdmin(false);
+    const enrichUserWithProfile = async (sessionUser: any) => {
+      if (!sessionUser) {
+        setUser(null);
+        setNotifications([]);
         return;
       }
+      setUser(sessionUser);
+      fetchUserNotifications(sessionUser);
       try {
-        const res = await fetch('/api/auth/role');
-        if (res.ok) {
-          const data = await res.json();
-          setIsAdmin(Boolean(data?.isAdmin));
-        } else {
-          setIsAdmin(false);
+        const { data: profileRow } = await (supabase.from('profiles' as any) as any)
+          .select('full_name, preferred_name, avatar_url')
+          .eq('id', sessionUser.id)
+          .maybeSingle();
+        if (profileRow) {
+          setUser((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  full_name: profileRow.full_name || prev.full_name,
+                  preferred_name: profileRow.preferred_name || prev.preferred_name,
+                  avatar_url: profileRow.avatar_url || prev.avatar_url,
+                }
+              : prev
+          );
         }
       } catch {
-        setIsAdmin(false);
+        // Ignore if profiles table doesn't have avatar_url or RLS blocks
       }
     };
 
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        setUser(session.user);
-        verifyAdmin(session.user);
-      } else {
-        setUser(null);
-        setIsAdmin(false);
-      }
+      if (syncTestAuthOverride()) return;
+      enrichUserWithProfile(session?.user ?? null);
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session?.user) {
-        setUser(session.user);
-        verifyAdmin(session.user);
-      } else {
-        setUser(null);
-        setIsAdmin(false);
-      }
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (syncTestAuthOverride()) return;
+      enrichUserWithProfile(session?.user ?? null);
     });
 
-    return () => subscription.unsubscribe();
-  }, []);
+    const handleOverrideEvent = () => {
+      if (!syncTestAuthOverride()) {
+        supabase.auth.getSession().then(({ data: { session } }) => {
+          enrichUserWithProfile(session?.user ?? null);
+        });
+      }
+      setLocallyReadIds(loadLocallyReadIds());
+    };
+    window.addEventListener('uttarkunth-auth-override-changed', handleOverrideEvent);
+
+    return () => {
+      subscription.unsubscribe();
+      window.removeEventListener('uttarkunth-auth-override-changed', handleOverrideEvent);
+    };
+  }, [fetchUserNotifications, loadLocallyReadIds]);
 
   const handleSignOut = async () => {
-    const supabase = createClient();
-    await supabase.auth.signOut();
+    if (typeof window !== 'undefined' && (window as any).__uttarkunthTestAuth) {
+      delete (window as any).__uttarkunthTestAuth;
+      window.dispatchEvent(new CustomEvent('uttarkunth-auth-override-changed'));
+      setUser(null);
+      setNotifications([]);
+      setAccountDropdownOpen(false);
+      return;
+    }
+    try {
+      const supabase = createClient();
+      await supabase.auth.signOut();
+    } catch {
+      // Ignore error
+    }
     window.location.href = '/';
   };
 
-  // Determine context-aware CTA based on current section
-  const getContextualCTA = () => {
-    if (pathname.startsWith('/stays') || pathname.startsWith('/properties')) {
-      return { label: 'List Your Property', href: '/stays/partner' };
-    }
-    if (pathname.startsWith('/products')) {
-      return { label: 'Sell Products', href: '/products/sell' };
-    }
-    if (pathname.startsWith('/production')) {
-      return { label: 'Collaborate', href: '/production/collaborate' };
-    }
-    if (pathname.startsWith('/community')) {
-      return { label: 'Join Our Mission', href: '/community/join' };
-    }
-    return { label: 'Partner With Us', href: '/community' };
+  // Mutual exclusivity handlers: tapping Arrow closes Profile; tapping Profile closes Arrow
+  const handleToggleArrowNav = () => {
+    setNavExpanded((prev) => {
+      const next = !prev;
+      if (next) {
+        setAccountDropdownOpen(false);
+      }
+      return next;
+    });
   };
 
-  const contextualCTA = getContextualCTA();
+  const handleToggleProfileMenu = () => {
+    setAccountDropdownOpen((prev) => {
+      const next = !prev;
+      if (next) {
+        setNavExpanded(false);
+      }
+      return next;
+    });
+  };
+
+  const avatarDisplay = resolveUserAvatarDisplay(user);
+  const isAuthenticated = avatarDisplay.isAuthenticated;
+  const unreadNotificationExists =
+    isAuthenticated && hasUnreadNotifications(notifications, locallyReadIds);
+  const profileMenuItems = getProfileMenuItems(isAuthenticated, pathname);
 
   return (
-    <header className="sticky top-0 z-40 bg-warm-canvas/95 backdrop-blur-md border-b border-beige/60 transition-colors">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
-        {/* Brand Logo */}
-        <Logo />
-
-        {/* Desktop Navigation Links — Four Pillars & Heritage */}
-        <nav className="hidden lg:flex items-center gap-7 text-sm font-medium text-charcoal" aria-label="Main Navigation">
-          <Link
-            href="/stays"
-            className={`transition-colors hover:text-terracotta py-1 border-b-2 ${
-              pathname.startsWith('/stays') || pathname.startsWith('/properties') 
-                ? 'border-forest text-forest font-semibold' 
-                : 'border-transparent text-charcoal'
-            }`}
-          >
-            Stays
-          </Link>
-          <Link
-            href="/products"
-            className={`transition-colors hover:text-terracotta py-1 border-b-2 ${
-              pathname.startsWith('/products') 
-                ? 'border-forest text-forest font-semibold' 
-                : 'border-transparent text-charcoal'
-            }`}
-          >
-            Products
-          </Link>
-          <Link
-            href="/production"
-            className={`transition-colors hover:text-terracotta py-1 border-b-2 ${
-              pathname.startsWith('/production') 
-                ? 'border-forest text-forest font-semibold' 
-                : 'border-transparent text-charcoal'
-            }`}
-          >
-            Productions
-          </Link>
-          <Link
-            href="/community"
-            className={`transition-colors hover:text-terracotta py-1 border-b-2 ${
-              pathname.startsWith('/community') 
-                ? 'border-forest text-forest font-semibold' 
-                : 'border-transparent text-charcoal'
-            }`}
-          >
-            Community
-          </Link>
-          <span className="w-px h-4 bg-beige" aria-hidden="true" />
-          <Link
-            href="/about"
-            className={`transition-colors hover:text-terracotta py-1 border-b-2 ${
-              pathname === '/about' 
-                ? 'border-forest text-forest font-semibold' 
-                : 'border-transparent text-charcoal/80'
-            }`}
-          >
-            About
-          </Link>
-          <Link
-            href="/contact"
-            className={`transition-colors hover:text-terracotta py-1 border-b-2 ${
-              pathname === '/contact' 
-                ? 'border-forest text-forest font-semibold' 
-                : 'border-transparent text-charcoal/80'
-            }`}
-          >
-            Contact
-          </Link>
-        </nav>
-
-        {/* Action Controls: Search, Contextual CTA & Unified Account Icon */}
-        <div className="hidden lg:flex items-center gap-3">
-          {/* Universal Search Link */}
-          <Link
-            href="/search"
-            className="p-2 rounded-full border border-beige bg-warm-card hover:border-forest/40 text-charcoal hover:text-terracotta transition-all duration-200"
-            aria-label="Search Ecosystem"
-          >
-            <Search className="w-4 h-4" />
-          </Link>
-
-          {/* Context-Aware Partnership CTA */}
-          <Link
-            href={contextualCTA.href}
-            className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-forest bg-forest/5 hover:bg-forest/10 border border-beige/80 rounded-full transition-all duration-200"
-          >
-            <Sparkles className="w-3.5 h-3.5 text-terracotta" />
-            <span>{contextualCTA.label}</span>
-          </Link>
-
-          {/* Canonical Account / Profile Icon with Dropdown */}
-          <div className="relative" ref={dropdownRef}>
+    <header
+      ref={headerRef}
+      className={`sticky top-0 z-header transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] relative overflow-visible bg-transparent ${
+        headerHidden
+          ? '-translate-y-24 opacity-0 pointer-events-none'
+          : 'translate-y-0 opacity-100'
+      }`}
+    >
+      {/* Main Header Content Container */}
+      <div className="relative z-40 max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4 bg-transparent">
+        {/* DESKTOP ONLY (md+): Left 135° Tilted Arrow + Showcase Card */}
+        <div className="hidden md:flex items-center shrink-0">
+          <div className="relative">
             <button
+              type="button"
               suppressHydrationWarning
-              onClick={() => setAccountDropdownOpen(!accountDropdownOpen)}
-              className="inline-flex items-center gap-2 p-1.5 rounded-full border border-beige bg-warm-card hover:border-forest/40 transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-terracotta"
-              aria-label="User Account Menu"
-              aria-expanded={accountDropdownOpen}
+              onClick={handleToggleArrowNav}
+              className={`group w-10 h-10 rounded-full bg-[#FFFDF9] hover:bg-white border transition-colors duration-200 ease-out flex items-center justify-center shadow-[0_4px_14px_rgba(12,20,16,0.18)] focus:outline-none ${
+                navExpanded
+                  ? 'border-[#C55B23] text-[#C55B23] ring-2 ring-[#C55B23]/20'
+                  : 'border-[#E5DEC9] hover:border-[#C55B23]/45 text-[#1F332A]'
+              }`}
+              aria-label={navExpanded ? 'Close navigation menu' : 'Open navigation menu'}
+              aria-expanded={navExpanded}
+              aria-haspopup="menu"
+              aria-controls="uttarkunth-expanded-pillars"
+              title={
+                navExpanded
+                  ? 'Close navigation'
+                  : 'Open Stays, Products, Productions, Community & About Uttarkunth'
+              }
             >
-              <div className="w-8 h-8 rounded-full bg-forest text-warm-canvas flex items-center justify-center font-medium text-xs">
-                {user ? (user.email?.[0]?.toUpperCase() || <User className="w-4 h-4" />) : <User className="w-4 h-4" />}
-              </div>
-              <ChevronDown className={`w-3.5 h-3.5 text-charcoal-muted mr-1 transition-transform duration-200 ${accountDropdownOpen ? 'rotate-180' : ''}`} />
+              <ArrowUp
+                strokeWidth={1.75}
+                className={`w-4 h-4 transition-transform duration-250 ease-out ${
+                  navExpanded
+                    ? 'rotate-180 text-[#C55B23]'
+                    : 'rotate-[135deg] text-[#1F332A] group-hover:text-[#C55B23]'
+                }`}
+              />
             </button>
 
-            {/* Dropdown Menu */}
-            {accountDropdownOpen && (
-              <div className="absolute right-0 mt-2 w-64 rounded-2xl bg-warm-surface border border-beige shadow-lifted py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
-                {user ? (
-                  // Logged In Menu
-                  <>
-                    <div className="px-4 py-2.5 border-b border-beige/60">
-                      <p className="text-xs text-charcoal-muted">Signed in as</p>
-                      <p className="text-sm font-semibold text-charcoal truncate">{user.email}</p>
-                    </div>
-
-                    <div className="py-1">
-                      <Link
-                        href="/account"
-                        className="flex items-center gap-2.5 px-4 py-2.5 text-sm font-medium text-charcoal hover:bg-forest/5 hover:text-forest transition-colors"
-                      >
-                        <Layers className="w-4 h-4 text-forest" />
-                        <span>My Uttarkunth</span>
-                      </Link>
-                      <Link
-                        href="/account/notifications"
-                        className="flex items-center gap-2.5 px-4 py-2.5 text-sm font-medium text-charcoal hover:bg-forest/5 hover:text-forest transition-colors"
-                      >
-                        <Bell className="w-4 h-4 text-ukorange" />
-                        <span>Activity &amp; Notifications</span>
-                      </Link>
-                      <Link
-                        href="/trips"
-                        className="flex items-center gap-2.5 px-4 py-2.5 text-sm font-medium text-charcoal hover:bg-forest/5 hover:text-forest transition-colors"
-                      >
-                        <Luggage className="w-4 h-4 text-terracotta" />
-                        <span>My Trips</span>
-                      </Link>
-                      <Link
-                        href="/account/profile"
-                        className="flex items-center gap-2.5 px-4 py-2.5 text-sm font-medium text-charcoal hover:bg-forest/5 hover:text-forest transition-colors"
-                      >
-                        <User className="w-4 h-4 text-charcoal-muted" />
-                        <span>My Profile</span>
-                      </Link>
-                      <Link
-                        href="/account/settings"
-                        className="flex items-center gap-2.5 px-4 py-2.5 text-sm font-medium text-charcoal hover:bg-forest/5 hover:text-forest transition-colors"
-                      >
-                        <Settings className="w-4 h-4 text-charcoal-muted" />
-                        <span>Account Settings</span>
-                      </Link>
-                    </div>
-
-                    <div className="pt-1 mt-1 border-t border-beige/60">
-                      <button suppressHydrationWarning
-                        onClick={handleSignOut}
-                        className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-left text-charcoal-muted hover:text-charcoal hover:bg-forest/5 transition-colors"
-                      >
-                        <LogOut className="w-4 h-4 text-charcoal-muted" />
-                        <span>Log Out</span>
-                      </button>
-                    </div>
-                  </>
-                ) : (
-                  // Logged Out Menu
-                  <div className="py-1">
+            {/* Left Showcase Card — Direct Stays, Products, Productions, Community, About */}
+            {navExpanded && (
+              <div
+                id="uttarkunth-expanded-pillars"
+                role="menu"
+                aria-label="Ecosystem navigation"
+                className="absolute left-0 mt-2.5 w-56 rounded-2xl bg-warm-surface border border-beige shadow-elevated py-1.5 z-dropdown animate-scale-in origin-top-left"
+              >
+                {ARROW_NAV_ITEMS.map((item) => {
+                  const active = item.match(pathname);
+                  const IconComponent = item.icon;
+                  return (
                     <Link
-                      href={`/login?returnUrl=${encodeURIComponent(pathname)}`}
-                      className="flex items-center justify-center mx-3 my-1.5 px-4 py-2 text-sm font-medium text-warm-canvas bg-forest hover:bg-forest-hover rounded-full transition-colors"
+                      key={item.href}
+                      href={item.href}
+                      role="menuitem"
+                      aria-current={active ? 'page' : undefined}
+                      onClick={() => setNavExpanded(false)}
+                      className={`flex items-center gap-3 px-4 py-2.5 text-xs sm:text-sm font-medium transition-colors ${
+                        active
+                          ? 'bg-forest/10 text-forest font-semibold'
+                          : 'text-charcoal hover:bg-forest/5 hover:text-forest'
+                      }`}
                     >
-                      Log In
+                      <IconComponent className={`w-4 h-4 shrink-0 ${item.iconColor}`} />
+                      <span>{item.label}</span>
                     </Link>
-                    <Link
-                      href={`/signup?returnUrl=${encodeURIComponent(pathname)}`}
-                      className="flex items-center justify-center mx-3 my-1 px-4 py-2 text-sm font-medium text-charcoal bg-warm-card hover:bg-white border border-beige rounded-full transition-colors"
-                    >
-                      Create Account
-                    </Link>
-                    <div className="pt-2 mt-2 border-t border-beige/60">
-                      <Link
-                        href="/community"
-                        className="flex items-center gap-2 px-4 py-2 text-xs text-charcoal-muted hover:text-forest transition-colors"
-                      >
-                        <Sparkles className="w-3.5 h-3.5 text-terracotta" />
-                        <span>Partner With Uttarkunth</span>
-                      </Link>
-                    </div>
-                  </div>
-                )}
+                  );
+                })}
               </div>
             )}
           </div>
         </div>
 
-        {/* Mobile Menu Button */}
-        <div className="flex items-center gap-3 lg:hidden">
-          {/* Direct Account Shortcut for Mobile */}
-          <Link
-            href={user ? "/account" : `/login?returnUrl=${encodeURIComponent(pathname)}`}
-            className="w-9 h-9 rounded-full bg-forest text-warm-canvas flex items-center justify-center text-xs font-medium"
-            aria-label="Account"
-          >
-            {user ? (user.email?.[0]?.toUpperCase() || <User className="w-4 h-4" />) : <User className="w-4 h-4" />}
-          </Link>
-
-          <button
-            suppressHydrationWarning
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="p-2 rounded-lg text-charcoal hover:text-forest hover:bg-forest/5 focus:outline-none focus:ring-2 focus:ring-terracotta"
-            aria-label={mobileMenuOpen ? "Close Menu" : "Open Menu"}
-            aria-expanded={mobileMenuOpen}
-          >
-            {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-          </button>
+        {/* LOGO — Left-aligned on Mobile (<md), Centered on Desktop (md+) */}
+        <div className="flex items-center md:absolute md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2 z-20">
+          <Logo centerMark />
         </div>
-      </div>
 
-      {/* Accessible Mobile Navigation Drawer */}
-      {mobileMenuOpen && (
-        <div className="lg:hidden fixed inset-x-0 top-20 bg-warm-canvas border-b border-beige shadow-lifted z-40 max-h-[calc(100vh-5rem)] overflow-y-auto">
-          <div className="px-5 py-6 space-y-6">
-            {/* The Four Pillars */}
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-charcoal-muted mb-3">Ecosystem Pillars</p>
-              <div className="grid grid-cols-2 gap-2.5">
-                {PILLARS.map((pillar) => (
-                  <Link
-                    key={pillar.id}
-                    href={pillar.href}
-                    className="flex flex-col p-3 rounded-xl bg-warm-card border border-beige/80 hover:border-forest transition-colors"
-                  >
-                    <span className="font-serif text-base font-semibold text-charcoal">{pillar.title}</span>
-                    <span className="text-[11px] text-charcoal-muted mt-0.5 line-clamp-1">{pillar.tagline}</span>
-                  </Link>
-                ))}
-              </div>
-            </div>
-
-            {/* Search link for mobile */}
-            <div>
-              <Link
-                href="/search"
-                className="flex items-center gap-2 p-3 rounded-xl bg-warm-card border border-beige/80 text-sm font-medium text-charcoal hover:border-forest transition-colors"
-              >
-                <Search className="w-4 h-4 text-terracotta" />
-                <span>Search Uttarkunth Ecosystem</span>
-              </Link>
-            </div>
-
-            {/* Heritage & Contact */}
-            <div className="space-y-2 border-t border-beige/60 pt-4">
-              <Link
-                href="/about"
-                className="block py-2 text-base font-medium text-charcoal hover:text-terracotta"
-              >
-                About Uttarkunth
-              </Link>
-              <Link
-                href="/contact"
-                className="block py-2 text-base font-medium text-charcoal hover:text-terracotta"
-              >
-                Contact & Support
-              </Link>
-            </div>
-
-            {/* Contextual CTA for Mobile */}
-            <div className="pt-2">
-              <Link
-                href={contextualCTA.href}
-                className="w-full flex items-center justify-center gap-2 py-3 rounded-full bg-forest text-warm-canvas font-medium text-sm transition-colors"
-              >
-                <Sparkles className="w-4 h-4 text-terracotta" />
-                <span>{contextualCTA.label}</span>
-              </Link>
-            </div>
-
-            {/* User Account Controls in Mobile Drawer */}
-            <div className="border-t border-beige/60 pt-4">
-              {user ? (
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between py-1">
-                    <span className="text-xs text-charcoal-muted truncate">{user.email}</span>
-                  </div>
-                  <Link
-                    href="/account"
-                    className="block py-2 text-sm font-semibold text-forest"
-                  >
-                    My Uttarkunth Dashboard →
-                  </Link>
-                  <Link
-                    href="/trips"
-                    className="block py-1.5 text-sm text-charcoal"
-                  >
-                    My Trips
-                  </Link>
-                  <button suppressHydrationWarning
-                    onClick={handleSignOut}
-                    className="block py-2 text-sm text-charcoal-muted hover:text-charcoal"
-                  >
-                    Log Out
-                  </button>
-                </div>
+        {/* RIGHT — Profile Icon / Avatar / Initial with Subtle Terracotta Notification Dot */}
+        <div className="flex items-center shrink-0">
+          <div className="relative">
+            <button
+              type="button"
+              suppressHydrationWarning
+              onClick={handleToggleProfileMenu}
+              data-testid="header-profile-button"
+              className={`relative group w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-[#FFFDF9] hover:bg-white border transition-colors duration-200 ease-out flex items-center justify-center shadow-[0_4px_14px_rgba(12,20,16,0.18)] focus:outline-none ${
+                accountDropdownOpen
+                  ? 'border-[#C55B23] text-[#C55B23] ring-2 ring-[#C55B23]/20'
+                  : 'border-[#E5DEC9] hover:border-[#C55B23]/45 text-[#1F332A]'
+              }`}
+              aria-label={
+                unreadNotificationExists
+                  ? 'User Profile & Quick Links (Unread notifications)'
+                  : 'User Profile & Quick Links'
+              }
+              aria-expanded={accountDropdownOpen}
+              aria-haspopup="menu"
+            >
+              {avatarDisplay.avatarUrl ? (
+                <img
+                  src={avatarDisplay.avatarUrl}
+                  alt={avatarDisplay.displayName || 'Profile'}
+                  referrerPolicy="no-referrer"
+                  data-testid="header-profile-avatar-img"
+                  className="w-full h-full rounded-full object-cover"
+                />
+              ) : avatarDisplay.initial ? (
+                <span
+                  data-testid="header-profile-initial"
+                  className="text-xs font-semibold text-[#1F332A]"
+                >
+                  {avatarDisplay.initial}
+                </span>
               ) : (
-                <div className="grid grid-cols-2 gap-3">
-                  <Link
-                    href={`/login?returnUrl=${encodeURIComponent(pathname)}`}
-                    className="flex items-center justify-center py-2.5 rounded-full bg-forest text-warm-canvas text-sm font-medium"
-                  >
-                    Log In
-                  </Link>
-                  <Link
-                    href={`/signup?returnUrl=${encodeURIComponent(pathname)}`}
-                    className="flex items-center justify-center py-2.5 rounded-full bg-warm-card border border-beige text-charcoal text-sm font-medium"
-                  >
-                    Create Account
-                  </Link>
-                </div>
+                <User
+                  strokeWidth={1.75}
+                  className={`w-4 h-4 transition-colors duration-200 ${
+                    accountDropdownOpen
+                      ? 'text-[#C55B23]'
+                      : 'text-[#1F332A] group-hover:text-[#C55B23]'
+                  }`}
+                />
               )}
-            </div>
+
+              {/* Subtle Terracotta Notification Indicator Dot when unread notifications exist */}
+              {unreadNotificationExists && (
+                <span
+                  data-testid="profile-unread-dot"
+                  aria-label="Unread notifications"
+                  className="absolute -bottom-0.5 right-0.5 w-2.5 h-2.5 rounded-full bg-[#C55B23] ring-2 ring-[#FFFDF9]"
+                />
+              )}
+            </button>
+
+            {/* Adaptive Profile Menu Card — No "Not logged in / Logged in" words; bottom Login/Signup or Logout CTA */}
+            {accountDropdownOpen && (
+              <div
+                role="menu"
+                aria-label="Profile and quick navigation"
+                data-testid="adaptive-profile-menu"
+                className="absolute right-0 mt-2.5 w-64 rounded-2xl bg-[#FFFDF9] border border-[#E5DEC9] shadow-[0_14px_34px_rgba(18,28,22,0.16)] py-1.5 z-dropdown animate-scale-in origin-top-right"
+              >
+                {/* Menu Links */}
+                <div className="py-1">
+                  {profileMenuItems.map((item) => {
+                    const showNotifBadge =
+                      item.id === 'notifications' && unreadNotificationExists;
+                    const isMyProfileItem = item.id === 'my-profile';
+
+                    return (
+                      <Link
+                        key={item.id}
+                        href={item.href}
+                        role="menuitem"
+                        onClick={() => setAccountDropdownOpen(false)}
+                        className="flex items-center justify-between gap-3 px-4 py-2.5 text-xs sm:text-sm font-medium text-[#29251F] hover:bg-[#263D32]/6 hover:text-[#263D32] transition-colors"
+                      >
+                        <span className="flex items-center gap-3 min-w-0">
+                          {isMyProfileItem && avatarDisplay.avatarUrl ? (
+                            <img
+                              src={avatarDisplay.avatarUrl}
+                              alt={avatarDisplay.displayName || 'Profile'}
+                              referrerPolicy="no-referrer"
+                              data-testid="menu-profile-avatar-img"
+                              className="w-5 h-5 rounded-full object-cover shrink-0 border border-[#E5DEC9]"
+                            />
+                          ) : isMyProfileItem && avatarDisplay.initial ? (
+                            <span
+                              data-testid="menu-profile-initial"
+                              className="w-5 h-5 rounded-full bg-[#263D32] text-[#FFFDF9] text-[10px] font-bold flex items-center justify-center shrink-0"
+                            >
+                              {avatarDisplay.initial}
+                            </span>
+                          ) : (
+                            renderProfileMenuIcon(item.iconName)
+                          )}
+                          <span className="truncate">{item.label}</span>
+                        </span>
+                        {showNotifBadge && (
+                          <span
+                            aria-hidden="true"
+                            className="w-2 h-2 rounded-full bg-[#C55B23] shrink-0"
+                          />
+                        )}
+                      </Link>
+                    );
+                  })}
+                </div>
+
+                {/* Bottom CTA Footer — Login / Sign Up when logged out, Log Out when signed in */}
+                <div className="pt-1.5 mt-1 border-t border-[#E5DEC9]/70 px-3 pb-1">
+                  {isAuthenticated ? (
+                    <button
+                      type="button"
+                      role="menuitem"
+                      data-testid="profile-menu-logout-cta"
+                      suppressHydrationWarning
+                      onClick={handleSignOut}
+                      className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-semibold text-[#29251F] bg-[#F5F0E6] hover:bg-status-danger-bg/60 hover:text-status-danger border border-[#E2D9C5] transition-colors"
+                    >
+                      <LogOut className="w-3.5 h-3.5 shrink-0" />
+                      <span>Log Out</span>
+                    </button>
+                  ) : (
+                    <div
+                      data-testid="profile-menu-guest-ctas"
+                      className="flex items-center gap-2"
+                    >
+                      <Link
+                        href={`/login?returnUrl=${encodeURIComponent(pathname || '/')}`}
+                        role="menuitem"
+                        data-testid="profile-menu-login-cta"
+                        onClick={() => setAccountDropdownOpen(false)}
+                        className="flex-1 flex items-center justify-center py-2 text-xs font-semibold text-[#FFFDF9] bg-[#263D32] hover:bg-[#1E3128] rounded-full transition-colors"
+                      >
+                        Log In
+                      </Link>
+                      <Link
+                        href={`/signup?returnUrl=${encodeURIComponent(pathname || '/')}`}
+                        role="menuitem"
+                        data-testid="profile-menu-signup-cta"
+                        onClick={() => setAccountDropdownOpen(false)}
+                        className="flex-1 flex items-center justify-center py-2 text-xs font-semibold text-[#29251F] bg-[#F5F0E6] hover:bg-white border border-[#D9CCB8] rounded-full transition-colors"
+                      >
+                        Sign Up
+                      </Link>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </div>
-      )}
+      </div>
     </header>
   );
 }
