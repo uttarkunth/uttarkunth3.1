@@ -5,6 +5,8 @@ import Image from 'next/image';
 
 interface HeroVideoProps {
   videoSrc?: string;
+  posterSrc?: string;
+  className?: string;
 }
 
 /**
