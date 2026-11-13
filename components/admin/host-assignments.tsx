@@ -149,7 +149,7 @@ export function HostAssignmentsManager({ properties, knownUsers }: HostAssignmen
         <div className="p-3.5 bg-forest/5 border border-forest/20 rounded-2xl flex items-start gap-3 mt-4">
           <Info className="w-4 h-4 text-forest flex-shrink-0 mt-0.5" />
           <p className="text-xs text-forest leading-relaxed">
-            <strong>Mandatory Platform Safeguard:</strong> Canonical launch properties <em>Yash Home Stay</em> and <em>Wonderway Retreat</em> must never be automatically assigned to arbitrary accounts. They remain in direct platform stewardship unless explicitly delegated by an authorized platform administrator.
+            <strong>Mandatory Platform Safeguard:</strong> Canonical launch property <em>Yash Home Stay</em> must never be automatically assigned to arbitrary accounts. It remains in direct platform stewardship unless explicitly delegated by an authorized platform administrator.
           </p>
         </div>
       </div>

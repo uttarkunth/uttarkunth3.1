@@ -35,9 +35,6 @@ export function generateMetadata({ params }: Props) {
   return {
     title: `${production.title} — ${BRAND.name} Productions`,
     description: production.description,
-    alternates: {
-      canonical: `/production/${params.slug}`,
-    },
   };
 }
 

@@ -1,4 +1,4 @@
-import { CURATED_DESTINATIONS, type Destination } from './destinations.ts';
+import { CURATED_DESTINATIONS, type Destination } from './destinations';
 
 export interface ParsedVoiceSearchCommand {
   rawTranscript: string;

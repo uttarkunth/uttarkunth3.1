@@ -17,13 +17,7 @@ function StayRowCard({ property }: { property: any }) {
   const [photoIndex, setPhotoIndex] = useState(0);
   const [isSaved, setIsSaved] = useState(false);
 
-  const roomPhotos = Array.isArray(property.rooms)
-    ? property.rooms.flatMap((r: any) => (Array.isArray(r.photos) ? r.photos : []))
-    : [];
-  const photos = getPropertyPhotoList(property.cover_photo, [
-    ...(Array.isArray(property.photos) ? property.photos : []),
-    ...roomPhotos,
-  ]).slice(0, 5);
+  const photos = getPropertyPhotoList(property.cover_photo, property.photos).slice(0, 5);
 
   const lowestPrice =
     Array.isArray(property.rooms) && property.rooms.length > 0

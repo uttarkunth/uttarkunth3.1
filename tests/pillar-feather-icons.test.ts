@@ -4,7 +4,7 @@ import {
   PILLAR_FEATHER_COLLECTIONS,
   getFeatherIconsForPillar,
   type PillarFeatherCategory,
-} from '../lib/pillar-feather-icons.ts';
+} from '../lib/pillar-feather-icons';
 
 test('every pillar has a unique 14-icon feather collection (7 left wing, 7 right wing)', () => {
   const pillars: PillarFeatherCategory[] = ['stays', 'products', 'productions', 'community'];

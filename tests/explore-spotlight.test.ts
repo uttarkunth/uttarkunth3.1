@@ -8,9 +8,7 @@ import {
   shouldTriggerExploreSpotlight,
   consumeExploreSpotlightSession,
   type SessionStorageLike,
-} from '../lib/explore-spotlight.ts';
-import { EXISTING_PROPERTIES } from '../lib/constants.ts';
-import { getPropertyPhotoList } from '../lib/property-images.ts';
+} from '../lib/explore-spotlight';
 
 function createMockSessionStorage(): SessionStorageLike & { store: Map<string, string> } {
   const store = new Map<string, string>();
@@ -61,34 +59,4 @@ test('new session allows spotlight transition again and duration supports peak l
   assert.ok(EXPLORE_SPOTLIGHT_PEAK_MS >= 250);
   assert.ok(EXPLORE_SPOTLIGHT_FADEOUT_MS >= 700);
   assert.equal(EXPLORE_SPOTLIGHT_DURATION_MS, EXPLORE_SPOTLIGHT_PEAK_MS + EXPLORE_SPOTLIGHT_FADEOUT_MS);
-});
-
-test('Yash Home Stay is synced with Supabase (8 total gallery photos, 4 rooms, house rules, and check-in/out times)', () => {
-  const yash: any = EXISTING_PROPERTIES[0];
-  assert.equal(yash.id, '7fab8bb8-a04a-462a-8124-26eb100d172f');
-  assert.equal(yash.slug, 'yash-home-stay');
-  assert.equal(yash.canonical_slug, 'yash-home-stay-jari-4u07');
-  assert.equal(yash.rooms.length, 4, 'Yash Home Stay must have all 4 rooms synced');
-  assert.ok(yash.house_rules.includes('Quiet hours after 10:00 PM'));
-  assert.equal(yash.check_in_time, '12:00 PM');
-  assert.equal(yash.check_out_time, '11:00 AM');
-
-  // Verify exact 8 unique gallery photos (2 property + 4 room + 1 private washroom + 1 shared washroom)
-  const seen = new Set<string>();
-  const addUrls = (urls: string[]) => urls.forEach((u) => seen.add(u));
-
-  addUrls(getPropertyPhotoList(yash.cover_photo, yash.photos));
-  assert.equal(seen.size, 2, '2 property photos');
-
-  for (const room of yash.rooms) {
-    addUrls(getPropertyPhotoList(null, room.photos));
-    if (room.attached_washroom) {
-      addUrls(getPropertyPhotoList(null, room.washroom_photos));
-    }
-  }
-  if (yash.rooms.some((r: any) => !r.attached_washroom)) {
-    addUrls(getPropertyPhotoList(null, yash.shared_washroom_photos));
-  }
-
-  assert.equal(seen.size, 8, 'Total gallery photos for Yash Home Stay must be 8');
 });

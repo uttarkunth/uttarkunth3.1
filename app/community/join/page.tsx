@@ -6,9 +6,6 @@ import { Heart, Users, CheckCircle2, ArrowRight, Mail } from 'lucide-react';
 export const metadata = {
   title: `Join Our Mission — ${BRAND.name} Community`,
   description: `Participate, volunteer, or partner with ${BRAND.name} in Himalayan community initiatives.`,
-  alternates: {
-    canonical: '/community/join',
-  },
 };
 
 export default function JoinCommunityPage() {

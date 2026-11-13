@@ -2,7 +2,7 @@ import React from 'react';
 import { SearchBar } from '@/components/search-bar';
 import { PropertyCard } from '@/components/property-card';
 import { createPublicServerSupabaseClient } from '@/lib/supabase/server';
-import { PROPERTY_TYPES, AMENITIES_LIST } from '@/lib/constants';
+import { PROPERTY_TYPES, AMENITIES_LIST, EXISTING_PROPERTIES } from '@/lib/constants';
 import { Filter, SlidersHorizontal, Mountain, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 
@@ -27,9 +27,10 @@ async function fetchFilteredProperties(params: PropertiesPageProps['searchParams
 
     let query = supabase
       .from('properties')
-      .select('id, slug, name, description, village, district, state, property_type, booking_mode, amenities, photos, published, moderation_status')
+      .select('*')
       .eq('published', true)
-      .eq('moderation_status', 'approved');
+      .eq('moderation_status', 'approved')
+      .neq('slug', 'wonderway-retreat');
 
     if (params.destination) {
       query = query.or(`village.ilike.%${params.destination}%,district.ilike.%${params.destination}%,name.ilike.%${params.destination}%`);
@@ -41,19 +42,20 @@ async function fetchFilteredProperties(params: PropertiesPageProps['searchParams
 
     const { data: properties, error } = await query;
 
-    let list = properties || [];
+    const rawList = (!error && properties && properties.length > 0) ? properties : EXISTING_PROPERTIES;
+    const list = rawList.filter((p: any) => p && p.slug !== 'wonderway-retreat');
 
     // Attach rooms
-    const propIds = list.map(p => p.id);
+    const propIds = list.map((p: any) => p.id);
     const { data: rooms } = await supabase
       .from('room_units')
       .select('id, property_id, room_name, description, max_guests, base_price, active')
       .in('property_id', propIds)
       .eq('active', true);
 
-    const withRooms = list.map(p => ({
+    const withRooms = list.map((p: any) => ({
       ...p,
-      rooms: rooms ? rooms.filter(r => r.property_id === p.id) : (p as any).rooms || []
+      rooms: rooms && rooms.length > 0 ? rooms.filter(r => r.property_id === p.id) : (p as any).rooms || []
     }));
 
     // Filter by guests capacity

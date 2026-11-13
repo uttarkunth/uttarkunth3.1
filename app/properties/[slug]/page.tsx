@@ -5,7 +5,7 @@ import { getPropertyPhotoList } from '@/lib/property-images';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { createPublicServerSupabaseClient, createServerSupabaseClient } from '@/lib/supabase/server';
-import { BRAND } from '@/lib/constants';
+import { BRAND, EXISTING_PROPERTIES } from '@/lib/constants';
 import { BookingWidget } from '@/components/booking-widget';
 import { RoomAvailabilityCalendar } from '@/components/stays/room-availability-calendar';
 import { MapPin, Users, CheckCircle2, ShieldCheck, Clock, Home, Sparkles, ChevronLeft, Wifi, Coffee, Utensils, Car, Image as ImageIcon } from 'lucide-react';
@@ -22,9 +22,6 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   return {
     title: `${property.name} — Mountain Stay in ${property.village || 'Jari'}, ${property.district || 'Kullu'} — ${BRAND.name}`,
     description: property.description?.slice(0, 160) || `Stay at ${property.name} in Himachal Pradesh. No online payment is currently collected by Uttarkunth. Guests pay their hosts directly at the property.`,
-    alternates: {
-      canonical: `/stays/${params.slug}`,
-    },
   };
 }
 
@@ -40,23 +37,26 @@ interface PropertyDetailPageProps {
 }
 
 async function getPropertyBySlug(slug: string) {
+  if (slug === 'wonderway-retreat') return null;
+
   try {
     const supabase = createPublicServerSupabaseClient();
     const { data: property, error } = await supabase
       .from('properties')
-      .select('id, slug, name, description, village, district, state, property_type, booking_mode, amenities, photos, cover_photo, shared_washroom_photos, published, moderation_status')
+      .select('*')
       .eq('slug', slug)
       .eq('published', true)
       .eq('moderation_status', 'approved')
       .single();
 
     if (error || !property) {
-      return null;
+      const fallback = EXISTING_PROPERTIES.find((p: any) => p.slug === slug && p.slug !== 'wonderway-retreat');
+      return (fallback as any) || null;
     }
 
     const { data: rooms } = await supabase
       .from('room_units')
-      .select('id, property_id, room_name, description, max_guests, base_price, attached_washroom, view_type, bed_type, features, photos, washroom_photos, active')
+      .select('*')
       .eq('property_id', property.id)
       .eq('active', true)
       .order('sort_order', { ascending: true });
@@ -66,7 +66,8 @@ async function getPropertyBySlug(slug: string) {
       rooms: rooms || []
     };
   } catch {
-    return null;
+    const fallback = EXISTING_PROPERTIES.find((p: any) => p.slug === slug && p.slug !== 'wonderway-retreat');
+    return (fallback as any) || null;
   }
 }
 
@@ -75,13 +76,14 @@ async function getRelatedStays(currentId: string) {
     const supabase = createPublicServerSupabaseClient();
     const { data: properties } = await supabase
       .from('properties')
-      .select('id, slug, name, description, village, district, state, property_type, amenities, photos, cover_photo')
+      .select('*')
       .eq('published', true)
       .eq('moderation_status', 'approved')
       .neq('id', currentId)
+      .neq('slug', 'wonderway-retreat')
       .limit(2);
 
-    return properties || [];
+    return (properties || []).filter((p: any) => p.slug !== 'wonderway-retreat');
   } catch {
     return [];
   }
@@ -97,7 +99,7 @@ export default async function PropertyDetailPage({ params, searchParams }: Prope
   const relatedStays = await getRelatedStays(property.id);
 
   const amenitiesList = Array.isArray(property.amenities) ? (property.amenities as unknown as string[]) : [];
-  const rooms = property.rooms || [];
+  const rooms: any[] = property.rooms || [];
   const galleryPhotos: PropertyGalleryPhoto[] = [];
   const seenGalleryUrls = new Set<string>();
   const addGalleryPhotos = (urls: string[], category: PropertyGalleryPhoto['category'], label: string) => {
@@ -183,7 +185,7 @@ export default async function PropertyDetailPage({ params, searchParams }: Prope
           <div className="space-y-4 pb-8 border-b border-forest/10">
             <h2 className="font-serif text-2xl font-bold text-forest">Room Types &amp; Inventory</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {rooms.map((roomItem) => {
+              {rooms.map((roomItem: any) => {
                 const room = roomItem as any;
                 return (
                   <div key={room.id} className="p-5 bg-white rounded-2xl border border-forest/15 shadow-sm space-y-3 flex flex-col justify-between">

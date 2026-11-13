@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { parseVoiceSearchCommand } from '../lib/voice-search.ts';
+import { parseVoiceSearchCommand } from '../lib/voice-search';
 
 test('parses direct destination voice transcript and strips trailing punctuation', () => {
   const res = parseVoiceSearchCommand('Manali.');

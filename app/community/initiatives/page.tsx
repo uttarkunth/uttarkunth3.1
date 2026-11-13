@@ -6,9 +6,6 @@ import { Users, Heart, ArrowRight, Calendar, MapPin, CheckCircle2, Sparkles, Fil
 export const metadata = {
   title: `Grassroots Initiatives — ${BRAND.name} Community`,
   description: `Explore the 9 active and upcoming Himalayan field initiatives of ${BRAND.name}. Ecology, architecture, youth skills, and oral folklore preservation.`,
-  alternates: {
-    canonical: '/community/initiatives',
-  },
 };
 
 export default function InitiativesPage() {
@@ -109,13 +106,11 @@ export default function InitiativesPage() {
             We review individual applications for field residencies across research, photography, soil testing, and vernacular building apprenticeships.
           </p>
         </div>
-
         <Link
-          href="/community/join"
-          className="px-6 py-3 bg-ukorange hover:bg-ukorange-deep text-white font-semibold text-xs rounded-full transition-colors flex-shrink-0 inline-flex items-center gap-2"
+          href="/community/participate"
+          className="px-6 py-3 bg-ukorange hover:bg-ukorange-deep text-white text-xs font-semibold rounded-xl transition-colors flex-shrink-0"
         >
-          <span>Volunteer or Partner</span>
-          <ArrowRight className="w-4 h-4" />
+          Submit Open Participation Application
         </Link>
       </div>
     </div>

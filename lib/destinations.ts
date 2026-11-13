@@ -258,7 +258,7 @@ export function getCanonicalDestinationSlug(property: any): string {
   const address = (property.address || '').toLowerCase().trim();
   const district = (property.district || '').toLowerCase().trim();
 
-  // Yash Home Stay & Wonderway Retreat are located in Jari
+  // Yash Home Stay is located in Jari
   if (village === 'jari' || address.includes('jari') || (village === '' && district === 'kullu')) {
     return 'kullu-jari';
   }
@@ -283,7 +283,12 @@ export function filterPropertiesForDestination(properties: any[], destination: D
   if (!properties || properties.length === 0 || !destination) return [];
 
   return properties.filter((property) => {
-    if (property.published !== true || property.moderation_status !== 'approved') {
+    if (
+      !property ||
+      property.slug === 'wonderway-retreat' ||
+      property.published !== true ||
+      property.moderation_status !== 'approved'
+    ) {
       return false;
     }
     return getCanonicalDestinationSlug(property) === destination.slug;

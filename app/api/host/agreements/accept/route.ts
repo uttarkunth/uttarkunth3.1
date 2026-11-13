@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
     // Signatory Authorization Rules:
     // 1. If property has an assigned primary host (property.host_id IS NOT NULL):
     //    Only the assigned primary host OR an explicitly designated signatory on the draft may accept.
-    // 2. If property has NO assigned primary host (property.host_id IS NULL, e.g. Yash Home Stay, Wonderway Retreat):
+    // 2. If property has NO assigned primary host (property.host_id IS NULL, e.g. Yash Home Stay):
     //    Acceptance strictly requires an explicitly designated signatory pre-assigned on the agreement draft.
     //    If agreement.host_user_id is null, acceptance is strictly prohibited until explicitly designated.
     // 3. Platform administrators do NOT automatically sign commercial terms unless explicitly pre-designated.

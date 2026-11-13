@@ -79,7 +79,7 @@ const PILLARS_DATA: PillarItem[] = [
     description:
       'Small-batch harvests, indigenous wool, woodcraft, and botanical goods from mountain makers.',
     highlight: '9 Curated Craft Categories',
-    image: '/assets/products-home-page.webp',
+    image: '/assets/products home page.webp',
     imageAlt: 'Uttarkunth Products — Authentic Himalayan handcrafts and small-batch harvests',
     href: '/products',
     ctaLabel: 'Shop',
@@ -96,7 +96,7 @@ const PILLARS_DATA: PillarItem[] = [
     description:
       'Independent ethnographic documentaries and cultural chronicles preserving Himalayan heritage.',
     highlight: 'Original Documentary Archive',
-    image: '/assets/productions-home.webp',
+    image: '/assets/productions home.webp',
     imageAlt: 'Uttarkunth Productions — Himalayan documentary filmmaking and visual storytelling',
     href: '/production',
     ctaLabel: 'Watch',
@@ -113,7 +113,7 @@ const PILLARS_DATA: PillarItem[] = [
     description:
       'Grassroots village stewardship connecting local families, youth, and conscious collaborators.',
     highlight: 'Karmayog Stewardship',
-    image: '/assets/community-home-page.webp',
+    image: '/assets/community home page.webp',
     imageAlt: 'Uttarkunth Community — Grassroots Himalayan village stewardship and collaboration',
     href: '/community',
     ctaLabel: 'Explore',
@@ -497,3 +497,6 @@ export function FourPillarsShowcase({
     </div>
   );
 }
+
+
+

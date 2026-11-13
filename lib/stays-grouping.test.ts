@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { groupPropertiesByLocation, resolvePropertyLocationGroup } from './stays-grouping.ts';
+import { groupPropertiesByLocation, resolvePropertyLocationGroup } from './stays-grouping';
 
 test('Yash Home Stay in Jari maps to Stays in Parvati Valley, Kullu', () => {
   const group = resolvePropertyLocationGroup({

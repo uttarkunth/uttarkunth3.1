@@ -24,9 +24,6 @@ export const metadata = {
   title: `Community — The 77 Houses of Jari & The Uttarkunth Movement`,
   description:
     'Uttarkunth is a community-rooted startup built with the 77 houses of Jari village. Powered by Karmayog (5% think, 95% work), the Uttarkunth Ekta Abhiyan cleanliness drives, and the Community Development Fund.',
-  alternates: {
-    canonical: '/community',
-  },
 };
 
 export default function CommunityPage() {

@@ -20,9 +20,6 @@ export const metadata = {
   title: `Partner With Uttarkunth Stays — List Your Mountain Property`,
   description:
     'Join our curated network of authentic Himalayan homestays. Retain complete booking autonomy, direct host payments, and transparent terms.',
-  alternates: {
-    canonical: '/stays/partner',
-  },
 };
 
 export default function StaysPartnerPage() {

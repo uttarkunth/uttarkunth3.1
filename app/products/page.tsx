@@ -16,12 +16,20 @@ export const dynamic = 'force-dynamic';
 export const metadata = {
   title: `Himalayan Products & Artisan Goods — ${BRAND.name}`,
   description: `Pure regional harvests, handloom shawls, wild honey, and traditional handicrafts direct from Himalayan village makers.`,
-  alternates: {
-    canonical: '/products',
-  },
 };
 
-export default async function ProductsPage() {
+interface ProductsPageProps {
+  searchParams?: Promise<{
+    category?: string;
+    q?: string;
+  }> | {
+    category?: string;
+    q?: string;
+  };
+}
+
+export default async function ProductsPage({ searchParams }: ProductsPageProps) {
+  const resolvedParams = await Promise.resolve(searchParams || {});
   let products: any[] = [];
   try {
     const adminClient = createAdminClient();
@@ -76,7 +84,11 @@ export default async function ProductsPage() {
 
       {/* 2. Interactive Product Browser */}
       <section>
-        <ProductsBrowser products={products} />
+        <ProductsBrowser
+          products={products}
+          initialCategory={resolvedParams?.category || 'all'}
+          initialQuery={resolvedParams?.q || ''}
+        />
       </section>
 
       {/* 3. Ethical Sourcing & Workflow */}

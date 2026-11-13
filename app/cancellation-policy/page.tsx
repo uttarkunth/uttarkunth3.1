@@ -5,9 +5,6 @@ import { RefreshCw, CalendarX, AlertCircle } from 'lucide-react';
 export const metadata = {
   title: `Cancellation Policy — ${BRAND.name}`,
   description: `Official booking cancellation guidelines and notice windows for ${BRAND.name}.`,
-  alternates: {
-    canonical: '/cancellation-policy',
-  },
 };
 
 export default function CancellationPolicyPage() {

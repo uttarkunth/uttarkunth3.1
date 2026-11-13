@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Host Desk — Uttarkunth Homestay Management</title>
+  <link rel="stylesheet" href="./css/brand.css?v=3.2">
+  <link rel="stylesheet" href="./css/portal.css?v=3.2">
+</head>
+<body>
+
+  <div class="portal-layout">
+    <!-- Sidebar -->
+    <aside class="portal-sidebar">
+      <a class="portal-sidebar-brand" href="/">
+        <img src="./assets/uttarkunth-logo-white.svg" alt="Uttarkunth" class="footer-logo" style="height:36px;">
+        <span style="font-family:var(--serif);font-size:18px;font-weight:600;">Host Desk</span>
+      </a>
+
+      <ul class="portal-nav">
+        <li><a href="/host" class="active"><span>📋</span> Booking Queue</a></li>
+        <li><a href="#calendar"><span>📅</span> Availability Calendar</a></li>
+        <li><a href="#property"><span>🏡</span> My Homestay</a></li>
+        <li><a href="/stays"><span>←</span> Return to Stays</a></li>
+      </ul>
+
+      <div class="portal-user-chip">
+        <span>Logged in as:</span>
+        <strong id="host-user-display">Loading host...</strong>
+        <button onclick="window.UKAuth.signOut(); window.location.reload();" style="background:none;border:none;color:var(--terracotta);font-size:12px;cursor:pointer;margin-top:8px;">Sign Out</button>
+      </div>
+    </aside>
+
+    <!-- Main Workspace Content -->
+    <main class="portal-content">
+      <!-- Unauthenticated Prompt -->
+      <div id="host-login-prompt" hidden style="max-width:480px;margin:80px auto;background:var(--surface);padding:40px;border-radius:16px;border:1px solid var(--line);text-align:center;">
+        <h2 style="font-family:var(--serif);margin-bottom:12px;">Sign in to Host Desk</h2>
+        <p style="color:var(--stone);margin-bottom:24px;font-size:14px;">Access your assigned homestay, review guest requests, and manage room calendar dates.</p>
+        <button class="btn-primary" onclick="window.openAuthModal('signin')" style="width:100%;">Sign In as Host</button>
+      </div>
+
+      <!-- Authenticated Dashboard View -->
+      <div id="host-dashboard-view">
+        <header class="portal-header">
+          <div>
+            <span class="editorial-label">Uttarkunth Homestay Workspace</span>
+            <h1>Incoming Requests &amp; Calendar</h1>
+          </div>
+          <div>
+            <a href="/stays" class="btn-ghost" style="color:var(--stone);border-color:var(--stone);font-size:12px;">View Public Listing ↗</a>
+          </div>
+        </header>
+
+        <!-- Metric Cards -->
+        <div class="metrics-grid">
+          <div class="metric-card">
+            <span class="metric-label">Pending Requests</span>
+            <div class="metric-value" id="m-pending-count">0</div>
+          </div>
+          <div class="metric-card">
+            <span class="metric-label">Confirmed Stays</span>
+            <div class="metric-value" id="m-confirmed-count">0</div>
+          </div>
+          <div class="metric-card">
+            <span class="metric-label">Payout Basis</span>
+            <div class="metric-value" style="font-size:1.6rem;color:var(--success);">On Arrival</div>
+          </div>
+          <div class="metric-card">
+            <span class="metric-label">Host Status</span>
+            <div class="metric-value" style="font-size:1.6rem;color:var(--terracotta);">Verified</div>
+          </div>
+        </div>
+
+        <!-- Decision Queue -->
+        <section style="margin-bottom:48px;">
+          <h2 style="font-family:var(--serif);font-size:1.4rem;margin-bottom:18px;">Active Booking Queue</h2>
+          <div id="host-queue-list">
+            <p style="padding:24px;text-align:center;color:var(--muted);">Loading requests from database...</p>
+          </div>
+        </section>
+
+        <!-- Availability Calendar Section -->
+        <section id="calendar" style="margin-bottom:48px;background:var(--surface);padding:32px;border-radius:16px;border:1px solid var(--line);">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+            <div>
+              <h2 style="font-family:var(--serif);font-size:1.4rem;">Room Availability &amp; Maintenance Blocking</h2>
+              <p style="font-size:13px;color:var(--muted);">Block room dates for seasonal repairs, family use, or heavy mountain snow.</p>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(3, 1fr);gap:16px;margin-bottom:20px;">
+            <div>
+              <label style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:6px;">Start Date</label>
+              <input type="date" id="block-start-date" style="width:100%;padding:10px;border-radius:6px;border:1px solid var(--line);">
+            </div>
+            <div>
+              <label style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:6px;">End Date</label>
+              <input type="date" id="block-end-date" style="width:100%;padding:10px;border-radius:6px;border:1px solid var(--line);">
+            </div>
+            <div style="display:flex;align-items:flex-end;">
+              <button class="btn-primary" style="width:100%;padding:10px;" onclick="alert('Select room unit from inventory to lock dates.')">Block Room Dates</button>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <!-- Shared Auth Modal -->
+  <div id="auth-modal" class="modal-overlay">
+    <div class="modal-card">
+      <button class="modal-close" onclick="window.closeAuthModal()">✕</button>
+      <h3 style="font-family:var(--serif);font-size:1.6rem;margin-bottom:8px;">Sign In to Host Desk</h3>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:20px;">Use your registered homestay owner email address.</p>
+      <form onsubmit="event.preventDefault(); window.UKAuth.signInWithPassword(document.getElementById('auth-email').value, document.getElementById('auth-password').value).then(() => window.location.reload()).catch(e => alert(e.message));">
+        <div style="margin-bottom:14px;">
+          <label style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);">Email</label>
+          <input type="email" id="auth-email" required style="width:100%;padding:10px;border:1px solid var(--line);border-radius:6px;margin-top:4px;">
+        </div>
+        <div style="margin-bottom:20px;">
+          <label style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);">Password</label>
+          <input type="password" id="auth-password" required style="width:100%;padding:10px;border:1px solid var(--line);border-radius:6px;margin-top:4px;">
+        </div>
+        <button type="submit" class="btn-primary" style="width:100%;">Sign In</button>
+      </form>
+    </div>
+  </div>
+
+  <script src="./js/supabase-client.js?v=3.2"></script>
+  <script src="./js/host-portal.js?v=3.2"></script>
+</body>
+</html>

@@ -5,9 +5,6 @@ import { BookmarkCheck, Clock, CreditCard, ShieldCheck } from 'lucide-react';
 export const metadata = {
   title: `Booking Policy — ${BRAND.name}`,
   description: `Official stay reservation and host confirmation guidelines for ${BRAND.name}.`,
-  alternates: {
-    canonical: '/booking-policy',
-  },
 };
 
 export default function BookingPolicyPage() {

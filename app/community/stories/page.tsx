@@ -10,9 +10,6 @@ export const dynamic = 'force-dynamic';
 export const metadata = {
   title: `Oral Archives & Field Stories — ${BRAND.name} Community`,
   description: `Authentic mountain stories, oral folklore transcriptions, and field reflections from Himalayan hamlets.`,
-  alternates: {
-    canonical: '/community/stories',
-  },
 };
 
 export default async function CommunityStoriesPage() {
@@ -109,34 +106,13 @@ export default async function CommunityStoriesPage() {
               <div className="prose prose-sm text-charcoal leading-relaxed whitespace-pre-line text-xs sm:text-sm">
                 {story.content}
               </div>
-
-              {story.excerpt && !story.content && (
-                <p className="text-xs sm:text-sm text-charcoal-muted leading-relaxed italic">
-                  &ldquo;{story.excerpt}&rdquo;
-                </p>
-              )}
             </article>
           ))
         )}
       </div>
 
-      {/* Contribute Story Section */}
-      <div className="bg-white rounded-3xl p-6 sm:p-10 border border-forest/15 shadow-soft space-y-6">
-        <div className="space-y-2">
-          <span className="text-xs font-bold uppercase tracking-wider text-ukorange flex items-center gap-1.5">
-            <Sparkles className="w-3.5 h-3.5" />
-            Preserve Mountain Voices
-          </span>
-          <h2 className="font-serif text-2xl font-bold text-forest">
-            Submit a Field Reflection or Folk Narrative
-          </h2>
-          <p className="text-xs sm:text-sm text-charcoal-muted leading-relaxed">
-            Are you a local elder, traveler, or folklorist with a genuine story from Parvati, Kullu, or Spiti valleys? Submit your draft for community archive review.
-          </p>
-        </div>
-
-        <CommunityStoryForm isDbReady={isDbReady} />
-      </div>
+      {/* Contribution Form */}
+      <CommunityStoryForm isDbReady={isDbReady} />
     </div>
   );
 }

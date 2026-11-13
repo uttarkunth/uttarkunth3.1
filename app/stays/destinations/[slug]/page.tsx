@@ -10,7 +10,7 @@ import {
   getActiveDestinations,
 } from '@/lib/destinations.server';
 import { createPublicServerSupabaseClient } from '@/lib/supabase/server';
-import { BRAND } from '@/lib/constants';
+import { BRAND, EXISTING_PROPERTIES } from '@/lib/constants';
 import { formatINR } from '@/lib/utils';
 import {
   MapPin,
@@ -40,11 +40,12 @@ async function getPropertiesForDestination(slug: string) {
     const supabase = createPublicServerSupabaseClient();
     const { data: properties, error } = await supabase
       .from('properties')
-      .select('id, slug, name, description, village, district, state, property_type, booking_mode, amenities, photos, cover_photo, published, moderation_status')
+      .select('*')
       .eq('published', true)
-      .eq('moderation_status', 'approved');
+      .eq('moderation_status', 'approved')
+      .neq('slug', 'wonderway-retreat');
 
-    const source = (error || !properties) ? [] : properties;
+    const source = (error || !properties || properties.length === 0) ? EXISTING_PROPERTIES : properties;
     const directMatching = filterPropertiesForDestination(source, destination);
     const nearbyMatching = getNearbyPropertiesForDestination(source, destination);
 
@@ -63,7 +64,7 @@ async function getPropertiesForDestination(slug: string) {
     const attachRooms = (list: any[]) =>
       list.map((p) => ({
         ...p,
-        rooms: rooms ? rooms.filter((r) => r.property_id === p.id) : [],
+        rooms: rooms && rooms.length > 0 ? rooms.filter((r) => r.property_id === p.id) : (p.rooms || []),
       }));
 
     return {
@@ -72,10 +73,12 @@ async function getPropertiesForDestination(slug: string) {
       nearbyProperties: attachRooms(nearbyMatching),
     };
   } catch {
+    const directMatching = filterPropertiesForDestination(EXISTING_PROPERTIES, destination);
+    const nearbyMatching = getNearbyPropertiesForDestination(EXISTING_PROPERTIES, destination);
     return {
       destination,
-      properties: [],
-      nearbyProperties: [],
+      properties: directMatching,
+      nearbyProperties: nearbyMatching,
     };
   }
 }
@@ -87,9 +90,6 @@ export async function generateMetadata({ params }: DestinationPageProps) {
   return {
     title: `${destination.name}, ${destination.region} Stays — ${BRAND.name}`,
     description: destination.description,
-    alternates: {
-      canonical: `/stays/destinations/${params.slug}`,
-    },
   };
 }
 
@@ -333,7 +333,7 @@ export default async function DestinationDetailPage({ params }: DestinationPageP
         )}
 
         {/* ── CASE 3: NO PROPERTIES (Mandated Authentic Empty State) ── */}
-        {properties.length === 0 && nearbyProperties.length > 0 && (
+        {properties.length === 0 && nearbyProperties.length === 0 && (
           <div className="bg-white rounded-3xl p-8 sm:p-14 border border-forest/15 shadow-soft text-center space-y-6 max-w-3xl mx-auto my-8">
             <div className="w-16 h-16 rounded-full bg-forest/10 text-forest mx-auto flex items-center justify-center">
               <Compass className="w-8 h-8 text-ukorange" />

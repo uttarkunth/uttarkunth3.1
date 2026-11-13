@@ -21,9 +21,6 @@ export const metadata = {
   title: `About Uttarkunth — Himalayan Entrepreneurial Ecosystem`,
   description:
     'Ideas born in the Himalayas. Built through people. Uttarkunth is a Himalayan-born entrepreneurial ecosystem built on one conviction: people working together can become a powerful force for community development.',
-  alternates: {
-    canonical: '/about',
-  },
 };
 
 export default function AboutPage() {
@@ -610,71 +607,137 @@ export default function AboutPage() {
         </section>
 
         {/* SECTION 11: FOUNDER'S STATEMENT */}
-        <section id="founder" className="scroll-mt-32 space-y-8">
-          <div className="border-l-4 border-ukorange pl-4 sm:pl-6 space-y-2">
+        <section id="founder" className="scroll-mt-36 space-y-8 -mx-4 sm:mx-0">
+          <div className="px-4 sm:px-0 space-y-1.5">
             <span className="text-xs uppercase tracking-widest text-ukorange font-bold">Founder</span>
             <h2 className="font-serif text-3xl sm:text-4xl font-bold text-forest">
               Founder’s Statement
             </h2>
           </div>
 
-          <div className="bg-forest-dark text-ivory rounded-3xl p-8 sm:p-12 shadow-lifted space-y-6 relative overflow-hidden">
-            <Quote className="w-12 h-12 text-ukorange/30 absolute top-6 right-6" />
-            <div className="space-y-4 text-sm sm:text-base text-ivory/90 leading-relaxed font-serif italic max-w-3xl">
-              <p>
-                &ldquo;Uttarkunth began as an idea in the Himalayas. While preparing for government exams, 
-                I was watching the changes around me and asking why so many problems seemed to be growing 
-                while people often waited for someone else to solve them.
-              </p>
-              <p>
-                I do not want Uttarkunth to become only a charity organisation. I want to build something 
-                financially strong enough to stand on its own feet. That is why I am starting with businesses. 
-                The homestay, the café, media and the ventures that may come later are vehicles through which 
-                I am learning, building resources and validating whether this larger idea can work.
-              </p>
-              <p>
-                My aim is not to claim that I already know the answer. My aim is to build, experiment, learn, 
-                document and improve.
-              </p>
-              <p>
-                If a small village can become a place where people create businesses, protect what they value, 
-                learn together and solve small problems collectively, perhaps that experience can become a model 
-                for something larger. That is the journey of Uttarkunth.&rdquo;
-              </p>
+          {/* Borderless Panoramic Founder Image Div — Content on the Left Side of the Founder */}
+          <div className="relative rounded-none sm:rounded-3xl overflow-hidden shadow-lifted bg-[#111D17]">
+            {/* Desktop / Tablet Full-Stage Panoramic Background Image */}
+            <div className="relative aspect-[2048/967] md:aspect-auto md:min-h-[560px] lg:min-h-[600px] w-full">
+              <Image
+                src="/assets/aistudio/uttarkunth-founder-face-lightened-natural_58cc9d8f.webp"
+                alt={`${BRAND.founder} — Founder of Uttarkunth in the Himalayas`}
+                fill
+                priority
+                sizes="(max-width: 1024px) 100vw, 1024px"
+                className="object-cover object-[68%_center] md:object-center"
+              />
+
+              {/* Subtle Radial Natural Lightness Boost Over Founder's Face */}
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_62%_58%,rgba(255,248,235,0.16)_0%,rgba(255,248,235,0.06)_15%,transparent_30%)] mix-blend-screen"
+              />
+
+              {/* Feathered Elliptical Readability Veil Behind Left-Side Text (Preserves Top Sky & Right-Side Founder 100% Clear) */}
+              <div
+                aria-hidden="true"
+                className="hidden md:block pointer-events-none absolute -inset-6 bg-[radial-gradient(ellipse_48%_74%_at_23%_56%,rgba(8,15,11,0.82)_0%,rgba(8,15,11,0.66)_48%,rgba(8,15,11,0.28)_74%,rgba(8,15,11,0)_100%)] blur-xl"
+              />
+
+              {/* Desktop / Tablet Content Positioned on the Left Side of the Founder in the Image */}
+              <div className="hidden md:flex relative z-10 h-full min-h-[560px] lg:min-h-[600px] items-center">
+                <div className="w-[49%] lg:w-[48%] pl-8 lg:pl-11 pr-4 py-8 lg:py-10 space-y-4 text-[#FFFDF9]">
+                  <div className="space-y-3 text-[13px] lg:text-[14.5px] text-[#FFFDF9] leading-[1.6] font-serif italic [text-shadow:0_2px_12px_rgba(6,12,9,0.92),0_1px_3px_rgba(6,12,9,0.95)]">
+                    <p>
+                      &ldquo;Uttarkunth began as an idea in the Himalayas. While preparing for
+                      government exams, I was watching the changes around me and asking why so many
+                      problems seemed to be growing while people often waited for someone else to
+                      solve them.
+                    </p>
+                    <p>
+                      I do not want Uttarkunth to become only a charity organisation. I want to build
+                      something financially strong enough to stand on its own feet. That is why I am
+                      starting with businesses. The homestay, the café, media and the ventures that
+                      may come later are vehicles through which I am learning, building resources and
+                      validating whether this larger idea can work.
+                    </p>
+                    <p>
+                      My aim is not to claim that I already know the answer. My aim is to build,
+                      experiment, learn, document and improve.
+                    </p>
+                    <p>
+                      If a small village can become a place where people create businesses, protect
+                      what they value, learn together and solve small problems collectively, perhaps
+                      that experience can become a model for something larger. That is the journey of
+                      Uttarkunth.&rdquo;
+                    </p>
+                  </div>
+
+                  <div className="pt-2 flex flex-col gap-0.5 [text-shadow:0_2px_10px_rgba(6,12,9,0.92),0_1px_3px_rgba(6,12,9,0.95)]">
+                    <strong className="text-[#FFFDF9] font-serif text-xl lg:text-2xl block">
+                      {BRAND.founder}
+                    </strong>
+                    <span className="text-[11px] text-[#FDE2A8] uppercase tracking-wider font-semibold">
+                      Founder, Uttarkunth &middot; Jari, Parvati Valley
+                    </span>
+                  </div>
+                </div>
+              </div>
             </div>
 
-            <div className="pt-6 border-t border-ivory/15 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-              <div>
-                <strong className="text-ivory font-serif text-2xl block">{BRAND.founder}</strong>
-                <span className="text-xs text-ukorange uppercase tracking-wider font-semibold">Founder, Uttarkunth</span>
+            {/* Mobile Content View (Below Uncropped Panoramic Image so Founder is Clearly Seen on Mobile Too) */}
+            <div className="md:hidden p-6 space-y-4 text-[#FFFDF9] bg-[#111D17]">
+              <div className="space-y-3 text-xs sm:text-sm text-[#FFFDF9]/90 leading-relaxed font-serif italic">
+                <p>
+                  &ldquo;Uttarkunth began as an idea in the Himalayas. While preparing for government
+                  exams, I was watching the changes around me and asking why so many problems seemed
+                  to be growing while people often waited for someone else to solve them.
+                </p>
+                <p>
+                  I do not want Uttarkunth to become only a charity organisation. I want to build
+                  something financially strong enough to stand on its own feet. That is why I am
+                  starting with businesses. The homestay, the café, media and the ventures that may
+                  come later are vehicles through which I am learning, building resources and
+                  validating whether this larger idea can work.
+                </p>
+                <p>
+                  My aim is not to claim that I already know the answer. My aim is to build,
+                  experiment, learn, document and improve.
+                </p>
+                <p>
+                  If a small village can become a place where people create businesses, protect what
+                  they value, learn together and solve small problems collectively, perhaps that
+                  experience can become a model for something larger. That is the journey of
+                  Uttarkunth.&rdquo;
+                </p>
               </div>
-              <div className="text-xs text-ivory/60">
-                Jari, Parvati Valley, Himachal Pradesh
+
+              <div className="pt-2">
+                <strong className="text-[#FFFDF9] font-serif text-xl block">{BRAND.founder}</strong>
+                <span className="text-[11px] text-[#FDE2A8] uppercase tracking-wider font-semibold">
+                  Founder, Uttarkunth &middot; Jari, Parvati Valley
+                </span>
               </div>
             </div>
+          </div>
 
-            {/* Core Summary Grid */}
-            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 pt-6 text-center text-xs">
-              <div className="bg-ivory/5 p-3 rounded-xl border border-ivory/10">
-                <span className="text-ukorange font-bold block text-[10px] uppercase">Origin</span>
-                <span className="text-ivory/90 font-medium">Himalayan lived experience</span>
-              </div>
-              <div className="bg-ivory/5 p-3 rounded-xl border border-ivory/10">
-                <span className="text-ukorange font-bold block text-[10px] uppercase">Belief</span>
-                <span className="text-ivory/90 font-medium">People united create change</span>
-              </div>
-              <div className="bg-ivory/5 p-3 rounded-xl border border-ivory/10">
-                <span className="text-ukorange font-bold block text-[10px] uppercase">Engine</span>
-                <span className="text-ivory/90 font-medium">Self-sustaining enterprise</span>
-              </div>
-              <div className="bg-ivory/5 p-3 rounded-xl border border-ivory/10">
-                <span className="text-ukorange font-bold block text-[10px] uppercase">Method</span>
-                <span className="text-ivory/90 font-medium">Learn by doing, replicate</span>
-              </div>
-              <div className="bg-ivory/5 p-3 rounded-xl border border-ivory/10 col-span-2 sm:col-span-1">
-                <span className="text-ukorange font-bold block text-[10px] uppercase">Purpose</span>
-                <span className="text-ivory/90 font-medium">Community development</span>
-              </div>
+          {/* Core Summary Grid (Borderless) */}
+          <div className="px-4 sm:px-0 grid grid-cols-2 sm:grid-cols-5 gap-3 text-center text-xs">
+            <div className="bg-forest/5 p-3.5 rounded-xl">
+              <span className="text-ukorange font-bold block text-[10px] uppercase">Origin</span>
+              <span className="text-forest font-medium">Himalayan lived experience</span>
+            </div>
+            <div className="bg-forest/5 p-3.5 rounded-xl">
+              <span className="text-ukorange font-bold block text-[10px] uppercase">Belief</span>
+              <span className="text-forest font-medium">People united create change</span>
+            </div>
+            <div className="bg-forest/5 p-3.5 rounded-xl">
+              <span className="text-ukorange font-bold block text-[10px] uppercase">Engine</span>
+              <span className="text-forest font-medium">Self-sustaining enterprise</span>
+            </div>
+            <div className="bg-forest/5 p-3.5 rounded-xl">
+              <span className="text-ukorange font-bold block text-[10px] uppercase">Method</span>
+              <span className="text-forest font-medium">Learn by doing, replicate</span>
+            </div>
+            <div className="bg-forest/5 p-3.5 rounded-xl col-span-2 sm:col-span-1">
+              <span className="text-ukorange font-bold block text-[10px] uppercase">Purpose</span>
+              <span className="text-forest font-medium">Community development</span>
             </div>
           </div>
 

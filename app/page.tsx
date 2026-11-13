@@ -1,29 +1,43 @@
 import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { SearchBar } from '@/components/search-bar';
 import { HeroVideo } from '@/components/hero-video';
-import { PartnershipChooser } from '@/components/partnership-chooser';
-import { BRAND } from '@/lib/constants';
-import { getActiveDestinations, filterPropertiesForDestination, CURATED_DESTINATIONS } from '@/lib/destinations.server';
-import { createPublicServerSupabaseClient } from '@/lib/supabase/server';
-import { formatINR } from '@/lib/utils';
+import { FourPillarsShowcase } from '@/components/home/four-pillars-showcase';
+import { FeaturedStaysRows } from '@/components/home/featured-stays-rows';
+import { DestinationAtlas } from '@/components/home/destination-atlas';
 import {
-  Sparkles,
-  CheckCircle2,
+  LinkButton,
+  Card,
+  EditorialKicker,
+  EmptyState,
+  ScrollReveal,
+} from '@/components/ui';
+import {
+  BRAND,
+  AUTHENTIC_PRODUCTIONS,
+  PRODUCT_CATEGORIES,
+  COMMUNITY_INITIATIVES,
+  EXISTING_PROPERTIES,
+} from '@/lib/constants';
+import {
+  getActiveDestinations,
+  filterPropertiesForDestination,
+  CURATED_DESTINATIONS,
+} from '@/lib/destinations.server';
+import { createPublicServerSupabaseClient } from '@/lib/supabase/server';
+import {
   ArrowRight,
+  ArrowDown,
+  ArrowUpRight,
   Home,
   Package,
   Film,
-  Users,
-  ShieldCheck,
-  MapPin,
   Play,
   Heart,
   Store,
-  Compass,
-  Clock,
   Building2,
+  Clapperboard,
+  Trees,
 } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
@@ -38,768 +52,736 @@ async function getHomePageData() {
 
   try {
     const supabase = createPublicServerSupabaseClient();
-    const { data: properties, error } = await supabase
-      .from('properties')
-      .select('id, slug, name, description, village, district, state, property_type, booking_mode, amenities, photos, published, moderation_status')
-      .eq('published', true)
-      .eq('moderation_status', 'approved')
-      .limit(6);
+    const [{ data: properties, error }, { data: approvedProducts }] = await Promise.all([
+      supabase
+        .from('properties')
+        .select('*')
+        .eq('published', true)
+        .eq('moderation_status', 'approved')
+        .neq('slug', 'wonderway-retreat')
+        .limit(24),
+      supabase
+        .from('products')
+        .select('id, slug, title, category, description, origin_valley, origin_state, maker_name')
+        .eq('moderation_status', 'approved')
+        .limit(12),
+    ]);
 
-    const source = (error || !properties) ? [] : properties;
+    const rawSource =
+      !error && properties && properties.length > 0 ? properties : EXISTING_PROPERTIES;
+    const source = rawSource.filter((p: any) => p && p.slug !== 'wonderway-retreat');
 
-    if (source.length === 0) {
-      return {
-        properties: [],
-        destinations: destinations.slice(0, 8),
-      };
+    let propertiesWithRooms: any[] = [];
+    if (source.length > 0) {
+      const propertyIds = source.map((p: any) => p.id);
+      const { data: rooms } = await supabase
+        .from('room_units')
+        .select('id, property_id, room_name, description, max_guests, base_price, active')
+        .in('property_id', propertyIds)
+        .eq('active', true);
+
+      propertiesWithRooms = source.map((p: any) => ({
+        ...p,
+        rooms:
+          rooms && rooms.length > 0
+            ? rooms.filter((r) => r.property_id === p.id)
+            : p.rooms || [],
+      }));
     }
 
-    const propertyIds = source.map((p) => p.id);
-    const { data: rooms } = await supabase
-      .from('room_units')
-      .select('id, property_id, room_name, description, max_guests, base_price, active')
-      .in('property_id', propertyIds)
-      .eq('active', true);
-
-    const propertiesWithRooms = source.map((p) => ({
-      ...p,
-      rooms: rooms ? rooms.filter((r) => r.property_id === p.id) : [],
+    const destinationsWithCounts = destinations.map((d) => ({
+      ...d,
+      propertyCount: filterPropertiesForDestination(propertiesWithRooms, d).length,
     }));
 
     return {
       properties: propertiesWithRooms,
-      destinations: destinations.slice(0, 8),
+      destinations: destinationsWithCounts,
+      products: approvedProducts || [],
     };
   } catch {
+    const cleanFallback = EXISTING_PROPERTIES.filter((p: any) => p.slug !== 'wonderway-retreat');
+    const destinationsWithCounts = destinations.map((d) => ({
+      ...d,
+      propertyCount: filterPropertiesForDestination(cleanFallback, d).length,
+    }));
     return {
-      properties: [],
-      destinations: destinations.slice(0, 8),
+      properties: cleanFallback,
+      destinations: destinationsWithCounts,
+      products: [],
     };
   }
 }
 
-// Exactly the two authorized productions from Uttarkunth
-const AUTHORIZED_PRODUCTIONS = [
-  {
-    id: 'aaj-ka-devta',
-    title: 'Aaj Ka Devta',
-    category: 'Documentary',
-    description: 'An ethnographic exploration into the living oracle and deity traditions of the Kullu Valley.',
-    thumbnail: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=800&q=80',
-    youtubeUrl: 'https://youtube.com',
-  },
-  {
-    id: 'ruk-gayi-gupt-bali',
-    title: 'Ruk Gayi Gupt Bali',
-    category: 'Cultural Monologue',
-    description: 'A critical investigation into cultural transitions and ritual shifts across sacred Himalayan hamlets.',
-    thumbnail: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=800&q=80',
-    youtubeUrl: 'https://youtube.com',
-  },
-];
-
 export default async function HomePage() {
-  const { properties, destinations } = await getHomePageData();
+  const { properties, destinations, products } = await getHomePageData();
+  const featuredInitiatives = COMMUNITY_INITIATIVES.slice(0, 4);
 
   return (
-    <div className="space-y-20 sm:space-y-32 pb-24">
-      {/* ─────────────────────────────────────────────────────────────
-          1. HERO SECTION WITH EXACT ORIGINAL HERO VIDEO & POSTER
-      ───────────────────────────────────────────────────────────── */}
-      <section className="relative min-h-[90vh] flex items-center justify-center pt-16 pb-20 px-4 sm:px-6 lg:px-8 overflow-hidden text-ivory">
-        {/* Exact Preserved Original Video & Authentic Fallback Poster */}
-        <HeroVideo
-          videoSrc="/assets/uttarkunth-hero-video.webm"
-          posterSrc="/assets/gaurav-negi-founder.webp"
+    <div className="space-y-14 sm:space-y-16 lg:space-y-20 pb-16">
+      {/* ─────────────────────────────────────────────────────────────────────
+          SECTION 3: HERO — ART-DIRECTED RESPONSIVE HIMALAYAN PANORAMA
+          • Starts at y=0 (-mt-16) directly behind the Header so there is zero plain header background
+          • Slightly more compact height and element scale for balanced viewport proportion
+      ───────────────────────────────────────────────────────────────────── */}
+      <section
+        id="hero"
+        className="relative -mt-16 pt-10 sm:pt-14 lg:pt-0 w-full aspect-[1200/896] lg:aspect-[1376/768] flex items-start overflow-hidden bg-warm-canvas"
+      >
+        <HeroVideo videoSrc="/assets/uttarkunth-hero-video.webm" />
+
+        {/* Left-Aligned Hero Editorial Heading — Always Positioned Cleanly Below the Left Dotted Trail & Icons */}
+        <div className="pointer-events-none relative z-20 w-full pt-[9.5%] sm:pt-[11.5%] lg:pt-[16.8%]">
+          <div className="max-w-7xl mx-auto w-full px-3 sm:px-6 lg:px-8">
+            <div className="relative max-w-[210px] sm:max-w-xs lg:max-w-[540px] xl:max-w-[580px] py-1 sm:py-2 lg:py-3 pr-3 sm:pr-5 pl-1 space-y-1 sm:space-y-2 lg:space-y-3.5">
+              {/* Ultra-Smooth Feathered Radial Vignette (Reaches 0 opacity inside closest-side + blur-2xl feathering = zero visible edges) */}
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute -inset-x-10 sm:-inset-x-16 lg:-inset-x-24 -inset-y-8 sm:-inset-y-14 lg:-inset-y-20 rounded-full bg-[radial-gradient(closest-side_at_42%_50%,rgba(10,18,14,0.44)_0%,rgba(10,18,14,0.22)_54%,rgba(10,18,14,0)_100%)] blur-2xl"
+              />
+
+              <h1 className="relative font-serif text-[12.5px] sm:text-xl lg:text-[42px] xl:text-[48px] font-semibold tracking-[0.01em] text-[#FFFDF9] leading-[1.1] [text-shadow:0_2px_14px_rgba(8,14,10,0.85),0_1px_3px_rgba(8,14,10,0.94)]">
+                Born in the Himalayas.
+                <span className="italic font-normal text-[#FDE2A8] block mt-0.5 lg:mt-1.5">
+                  Built Around Community.
+                </span>
+              </h1>
+
+              <div
+                aria-hidden="true"
+                className="relative h-[1px] sm:h-[1.5px] lg:h-[2px] w-14 sm:w-24 lg:w-44 bg-gradient-to-r from-[#FDE2A8]/85 via-[#E59866]/55 to-transparent"
+              />
+
+              <p className="relative font-sans text-[8.5px] sm:text-[11px] lg:text-[16.5px] xl:text-[18px] text-[#FAF4E8]/95 font-normal leading-snug sm:leading-relaxed max-w-[195px] sm:max-w-[270px] lg:max-w-[490px] xl:max-w-[530px] [text-shadow:0_1px_10px_rgba(8,14,10,0.9),0_1px_2px_rgba(8,14,10,0.96)]">
+                Discover meaningful stays, Himalayan products, original stories and opportunities to be
+                part of something bigger.
+              </p>
+
+              {/* Clean Minimalist Editorial Explore Uttarkunth CTA */}
+              <div className="relative pt-0.5 sm:pt-1 lg:pt-2 pointer-events-auto">
+                <a
+                  href="#four-pillars"
+                  className="group inline-flex items-center gap-2 sm:gap-2.5 pl-3 pr-1.5 sm:pl-4 sm:pr-2 lg:pl-5 lg:pr-2.5 py-1 sm:py-1.5 lg:py-2 rounded-full bg-[#FFFDF9] hover:bg-white text-[#1F332A] border border-[#E5DEC9] hover:border-[#C55B23] shadow-[0_4px_14px_rgba(12,20,16,0.22)] text-[8.5px] sm:text-[11px] lg:text-[13.5px] font-semibold tracking-[0.02em] transition-colors duration-200 ease-out"
+                >
+                  <span>Explore Uttarkunth</span>
+                  <span className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 rounded-full bg-[#F2ECE0] group-hover:bg-[#C55B23] text-[#1F332A] group-hover:text-white flex items-center justify-center transition-colors duration-200">
+                    <ArrowDown
+                      strokeWidth={1.75}
+                      className="w-2.5 h-2.5 sm:w-3 sm:h-3 lg:w-3.5 lg:h-3.5"
+                    />
+                  </span>
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ─────────────────────────────────────────────────────────────────────
+          SECTION 4 & 5: ONE CONNECTED HIMALAYAN ECOSYSTEM — THE FOUR PILLARS
+          • Balanced breathing space above One Connected Himalayan Ecosystem
+          • Completely borderless, smooth, feathered Himalayan golden-hour & valley mist stage matching the Hero image vibe
+          • Includes the single Context-Aware Adaptive Search & Action Bar directly beneath the carousel
+      ───────────────────────────────────────────────────────────────────── */}
+      <section
+        id="four-pillars"
+        className="relative z-30 !mt-0 w-full pt-4 sm:pt-6 lg:pt-8 pb-3 sm:pb-5 scroll-mt-1 sm:scroll-mt-2 overflow-x-clip overflow-y-visible"
+      >
+        <div id="ecosystem" className="sr-only" aria-hidden="true" />
+        {/* Smooth Unbounded Top-to-Bottom Himalayan Golden-Hour Valley Transition (Zero Hard Edges) */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(245,240,230,0)_0%,rgba(244,230,204,0.88)_22%,rgba(235,216,186,0.72)_54%,rgba(242,231,212,0.82)_80%,#F5F0E6_100%)]"
+        />
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute top-1/2 left-1/4 -translate-y-1/2 w-[560px] h-[560px] rounded-full bg-[#C55B23]/[0.14] blur-[130px]"
+        />
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute top-1/2 right-1/4 -translate-y-1/2 w-[560px] h-[560px] rounded-full bg-[#263D32]/[0.14] blur-[130px]"
         />
 
-        <div className="relative max-w-5xl mx-auto text-center space-y-8 z-10">
-          {/* Ecosystem Badge */}
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-xs sm:text-sm font-medium tracking-wider uppercase text-ivory">
-            <Sparkles className="w-4 h-4 text-ukorange" />
-            <span>Ecosystem of Four Pillars • Stays • Products • Productions • Community</span>
-          </div>
+        {/* div:nth-of-type(5) — Borderless, Feathered Smooth Himalayan Sanctuary Stage */}
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-2 pb-2 sm:pt-3 sm:pb-4 space-y-2 sm:space-y-3 bg-[radial-gradient(closest-side_at_50%_46%,rgba(253,226,168,0.48)_0%,rgba(218,142,78,0.18)_44%,rgba(38,61,50,0.08)_74%,rgba(245,240,230,0)_100%)]">
+          {/* Soft Feathered Golden-Hour Sunburst & Mist Aura Behind Heading */}
+          <span
+            aria-hidden="true"
+            className="pointer-events-none absolute -top-10 left-1/2 -translate-x-1/2 w-[520px] sm:w-[760px] h-[200px] sm:h-[250px] rounded-full bg-[radial-gradient(closest-side,rgba(253,226,168,0.65)_0%,rgba(197,91,35,0.16)_52%,transparent_100%)] blur-2xl"
+          />
 
-          {/* Master Blueprint Heading */}
-          <h1 className="font-serif text-5xl sm:text-7xl lg:text-8xl font-bold tracking-tight text-ivory leading-[1.05] max-w-4xl mx-auto">
-            Ideas born in the mountains. <br />
-            <span className="italic font-normal text-ukorange">Built through people.</span>
-          </h1>
-
-          {/* Master Blueprint Subheading */}
-          <p className="text-base sm:text-xl text-ivory/85 max-w-2xl mx-auto font-sans leading-relaxed">
-            A growing ecosystem connecting mountain stays, local products, creative productions and community initiatives.
-          </p>
-
-          {/* Primary & Secondary Action Pathways */}
-          <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
-            <Link
-              href="/stays"
-              className="inline-flex items-center gap-2 bg-ukorange hover:bg-ukorange-deep text-white px-7 py-3.5 rounded-full font-semibold text-sm sm:text-base transition-all shadow-lifted hover:scale-[1.02]"
-            >
-              <span>Explore Stays</span>
-              <ArrowRight className="w-4 h-4" />
-            </Link>
-
-            <Link
-              href="/products"
-              className="inline-flex items-center gap-2 bg-white/15 hover:bg-white/25 backdrop-blur-md border border-white/30 text-ivory px-6 py-3.5 rounded-full font-semibold text-sm sm:text-base transition-all hover:scale-[1.02]"
-            >
-              <Package className="w-4 h-4 text-ukorange" />
-              <span>Discover Products</span>
-            </Link>
-
-            <Link
-              href="/production"
-              className="inline-flex items-center gap-2 bg-white/15 hover:bg-white/25 backdrop-blur-md border border-white/30 text-ivory px-6 py-3.5 rounded-full font-semibold text-sm sm:text-base transition-all hover:scale-[1.02]"
-            >
-              <Film className="w-4 h-4 text-ukorange" />
-              <span>Watch Productions</span>
-            </Link>
-
-            <Link
-              href="/community"
-              className="inline-flex items-center gap-2 bg-white/15 hover:bg-white/25 backdrop-blur-md border border-white/30 text-ivory px-6 py-3.5 rounded-full font-semibold text-sm sm:text-base transition-all hover:scale-[1.02]"
-            >
-              <Users className="w-4 h-4 text-ukorange" />
-              <span>Join Community</span>
-            </Link>
-          </div>
-
-          {/* Floating Search Pill */}
-          <div className="pt-6 sm:pt-8 max-w-4xl mx-auto">
-            <SearchBar />
-          </div>
-
-          {/* Trust Guarantees */}
-          <div className="flex flex-wrap items-center justify-center gap-6 sm:gap-10 text-xs sm:text-sm text-ivory/80 pt-4">
-            <span className="flex items-center gap-1.5">
-              <CheckCircle2 className="w-4 h-4 text-ukorange" />
-              100% Direct Host Payment at Property
-            </span>
-            <span className="flex items-center gap-1.5">
-              <CheckCircle2 className="w-4 h-4 text-ukorange" />
-              Verified Mountain Homestays
-            </span>
-            <span className="flex items-center gap-1.5">
-              <CheckCircle2 className="w-4 h-4 text-ukorange" />
-              Host Approval Before Confirmation
-            </span>
-          </div>
-        </div>
-      </section>
-
-      {/* ─────────────────────────────────────────────────────────────
-          2. ECOSYSTEM INTRODUCTION
-      ───────────────────────────────────────────────────────────── */}
-      <section className="max-w-5xl mx-auto px-4 sm:px-6 text-center space-y-6">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-forest/10 text-forest text-xs font-semibold uppercase tracking-widest">
-          <Sparkles className="w-3.5 h-3.5 text-ukorange" />
-          The Uttarkunth Ecosystem
-        </div>
-        <h2 className="font-serif text-3xl sm:text-5xl lg:text-6xl font-bold text-forest leading-tight">
-          More Than a Stay. More Than a Store. <br />
-          <span className="italic font-normal text-ukorange">One Connected Ecosystem.</span>
-        </h2>
-        <p className="text-base sm:text-lg text-charcoal-muted leading-relaxed max-w-3xl mx-auto font-sans">
-          Uttarkunth began in Jari, deep in the Parvati Valley of Himachal Pradesh. What started with hospitality has expanded into a unified ecosystem celebrating the people, the craft, the stories, and the mountain lands that sustain us. We connect travelers with authentic homestays, support independent mountain makers, document Himalayan narratives through film, and invest in village development.
-        </p>
-        <div className="pt-2">
-          <Link
-            href="/about"
-            className="inline-flex items-center gap-2 text-sm font-semibold text-forest hover:text-ukorange transition-colors"
+          {/* Soft Feathered Himalayan Valley Ridge Silhouette Watermark (Fades Smoothly at All Edges) */}
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 1440 320"
+            preserveAspectRatio="none"
+            className="pointer-events-none absolute inset-x-0 bottom-0 w-full h-44 sm:h-60 opacity-[0.16] [mask-image:radial-gradient(ellipse_75%_80%_at_50%_60%,#000_25%,transparent_95%)]"
           >
-            <span>Discover Our Story &amp; Founder</span>
-            <ArrowRight className="w-4 h-4" />
-          </Link>
-        </div>
-      </section>
+            <path
+              d="M0,220 L140,118 L245,178 L390,74 L535,168 L690,88 L845,172 L1010,68 L1165,162 L1310,96 L1440,176 L1440,320 L0,320 Z"
+              fill="#263D32"
+              fillOpacity="0.45"
+            />
+            <path
+              d="M0,256 C180,210 340,238 520,198 C710,156 890,224 1090,184 C1240,154 1350,196 1440,214 L1440,320 L0,320 Z"
+              fill="#C55B23"
+              fillOpacity="0.32"
+            />
+            <path
+              d="M0,284 C260,254 510,292 780,264 C1040,236 1260,274 1440,258 L1440,320 L0,320 Z"
+              fill="#1A2B23"
+              fillOpacity="0.45"
+            />
+          </svg>
 
-      {/* ─────────────────────────────────────────────────────────────
-          3. FOUR PILLARS BENTO GRID
-      ───────────────────────────────────────────────────────────── */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-forest/10 pb-4">
-          <div>
-            <span className="text-xs uppercase font-bold tracking-widest text-ukorange">Four First-Class Pillars</span>
-            <h2 className="font-serif text-3xl sm:text-4xl font-bold text-forest mt-1">
-              Explore the Four Pillars
-            </h2>
-          </div>
-          <p className="text-xs sm:text-sm text-charcoal-muted max-w-md">
-            Each pillar represents an authentic dimension of our Himalayan work and community life.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {/* Pillar 1: Stays */}
-          <Link
-            href="/stays"
-            className="group bg-white rounded-3xl border border-forest/15 overflow-hidden shadow-soft hover:shadow-lifted transition-all flex flex-col justify-between"
-          >
-            <div className="relative aspect-[4/3] w-full bg-forest-dark overflow-hidden">
-              <Image
-                src="/assets/uttarkunth-stays-homepage-card.webp"
-                alt="Uttarkunth Stays"
-                fill
-                className="object-cover group-hover:scale-105 transition-transform duration-700"
+          <ScrollReveal>
+            <div className="relative z-10 text-center space-y-1">
+              <h2 className="font-serif text-xl sm:text-3xl lg:text-[38px] italic font-semibold text-[#263D32] tracking-tight leading-tight drop-shadow-[0_1px_2px_rgba(255,253,249,0.85)]">
+                One Connected Himalayan Ecosystem.
+              </h2>
+              <div
+                aria-hidden="true"
+                className="mx-auto h-[1.5px] w-24 sm:w-36 bg-gradient-to-r from-transparent via-[#C55B23]/65 to-transparent"
               />
-              <div className="absolute top-4 left-4 w-10 h-10 rounded-2xl bg-forest/90 backdrop-blur-md text-ivory flex items-center justify-center">
-                <Home className="w-5 h-5 text-ukorange" />
-              </div>
-              <span className="absolute bottom-3 left-3 bg-black/60 text-ivory text-[11px] font-semibold px-2.5 py-1 rounded-full backdrop-blur-sm">
-                Pillar I
-              </span>
             </div>
-            <div className="p-6 space-y-3 flex-1 flex flex-col justify-between">
-              <div className="space-y-1.5">
-                <h3 className="font-serif text-2xl font-bold text-forest group-hover:text-ukorange transition-colors">
-                  Stays
-                </h3>
-                <p className="text-xs text-charcoal-muted leading-relaxed">
-                  Timber homestays and retreats in Parvati Valley. Direct host approval with zero guest booking surcharges.
-                </p>
-              </div>
-              <div className="pt-3 border-t border-forest/10 flex items-center justify-between text-xs font-bold text-forest group-hover:text-ukorange">
-                <span>Explore Stays</span>
-                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-              </div>
-            </div>
-          </Link>
+          </ScrollReveal>
 
-          {/* Pillar 2: Products */}
-          <Link
-            href="/products"
-            className="group bg-white rounded-3xl border border-forest/15 overflow-hidden shadow-soft hover:shadow-lifted transition-all flex flex-col justify-between"
+          <div className="relative z-10">
+            <FourPillarsShowcase
+              destinations={destinations}
+              properties={properties}
+              products={products}
+              productCategories={PRODUCT_CATEGORIES}
+              productions={AUTHENTIC_PRODUCTIONS}
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* ─────────────────────────────────────────────────────────────────────
+          SECTION 6: STAYS — LOCATION-GROUPED HORIZONTAL STAYS SHOWCASE
+          • Matches the borderless, feathered Himalayan golden-hour & valley mist stage above
+          • Dynamically renders location rows ("Stays in Parvati Valley, Kullu", "Stays in Manali", etc.)
+      ───────────────────────────────────────────────────────────────────── */}
+      <section
+        id="stays"
+        className="relative z-20 w-full py-5 sm:py-8 overflow-x-clip"
+      >
+        {/* Smooth Unbounded Himalayan Golden-Hour Valley Atmosphere Matching Above Section */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(245,240,230,0)_0%,rgba(244,230,204,0.82)_22%,rgba(235,216,186,0.68)_54%,rgba(242,231,212,0.78)_82%,rgba(245,240,230,0)_100%)]"
+        />
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute top-1/2 left-1/4 -translate-y-1/2 w-[480px] h-[480px] rounded-full bg-[#C55B23]/[0.11] blur-[125px]"
+        />
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute top-1/2 right-1/4 -translate-y-1/2 w-[480px] h-[480px] rounded-full bg-[#263D32]/[0.11] blur-[125px]"
+        />
+
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 sm:py-3 bg-[radial-gradient(closest-side_at_50%_50%,rgba(253,226,168,0.38)_0%,rgba(218,142,78,0.14)_46%,rgba(38,61,50,0.06)_76%,rgba(245,240,230,0)_100%)]">
+          {/* Soft Feathered Himalayan Valley Ridge Silhouette Watermark */}
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 1440 320"
+            preserveAspectRatio="none"
+            className="pointer-events-none absolute inset-x-0 bottom-0 w-full h-36 sm:h-48 opacity-[0.13] [mask-image:radial-gradient(ellipse_75%_80%_at_50%_60%,#000_25%,transparent_95%)]"
           >
-            <div className="relative aspect-[4/3] w-full bg-forest-dark overflow-hidden">
-              <Image
-                src="/assets/products-home-page.webp"
-                alt="Uttarkunth Products"
-                fill
-                className="object-cover group-hover:scale-105 transition-transform duration-700"
+            <path
+              d="M0,220 L140,118 L245,178 L390,74 L535,168 L690,88 L845,172 L1010,68 L1165,162 L1310,96 L1440,176 L1440,320 L0,320 Z"
+              fill="#263D32"
+              fillOpacity="0.45"
+            />
+            <path
+              d="M0,256 C180,210 340,238 520,198 C710,156 890,224 1090,184 C1240,154 1350,196 1440,214 L1440,320 L0,320 Z"
+              fill="#C55B23"
+              fillOpacity="0.32"
+            />
+          </svg>
+
+          <ScrollReveal>
+            {properties.length > 0 ? (
+              <FeaturedStaysRows properties={properties} />
+            ) : (
+              <EmptyState
+                icon={<Building2 className="w-6 h-6 text-terracotta" />}
+                kicker="Curated Onboarding"
+                title="Verified Homestays in Preparation"
+                description="We only display real, verified mountain properties approved by our moderation team. Are you a local homestay host in the Himalayas?"
+                action={
+                  <LinkButton href="/stays/partner" variant="primary" size="md">
+                    Partner With Uttarkunth Stays
+                  </LinkButton>
+                }
               />
-              <div className="absolute top-4 left-4 w-10 h-10 rounded-2xl bg-forest/90 backdrop-blur-md text-ivory flex items-center justify-center">
-                <Package className="w-5 h-5 text-ukorange" />
-              </div>
-              <span className="absolute bottom-3 left-3 bg-black/60 text-ivory text-[11px] font-semibold px-2.5 py-1 rounded-full backdrop-blur-sm">
-                Pillar II
-              </span>
-            </div>
-            <div className="p-6 space-y-3 flex-1 flex flex-col justify-between">
-              <div className="space-y-1.5">
-                <h3 className="font-serif text-2xl font-bold text-forest group-hover:text-ukorange transition-colors">
-                  Products
-                </h3>
-                <p className="text-xs text-charcoal-muted leading-relaxed">
-                  Curated Himalayan goods from independent mountain makers. Sourcing in progress &bull; Coming soon.
-                </p>
-              </div>
-              <div className="pt-3 border-t border-forest/10 flex items-center justify-between text-xs font-bold text-forest group-hover:text-ukorange">
-                <span>Coming Soon</span>
-                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-              </div>
-            </div>
-          </Link>
-
-          {/* Pillar 3: Productions */}
-          <Link
-            href="/production"
-            className="group bg-white rounded-3xl border border-forest/15 overflow-hidden shadow-soft hover:shadow-lifted transition-all flex flex-col justify-between"
-          >
-            <div className="relative aspect-[4/3] w-full bg-forest-dark overflow-hidden">
-              <Image
-                src="/assets/productions-home.webp"
-                alt="Uttarkunth Productions"
-                fill
-                className="object-cover group-hover:scale-105 transition-transform duration-700"
-              />
-              <div className="absolute top-4 left-4 w-10 h-10 rounded-2xl bg-forest/90 backdrop-blur-md text-ivory flex items-center justify-center">
-                <Film className="w-5 h-5 text-ukorange" />
-              </div>
-              <span className="absolute bottom-3 left-3 bg-black/60 text-ivory text-[11px] font-semibold px-2.5 py-1 rounded-full backdrop-blur-sm">
-                Pillar III
-              </span>
-            </div>
-            <div className="p-6 space-y-3 flex-1 flex flex-col justify-between">
-              <div className="space-y-1.5">
-                <h3 className="font-serif text-2xl font-bold text-forest group-hover:text-ukorange transition-colors">
-                  Productions
-                </h3>
-                <p className="text-xs text-charcoal-muted leading-relaxed">
-                  Cinematic documentaries, village chronicles, and oral histories documenting the living heritage of the Himalayas.
-                </p>
-              </div>
-              <div className="pt-3 border-t border-forest/10 flex items-center justify-between text-xs font-bold text-forest group-hover:text-ukorange">
-                <span>Watch Productions</span>
-                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-              </div>
-            </div>
-          </Link>
-
-          {/* Pillar 4: Community */}
-          <Link
-            href="/community"
-            className="group bg-white rounded-3xl border border-forest/15 overflow-hidden shadow-soft hover:shadow-lifted transition-all flex flex-col justify-between"
-          >
-            <div className="relative aspect-[4/3] w-full bg-forest-dark overflow-hidden">
-              <Image
-                src="/assets/community-home-page.webp"
-                alt="Uttarkunth Community"
-                fill
-                className="object-cover group-hover:scale-105 transition-transform duration-700"
-              />
-              <div className="absolute top-4 left-4 w-10 h-10 rounded-2xl bg-forest/90 backdrop-blur-md text-ivory flex items-center justify-center">
-                <Users className="w-5 h-5 text-ukorange" />
-              </div>
-              <span className="absolute bottom-3 left-3 bg-black/60 text-ivory text-[11px] font-semibold px-2.5 py-1 rounded-full backdrop-blur-sm">
-                Pillar IV
-              </span>
-            </div>
-            <div className="p-6 space-y-3 flex-1 flex flex-col justify-between">
-              <div className="space-y-1.5">
-                <h3 className="font-serif text-2xl font-bold text-forest group-hover:text-ukorange transition-colors">
-                  Community
-                </h3>
-                <p className="text-xs text-charcoal-muted leading-relaxed">
-                  Grassroots action, trail stewardship, youth skills, and cultural archiving rooted in Karmayog service.
-                </p>
-              </div>
-              <div className="pt-3 border-t border-forest/10 flex items-center justify-between text-xs font-bold text-forest group-hover:text-ukorange">
-                <span>Join Community</span>
-                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-              </div>
-            </div>
-          </Link>
+            )}
+          </ScrollReveal>
         </div>
       </section>
 
-      {/* ─────────────────────────────────────────────────────────────
-          4. FEATURED STAYS (Actual Supabase Published Listings Only)
-      ───────────────────────────────────────────────────────────── */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-forest/10 pb-4">
-          <div>
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-forest/10 text-forest text-xs font-semibold uppercase tracking-wider mb-2">
-              <Home className="w-3.5 h-3.5 text-ukorange" />
-              Real Mountain Inventory
-            </div>
-            <h2 className="font-serif text-3xl sm:text-4xl font-bold text-forest">
-              Featured Mountain Stays
-            </h2>
-          </div>
-          <Link
-            href="/stays"
-            className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-forest hover:text-ukorange transition-colors"
-          >
-            <span>Explore All Stays</span>
-            <ArrowRight className="w-4 h-4" />
-          </Link>
-        </div>
-
-        {/* Direct Host Payment Guarantee Banner */}
-        <div className="bg-ivory-warm rounded-2xl p-4 sm:p-5 border border-forest/15 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <ShieldCheck className="w-6 h-6 text-ukorange flex-shrink-0" />
-            <div>
-              <span className="text-xs sm:text-sm font-bold text-forest block">
-                Direct Host Payment Guarantee
-              </span>
-              <span className="text-xs text-charcoal-muted">
-                No online payment for stays in this release. You pay your host directly upon arrival at the property.
-              </span>
+      {/* ─────────────────────────────────────────────────────────────────────
+          SECTION 7: DESTINATION DISCOVERY — INTERACTIVE HIMALAYAN ATLAS
+      ───────────────────────────────────────────────────────────────────── */}
+      <section id="destinations" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
+        <ScrollReveal>
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-beige pb-4">
+            <div className="space-y-1.5">
+              <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-forest tracking-tight">
+                Explore the Mountain Atlas
+              </h2>
             </div>
           </div>
-          <span className="text-[11px] font-semibold text-ukorange bg-ukorange/10 px-3 py-1 rounded-full whitespace-nowrap self-start sm:self-auto">
-            Zero Platform Surcharge
-          </span>
-        </div>
+        </ScrollReveal>
 
-        {/* Real Properties Grid */}
-        {properties.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {properties.map((property: any) => {
-              const coverPhoto = property.photos?.[0];
-              const startingPrice = property.rooms?.[0]?.base_price || 900;
-              const locationText = `${property.village || 'Jari'}, ${property.district || 'Kullu'}`;
-
-              return (
-                <div
-                  key={property.id}
-                  className="bg-white rounded-3xl border border-forest/15 overflow-hidden shadow-soft hover:shadow-lifted transition-all flex flex-col group"
-                >
-                  <div className="relative aspect-[16/10] w-full bg-forest-dark overflow-hidden">
-                    {coverPhoto ? (
-                      <Image
-                        src={coverPhoto}
-                        alt={property.name}
-                        fill
-                        className="object-cover group-hover:scale-105 transition-transform duration-700"
-                      />
-                    ) : (
-                      /* Neutral branded missing-image presentation */
-                      <div className="absolute inset-0 bg-canvas flex flex-col items-center justify-center p-6 text-center text-forest border-b border-forest/10">
-                        <Building2 className="w-12 h-12 text-forest/40 mb-2" />
-                        <span className="font-serif text-lg font-bold">{property.name}</span>
-                        <span className="text-[11px] text-charcoal-muted uppercase tracking-wider mt-1">
-                          Authentic Himalayan Homestay
-                        </span>
-                      </div>
-                    )}
-
-                    <div className="absolute top-4 left-4 bg-forest/90 text-ivory text-xs font-semibold px-3 py-1 rounded-full backdrop-blur-sm">
-                      {property.property_type || 'Homestay'}
-                    </div>
-                    <div className="absolute bottom-3 right-3 bg-black/70 text-ivory text-xs font-bold px-3 py-1 rounded-full backdrop-blur-sm">
-                      {formatINR(startingPrice)} <span className="font-normal text-[11px]">/ night</span>
-                    </div>
-                  </div>
-
-                  <div className="p-6 flex flex-col flex-1 justify-between space-y-4">
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-1.5 text-xs text-ukorange font-semibold">
-                        <MapPin className="w-3.5 h-3.5" />
-                        <span>{locationText}</span>
-                      </div>
-                      <h3 className="font-serif text-2xl font-bold text-forest group-hover:text-ukorange transition-colors">
-                        {property.name}
-                      </h3>
-                      <p className="text-xs text-charcoal-muted line-clamp-2 leading-relaxed">
-                        {property.description}
-                      </p>
-
-                      {/* Verified Amenities Pills */}
-                      {(property.amenities || []).length > 0 && (
-                        <div className="flex flex-wrap gap-1.5 pt-1">
-                          {property.amenities.slice(0, 3).map((amenity: string) => (
-                            <span
-                              key={amenity}
-                              className="text-[10px] bg-canvas text-charcoal px-2 py-0.5 rounded-md font-medium border border-forest/10"
-                            >
-                              {amenity}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="pt-3 border-t border-forest/10 flex items-center justify-between">
-                      <span className="text-[11px] font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full">
-                        Request-Based Booking
-                      </span>
-                      <Link
-                        href={`/stays/${property.slug}`}
-                        className="inline-flex items-center gap-1 text-xs font-bold text-forest hover:text-ukorange transition-colors"
-                      >
-                        <span>View &amp; Request</span>
-                        <ArrowRight className="w-3.5 h-3.5" />
-                      </Link>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        ) : (
-          <div className="text-center py-12 px-6 rounded-3xl bg-forest/5 border border-forest/10 space-y-3">
-            <Building2 className="w-10 h-10 text-forest/40 mx-auto" />
-            <h3 className="font-serif text-xl font-bold text-forest">No Live Homestays Listed Yet</h3>
-            <p className="text-xs text-charcoal-muted max-w-md mx-auto">
-              Our curated homestays are currently undergoing onboarding and review. Are you a local homestay host?
-            </p>
-            <div className="pt-2">
-              <Link
-                href="/host/properties/new"
-                className="inline-flex items-center gap-2 text-xs font-semibold px-5 py-2.5 bg-forest text-ivory rounded-full hover:bg-forest/90 transition-colors shadow-soft"
-              >
-                List Your Homestay →
-              </Link>
-            </div>
-          </div>
-        )}
+        <DestinationAtlas destinations={destinations} />
       </section>
 
-      {/* ─────────────────────────────────────────────────────────────
-          5. DESTINATION-FIRST DISCOVERY PREVIEW
-      ───────────────────────────────────────────────────────────── */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-forest/10 pb-4">
-          <div>
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-ukorange/10 text-ukorange text-xs font-semibold uppercase tracking-wider mb-2">
-              <Compass className="w-3.5 h-3.5" />
-              Regional Discovery
-            </div>
-            <h2 className="font-serif text-3xl sm:text-4xl font-bold text-forest">
-              Explore Popular Destinations
-            </h2>
-          </div>
-          <Link
-            href="/stays#destinations"
-            className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-forest hover:text-ukorange transition-colors"
+      {/* ─────────────────────────────────────────────────────────────────────
+          SECTION 8: PRODUCTS — LOCAL CRAFT AND COMMERCE (HONEST PREVIEW)
+      ───────────────────────────────────────────────────────────────────── */}
+      <section id="products" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <ScrollReveal>
+          <Card
+            variant="standard"
+            padding="none"
+            className="overflow-hidden border-beige-dark/80 shadow-editorial-lg"
           >
-            <span>View All 22 Destinations</span>
-            <ArrowRight className="w-4 h-4" />
-          </Link>
-        </div>
-
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          {destinations.map((d) => (
-            <Link
-              key={d.id}
-              href={`/stays/destinations/${d.slug}`}
-              className="p-5 bg-white rounded-2xl border border-forest/15 hover:border-ukorange/40 hover:shadow-soft transition-all flex flex-col justify-between group space-y-2"
-            >
-              <div>
-                <span className="text-[10px] font-bold text-ukorange uppercase tracking-wider block">
-                  {d.region === 'Himachal Pradesh' ? 'Himachal' : d.region === 'Jammu & Kashmir' ? 'J&K' : 'Uttarakhand'}
-                </span>
-                <h4 className="font-serif text-lg font-bold text-forest group-hover:text-ukorange transition-colors">
-                  {d.name}
-                </h4>
-              </div>
-              <div className="text-[11px] font-semibold text-forest group-hover:text-ukorange flex items-center justify-between pt-2 border-t border-forest/5">
-                <span>View Stays</span>
-                <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
-              </div>
-            </Link>
-          ))}
-        </div>
-      </section>
-
-      {/* ─────────────────────────────────────────────────────────────
-          6. PRODUCTS — HONEST COMING SOON STATE (Zero Fake Products)
-      ───────────────────────────────────────────────────────────── */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-forest/10 pb-4">
-          <div>
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-ukorange/10 text-ukorange text-xs font-semibold uppercase tracking-wider mb-2">
-              <Clock className="w-3.5 h-3.5" />
-              Pillar II • Products
-            </div>
-            <h2 className="font-serif text-3xl sm:text-4xl font-bold text-forest">
-              Discover Something Meaningful.
-            </h2>
-          </div>
-          <Link href="/products/sell" className="text-xs sm:text-sm font-semibold text-ukorange hover:underline">
-            Sell With Us →
-          </Link>
-        </div>
-
-        {/* Elegant Editorial Coming Soon Presentation */}
-        <div className="bg-white rounded-3xl p-8 sm:p-14 border border-forest/15 shadow-soft text-center space-y-6 max-w-3xl mx-auto">
-          <div className="w-16 h-16 rounded-full bg-forest/10 text-forest mx-auto flex items-center justify-center">
-            <Package className="w-8 h-8 text-ukorange" />
-          </div>
-
-          <div className="space-y-3">
-            <h3 className="font-serif text-2xl sm:text-3xl font-bold text-forest">
-              Our Product Collection is Coming Soon
-            </h3>
-            <p className="text-sm text-charcoal-muted max-w-xl mx-auto leading-relaxed font-sans">
-              We&rsquo;re building a growing collection of valuable products from independent makers, local creators and responsible businesses. We do not display fictional inventory — every product appears only after authentic sourcing and moderation approval.
-            </p>
-          </div>
-
-          <div className="pt-2 flex flex-wrap items-center justify-center gap-4">
-            <Link
-              href="/products/sell"
-              className="inline-flex items-center gap-2 bg-ukorange hover:bg-ukorange-deep text-white px-6 py-3 rounded-full font-semibold text-xs transition-all shadow-sm"
-            >
-              <Store className="w-4 h-4" />
-              <span>Sell Your Products With Us</span>
-            </Link>
-            <Link
-              href="/products"
-              className="inline-flex items-center gap-2 bg-forest/5 hover:bg-forest/10 text-forest border border-forest/15 px-6 py-3 rounded-full font-semibold text-xs transition-all"
-            >
-              <span>Explore Categories Taxonomy</span>
-              <ArrowRight className="w-4 h-4" />
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* ─────────────────────────────────────────────────────────────
-          7. PRODUCTIONS — EXACTLY THE TWO AUTHORIZED VIDEOS
-      ───────────────────────────────────────────────────────────── */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-forest/10 pb-4">
-          <div>
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-ukblue-deep/10 text-ukblue-deep text-xs font-semibold uppercase tracking-wider mb-2">
-              <Film className="w-3.5 h-3.5 text-ukorange" />
-              Pillar III • Visual Storytelling
-            </div>
-            <h2 className="font-serif text-3xl sm:text-4xl font-bold text-forest">
-              Productions &amp; Himalayan Cinema
-            </h2>
-          </div>
-          <Link
-            href="/production"
-            className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-forest hover:text-ukorange transition-colors"
-          >
-            <span>Watch All Productions</span>
-            <ArrowRight className="w-4 h-4" />
-          </Link>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {AUTHORIZED_PRODUCTIONS.map((film) => (
-            <div
-              key={film.id}
-              className="bg-white rounded-3xl border border-forest/15 overflow-hidden shadow-soft hover:shadow-lifted transition-all flex flex-col group"
-            >
-              <div className="relative aspect-video w-full bg-forest-dark overflow-hidden">
+            <div className="grid grid-cols-1 lg:grid-cols-12">
+              {/* Section Cover Asset: /assets/products home page.webp */}
+              <div className="relative min-h-[280px] sm:min-h-[360px] lg:col-span-5 bg-forest-dark overflow-hidden flex flex-col justify-between p-6 sm:p-8 text-warm-surface">
                 <Image
-                  src={film.thumbnail}
-                  alt={film.title}
+                  src="/assets/products home page.webp"
+                  alt="Uttarkunth Products — Section Cover for Himalayan Craft and Makers"
                   fill
-                  className="object-cover group-hover:scale-105 transition-transform duration-700 opacity-90"
+                  sizes="(max-width: 1024px) 100vw, 42vw"
+                  className="object-cover object-center"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-                <Link
-                  href="/production"
-                  className="absolute inset-0 flex items-center justify-center"
-                >
-                  <div className="w-14 h-14 rounded-full bg-white/20 backdrop-blur-md border border-white/40 flex items-center justify-center text-white group-hover:scale-110 group-hover:bg-ukorange transition-all">
-                    <Play className="w-6 h-6 fill-current ml-1" />
-                  </div>
-                </Link>
-                <div className="absolute bottom-3 left-4 right-4 flex items-center justify-between text-xs text-white/90">
-                  <span className="font-semibold uppercase tracking-wider text-[11px] bg-black/60 px-2.5 py-1 rounded-full backdrop-blur-sm">
-                    {film.category}
-                  </span>
-                  <span className="text-[11px] text-white/80">Uttarkunth Archive</span>
-                </div>
-              </div>
+                <div className="absolute inset-0 bg-gradient-to-t from-charcoal/90 via-charcoal/35 to-black/30" />
 
-              <div className="p-6 space-y-3 flex-1 flex flex-col justify-between">
-                <div className="space-y-1.5">
-                  <h3 className="font-serif text-2xl font-bold text-forest group-hover:text-ukorange transition-colors">
-                    {film.title}
+                <div className="relative z-10 flex items-center justify-end">
+                  <Package className="w-5 h-5 text-terracotta-light" />
+                </div>
+
+                <div className="relative z-10 space-y-2 pt-10">
+                  <span className="text-xs font-serif italic text-warm-canvas/90 block">
+                    Independent Mountain Makers
+                  </span>
+                  <h3 className="font-serif text-2xl sm:text-3xl font-bold text-warm-surface leading-tight">
+                    Crafted in Alpine Valleys. Verified for Provenance.
                   </h3>
-                  <p className="text-xs sm:text-sm text-charcoal-muted leading-relaxed">
-                    {film.description}
+                  <p className="text-xs text-warm-canvas/80 leading-relaxed">
+                    Every maker and batch undergoes origin and quality verification before entering
+                    the Uttarkunth catalogue.
                   </p>
                 </div>
-                <div className="pt-3 border-t border-forest/10 flex items-center justify-between">
+              </div>
+
+              {/* Honest Empty / Coming-Soon State & Maker Taxonomy */}
+              <div className="lg:col-span-7 p-6 sm:p-8 lg:p-10 flex flex-col justify-between space-y-6 bg-warm-surface">
+                <div className="space-y-4">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <EditorialKicker>Uttarkunth Products · Local Craft &amp; Commerce</EditorialKicker>
+                    <span className="text-[11px] font-semibold text-forest bg-forest/10 border border-forest/20 px-2.5 py-1 rounded-md">
+                      Coming Soon · Zero Fictional Stock
+                    </span>
+                  </div>
+
+                  <h2 className="font-serif text-3xl sm:text-4xl font-bold text-forest leading-tight">
+                    Our Curated Product Collection is in Preparation
+                  </h2>
+
+                  <p className="text-xs sm:text-sm text-charcoal-muted leading-relaxed">
+                    We are onboarding independent Himalayan beekeepers, handloom weavers, wood
+                    carvers, and small-batch organic growers. Rather than displaying placeholder
+                    listings or fictional stock, products appear here only once their maker
+                    provenance and batch quality have been formally approved.
+                  </p>
+
+                  {/* 9 Official Product Categories Grid */}
+                  <div className="pt-2 space-y-3">
+                    <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-charcoal-muted block">
+                      9 Curated Sourcing &amp; Craft Disciplines
+                    </span>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                      {PRODUCT_CATEGORIES.map((cat) => (
+                        <Link
+                          key={cat.id}
+                          href="/products"
+                          className="p-3 rounded-xl bg-warm-canvas/70 hover:bg-warm-canvas border border-beige/90 hover:border-forest/35 transition-colors group"
+                        >
+                          <span className="text-xs font-bold text-forest group-hover:text-terracotta transition-colors block">
+                            {cat.name}
+                          </span>
+                          <span className="text-[11px] text-charcoal-muted line-clamp-1 mt-0.5 block">
+                            {cat.description}
+                          </span>
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-5 border-t border-beige flex flex-wrap items-center justify-between gap-4">
+                  <div className="flex flex-wrap items-center gap-3">
+                    <LinkButton
+                      href="/products/sell"
+                      variant="terracotta"
+                      size="md"
+                      leftIcon={<Store className="w-4 h-4" />}
+                    >
+                      Sell Your Products With Us
+                    </LinkButton>
+                    <LinkButton
+                      href="/products"
+                      variant="secondary"
+                      size="md"
+                      rightIcon={<ArrowRight className="w-4 h-4" />}
+                    >
+                      Explore Products Pillar
+                    </LinkButton>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </Card>
+        </ScrollReveal>
+      </section>
+
+      {/* ─────────────────────────────────────────────────────────────────────
+          SECTION 9: PRODUCTIONS — CINEMATIC STORYTELLING (ARCHIVE MONOGRAPHS)
+      ───────────────────────────────────────────────────────────────────── */}
+      <section id="productions" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6 sm:space-y-7">
+        <ScrollReveal>
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-beige pb-4">
+            <div className="space-y-1.5">
+              <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-forest tracking-tight">
+                Productions &amp; Living Archives
+              </h2>
+            </div>
+            <div className="flex flex-wrap items-center gap-4">
+              <Link
+                href="/production/collaborate"
+                className="text-xs font-semibold text-charcoal-muted hover:text-forest transition-colors"
+              >
+                Pitch a Documentary →
+              </Link>
+              <LinkButton
+                href="/production"
+                variant="outline"
+                size="sm"
+                rightIcon={<ArrowRight className="w-3.5 h-3.5" />}
+              >
+                Open Screening Room
+              </LinkButton>
+            </div>
+          </div>
+        </ScrollReveal>
+
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-stretch">
+          {/* Left Cover Visual Anchor using /assets/productions home.webp */}
+          <div className="lg:col-span-5 bg-forest-dark text-warm-surface rounded-2xl overflow-hidden border border-forest-light/40 shadow-editorial-lg flex flex-col justify-between relative min-h-[360px]">
+            <Image
+              src="/assets/productions home.webp"
+              alt="Uttarkunth Productions — Himalayan Documentary & Cultural Archive Cover"
+              fill
+              sizes="(max-width: 1024px) 100vw, 42vw"
+              className="object-cover object-center opacity-85"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-forest-dark via-forest-dark/55 to-forest-dark/30" />
+
+            <div className="relative z-10 p-6 sm:p-8 flex items-center justify-between">
+              <span className="px-3 py-1 rounded-md bg-forest-dark/85 border border-white/15 text-[10px] font-bold uppercase tracking-[0.16em] text-terracotta-light">
+                Uttarkunth Film Unit
+              </span>
+              <Clapperboard className="w-5 h-5 text-terracotta-light" />
+            </div>
+
+            <div className="relative z-10 p-6 sm:p-8 space-y-4 mt-auto">
+              <span className="text-xs font-serif italic text-terracotta-light block">
+                Ethnographic &amp; Cultural Storytelling
+              </span>
+              <h3 className="font-serif text-2xl sm:text-3xl font-bold text-warm-surface leading-snug">
+                Documenting the Deities, Oral Traditions, and Transitions of the Himalayas
+              </h3>
+              <p className="text-xs text-warm-canvas/80 leading-relaxed">
+                Our production unit chronicles authentic village narratives in the Kullu and Parvati
+                valleys—preserving cultural memory without commercial distortion.
+              </p>
+              <div className="pt-2 flex flex-wrap items-center gap-3">
+                <Link
+                  href="/production/collaborate"
+                  className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.12em] text-terracotta-light hover:text-warm-surface transition-colors"
+                >
+                  <span>Collaborate on Films</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </Link>
+              </div>
+            </div>
+          </div>
+
+          {/* Right Two Authorized Productions: Tasteful Editorial Archive Monograph Plates */}
+          <div className="lg:col-span-7 grid grid-cols-1 gap-6">
+            {AUTHENTIC_PRODUCTIONS.map((film, idx) => (
+              <div
+                key={film.id}
+                className="group bg-warm-surface rounded-2xl border border-beige-dark/80 hover:border-forest/45 shadow-editorial-sm hover:shadow-editorial-lg transition-all duration-300 ease-editorial overflow-hidden flex flex-col justify-between"
+              >
+                {/* Archival Monograph Header Strip */}
+                <div className="px-6 py-3 bg-forest-dark text-warm-canvas flex flex-wrap items-center justify-between gap-2 text-[11px] font-mono">
+                  <div className="flex items-center gap-2.5">
+                    <span className="text-terracotta-light font-bold">
+                      ARCHIVE REEL 0{idx + 1}
+                    </span>
+                    <span className="text-warm-canvas/30" aria-hidden="true">
+                      |
+                    </span>
+                    <span className="uppercase tracking-widest text-warm-canvas/90 font-sans font-bold text-[10px]">
+                      {film.category}
+                    </span>
+                  </div>
+                  <span className="text-warm-canvas/70 text-[10px] uppercase tracking-widest font-sans">
+                    Authorized Uttarkunth Release
+                  </span>
+                </div>
+
+                {/* Editorial Archive Plate Body */}
+                <div className="p-6 sm:p-8 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+                  <div className="space-y-3 max-w-xl">
+                    <div className="flex items-center gap-2 text-xs text-terracotta font-semibold">
+                      <Film className="w-3.5 h-3.5" />
+                      <span>Kullu &amp; Parvati Valley Cultural Archive</span>
+                    </div>
+
+                    <Link href={`/production/${film.slug}`} className="block">
+                      <h3 className="font-serif text-2xl sm:text-3xl font-bold text-forest group-hover:text-terracotta transition-colors">
+                        {film.title}
+                      </h3>
+                    </Link>
+
+                    <p className="text-xs sm:text-sm text-charcoal-muted leading-relaxed">
+                      {film.description}
+                    </p>
+                  </div>
+
+                  {/* Interactive Play & Screening Room Trigger */}
                   <Link
-                    href="/production"
-                    className="inline-flex items-center gap-1.5 text-xs font-bold text-forest hover:text-ukorange transition-colors"
+                    href={`/production/${film.slug}`}
+                    aria-label={`Watch ${film.title} in Screening Room`}
+                    className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-forest group-hover:bg-terracotta text-warm-surface flex items-center justify-center shrink-0 transition-all duration-300 ease-editorial shadow-editorial-sm group-hover:scale-105"
                   >
-                    <span>Watch Film</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
+                    <Play className="w-6 h-6 fill-current ml-0.5" />
                   </Link>
+                </div>
+
+                {/* Archival Plate Footer */}
+                <div className="px-6 sm:px-8 py-3.5 border-t border-beige/90 bg-warm-canvas/45 flex flex-wrap items-center justify-between gap-4 text-xs">
+                  <Link
+                    href={`/production/${film.slug}`}
+                    className="inline-flex items-center gap-1.5 font-bold uppercase tracking-[0.12em] text-forest hover:text-terracotta transition-colors"
+                  >
+                    <span>Enter Screening Room</span>
+                    <ArrowRight className="w-3.5 h-3.5 text-terracotta" />
+                  </Link>
+
                   <a
                     href={film.youtubeUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-xs font-semibold text-charcoal-muted hover:text-ukorange"
+                    className="inline-flex items-center gap-1 font-semibold text-charcoal-muted hover:text-terracotta transition-colors"
                   >
-                    YouTube ↗
+                    <span>YouTube Dispatch</span>
+                    <ArrowUpRight className="w-3.5 h-3.5" />
                   </a>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ─────────────────────────────────────────────────────────────
-          8. OUR PHILOSOPHY & KARMAYOG
-      ───────────────────────────────────────────────────────────── */}
-      <section className="max-w-5xl mx-auto px-4 sm:px-6">
-        <div className="bg-forest-dark text-ivory rounded-3xl p-8 sm:p-14 text-center space-y-8 shadow-lifted relative overflow-hidden">
-          <span className="text-xs uppercase tracking-widest text-ukorange font-bold block">
-            Our Core Philosophy
-          </span>
-
-          <blockquote className="font-serif text-3xl sm:text-5xl lg:text-6xl font-medium italic text-ivory leading-tight">
-            &ldquo;{BRAND.philosophy}&rdquo;
-          </blockquote>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-6 text-left border-t border-white/15">
-            <div className="space-y-2">
-              <span className="text-xs font-bold text-ukorange uppercase tracking-wider block">1. Karmayog in Action</span>
-              <h4 className="font-serif text-lg font-bold text-ivory">Think 5%, Do 95% Work</h4>
-              <p className="text-xs text-ivory/70 leading-relaxed font-sans">
-                Real change in mountain communities happens through daily persistent effort, not abstract strategy documents.
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              <span className="text-xs font-bold text-ukorange uppercase tracking-wider block">2. Complete Integrity</span>
-              <h4 className="font-serif text-lg font-bold text-ivory">Direct Host Payments</h4>
-              <p className="text-xs text-ivory/70 leading-relaxed font-sans">
-                Zero middle-layer surcharges. Guests pay the host directly, ensuring maximum economic retention in the village.
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              <span className="text-xs font-bold text-ukorange uppercase tracking-wider block">3. Respecting Nature</span>
-              <h4 className="font-serif text-lg font-bold text-ivory">Ecological Guardianship</h4>
-              <p className="text-xs text-ivory/70 leading-relaxed font-sans">
-                Protecting alpine rivers, ancient deodar groves, and vernacular wood architecture against destructive over-commercialization.
-              </p>
-            </div>
-          </div>
-
-          <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link
-              href="/about"
-              className="inline-flex items-center gap-2 bg-ukorange hover:bg-ukorange-deep text-white px-7 py-3 rounded-full font-semibold text-sm transition-all"
-            >
-              Read Our Full Story <ArrowRight className="w-4 h-4" />
-            </Link>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* ─────────────────────────────────────────────────────────────
-          9. COMMUNITY & VILLAGE DEVELOPMENT VISION
-      ───────────────────────────────────────────────────────────── */}
-      <section className="max-w-6xl mx-auto px-4 sm:px-6">
-        <div className="bg-white rounded-3xl p-8 sm:p-12 border border-forest/15 shadow-soft flex flex-col lg:flex-row gap-8 items-center justify-between">
-          <div className="space-y-4 max-w-xl">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-forest/10 text-forest text-xs font-semibold uppercase tracking-wider">
-              <Heart className="w-3.5 h-3.5 text-ukorange" />
-              Community &amp; Village Development
+      {/* ─────────────────────────────────────────────────────────────────────
+          SECTION 10: COMMUNITY — PEOPLE, PURPOSE AND KARMAYOG
+      ───────────────────────────────────────────────────────────────────── */}
+      <section id="community" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <ScrollReveal>
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-center bg-warm-surface rounded-2xl border border-beige-dark/80 shadow-editorial-md overflow-hidden">
+            {/* Left Community Storytelling Content */}
+            <div className="lg:col-span-7 p-6 sm:p-8 lg:p-10 space-y-5">
+              <div className="space-y-2">
+                <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-forest leading-[1.08] tracking-tight">
+                  Stewarding Himalayan Villages Together
+                </h2>
+              </div>
+
+              <p className="text-xs sm:text-sm text-charcoal leading-relaxed">
+                Uttarkunth Community connects local residents, youth, researchers, and conscious
+                travelers around practical mountain stewardship. We clearly distinguish our present
+                foundational platform work from our proposed field tracks—never fabricating impact
+                numbers or claiming unverified project completions.
+              </p>
+
+              {/* Proposed Community Tracks Preview */}
+              <div className="space-y-3 pt-1">
+                <div className="flex items-center justify-end">
+                  <Link
+                    href="/community/initiatives"
+                    className="text-xs font-bold text-forest hover:text-terracotta transition-colors"
+                  >
+                    All 9 Tracks →
+                  </Link>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {featuredInitiatives.map((init) => (
+                    <Link
+                      key={init.id}
+                      href={`/community/initiatives/${init.slug}`}
+                      className="p-4 rounded-xl bg-warm-canvas/65 hover:bg-warm-canvas border border-beige/90 hover:border-forest/40 transition-all group space-y-1.5"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-terracotta">
+                          {init.category}
+                        </span>
+                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-forest/10 text-forest">
+                          {init.status}
+                        </span>
+                      </div>
+                      <h4 className="font-serif text-lg font-bold text-forest group-hover:text-terracotta transition-colors leading-snug">
+                        {init.title}
+                      </h4>
+                      <p className="text-[11px] text-charcoal-muted line-clamp-2">
+                        {init.tagline}
+                      </p>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+
+              <div className="pt-3 flex flex-wrap items-center gap-3.5">
+                <LinkButton
+                  href="/community/join"
+                  variant="primary"
+                  size="md"
+                  leftIcon={<Heart className="w-4 h-4 text-terracotta-light" />}
+                >
+                  Join the Community Mission
+                </LinkButton>
+                <LinkButton
+                  href="/community"
+                  variant="secondary"
+                  size="md"
+                  rightIcon={<ArrowRight className="w-4 h-4" />}
+                >
+                  Explore Community Pillar
+                </LinkButton>
+              </div>
             </div>
-            <h3 className="font-serif text-3xl sm:text-4xl font-bold text-forest">
-              Investing in Himalayan People &amp; Places
-            </h3>
-            <p className="text-xs sm:text-sm text-charcoal leading-relaxed font-sans">
-              We distinguish active work from our long-term vision. We are a parent brand and business ecosystem with a community purpose — supporting youth skill development, preserving mountain cultural heritage, and keeping trails clean and wild.
+
+            {/* Right Visual Cover using /assets/community home page.webp */}
+            <div className="relative min-h-[320px] sm:min-h-[460px] lg:h-full lg:col-span-5 bg-forest-dark overflow-hidden flex flex-col justify-end p-6 sm:p-8 text-warm-surface">
+              <Image
+                src="/assets/community home page.webp"
+                alt="Uttarkunth Community — Himalayan Village Collaboration and Karmayog Cover"
+                fill
+                sizes="(max-width: 1024px) 100vw, 42vw"
+                className="object-cover object-center"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-charcoal/90 via-charcoal/25 to-black/20" />
+
+              <div className="relative z-10 space-y-2">
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-forest-dark/85 border border-white/15 text-[10px] font-bold uppercase tracking-[0.14em] text-terracotta-light">
+                  <Trees className="w-3.5 h-3.5" />
+                  <span>Parvati &amp; Kullu Valleys</span>
+                </div>
+                <p className="font-serif text-2xl font-bold text-warm-surface leading-snug">
+                  &ldquo;When mountain youth and village families lead, conservation and livelihood
+                  move together.&rdquo;
+                </p>
+              </div>
+            </div>
+          </div>
+        </ScrollReveal>
+      </section>
+
+      {/* ─────────────────────────────────────────────────────────────────────
+          SECTION 11: FOUNDER WORDS — SIMPLE EDITORIAL QUOTE
+      ───────────────────────────────────────────────────────────────────── */}
+      <section id="philosophy" className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10">
+        <ScrollReveal>
+          <div className="text-center space-y-5 sm:space-y-6 px-2 sm:px-8">
+            <span className="text-xs font-serif italic tracking-[0.14em] uppercase text-terracotta block">
+              Founder Words
+            </span>
+
+            <blockquote className="font-serif text-xl sm:text-3xl lg:text-[2.2rem] font-medium italic text-forest leading-[1.38] tracking-tight max-w-4xl mx-auto text-balance">
+              &ldquo;My aim is not to claim that I already know the answer. My aim is to build,
+              experiment, learn, document and improve. If a small village can become a place where
+              people create businesses, protect what they value and solve small problems together,
+              perhaps that experience can become a model for something larger.&rdquo;
+            </blockquote>
+
+            <p className="font-serif text-base sm:text-lg font-bold tracking-wide text-charcoal pt-1">
+              &mdash; {BRAND.founder}
             </p>
           </div>
-
-          <div className="flex-shrink-0">
-            <Link
-              href="/community/join"
-              className="inline-flex items-center gap-2 bg-forest hover:bg-forest-dark text-ivory px-7 py-3.5 rounded-full font-semibold text-sm transition-all shadow-sm"
-            >
-              <span>Join Our Mission</span>
-              <ArrowRight className="w-4 h-4 text-ukorange" />
-            </Link>
-          </div>
-        </div>
+        </ScrollReveal>
       </section>
 
-      {/* ─────────────────────────────────────────────────────────────
-          10. UNIVERSAL PARTNERSHIP CHOOSER
-      ───────────────────────────────────────────────────────────── */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
-        <div className="text-center max-w-2xl mx-auto space-y-2">
-          <span className="text-xs uppercase font-bold tracking-widest text-ukorange">Collaborate With Us</span>
-          <h2 className="font-serif text-3xl sm:text-4xl font-bold text-forest">
-            Be Part of the Uttarkunth Journey
+      {/* ─────────────────────────────────────────────────────────────────────
+          SECTION 12: PARTNERSHIP & FINAL EDITORIAL CALL TO ACTION
+      ───────────────────────────────────────────────────────────────────── */}
+      <section
+        id="participate"
+        className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8 scroll-mt-24"
+      >
+        {/* Final Monumental Editorial Brand Statement */}
+        <div className="bg-warm-surface rounded-2xl border border-beige-dark/80 p-6 sm:p-10 lg:p-12 shadow-editorial-lg text-center space-y-4">
+          <h2 className="font-serif text-3xl sm:text-5xl lg:text-6xl font-bold text-forest leading-[1.06] tracking-tight max-w-4xl mx-auto text-balance">
+            Ideas Born in the Mountains.{' '}
+            <span className="italic font-normal text-terracotta block sm:inline">
+              Built Through People.
+            </span>
           </h2>
-          <p className="text-xs sm:text-sm text-charcoal-muted">
-            Choose your pathway to participate as a host, artisan, creator, or community volunteer.
-          </p>
-        </div>
 
-        <PartnershipChooser />
+          <p className="font-serif italic text-lg sm:text-2xl text-charcoal-light">
+            Learn by Doing &bull; Grow by Serving.
+          </p>
+
+          <div className="pt-4 flex flex-wrap items-center justify-center gap-3.5">
+            <LinkButton
+              href="/stays"
+              variant="primary"
+              size="lg"
+              rightIcon={<ArrowRight className="w-4 h-4 text-terracotta-light" />}
+            >
+              Explore Mountain Stays
+            </LinkButton>
+            <LinkButton
+              href="/stays/partner"
+              variant="terracotta"
+              size="lg"
+              leftIcon={<Home className="w-4 h-4" />}
+            >
+              Partner as a Host
+            </LinkButton>
+            <LinkButton
+              href="/community/join"
+              variant="secondary"
+              size="lg"
+              leftIcon={<Heart className="w-4 h-4 text-terracotta" />}
+            >
+              Join Community Mission
+            </LinkButton>
+            <LinkButton href="/contact" variant="outline" size="lg">
+              Contact Jari Headquarters
+            </LinkButton>
+          </div>
+        </div>
       </section>
     </div>
   );
 }
+
+

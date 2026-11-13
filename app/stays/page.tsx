@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { PropertyImage } from '@/components/property-image';
 import { getPropertyPhotoList } from '@/lib/property-images';
 import { SearchBar } from '@/components/search-bar';
-import { BRAND } from '@/lib/constants';
+import { BRAND, EXISTING_PROPERTIES } from '@/lib/constants';
 import { getActiveDestinations, filterPropertiesForDestination, CURATED_DESTINATIONS, Destination } from '@/lib/destinations.server';
 import { createPublicServerSupabaseClient } from '@/lib/supabase/server';
 import { formatINR } from '@/lib/utils';
@@ -23,9 +23,6 @@ export const dynamic = 'force-dynamic';
 export const metadata = {
   title: `Stays — Find Your Place in the Mountains — ${BRAND.name}`,
   description: 'Explore welcoming timber homestays, riverside retreats, and comfortable bases in the Himalayas. 100% direct host payment.',
-  alternates: {
-    canonical: '/stays',
-  },
 };
 
 async function getStaysData() {
@@ -40,24 +37,26 @@ async function getStaysData() {
     const supabase = createPublicServerSupabaseClient();
     const { data: properties, error } = await supabase
       .from('properties')
-      .select('id, slug, name, description, village, district, state, property_type, booking_mode, amenities, photos, cover_photo, published, moderation_status')
+      .select('*')
       .eq('published', true)
-      .eq('moderation_status', 'approved');
+      .eq('moderation_status', 'approved')
+      .neq('slug', 'wonderway-retreat');
 
-    const source = (error || !properties) ? [] : properties;
+    const rawSource = (!error && properties && properties.length > 0) ? properties : EXISTING_PROPERTIES;
+    const source = rawSource.filter((p: any) => p && p.slug !== 'wonderway-retreat');
 
     let propertiesWithRooms: any[] = [];
     if (source.length > 0) {
-      const propertyIds = source.map((p) => p.id);
+      const propertyIds = source.map((p: any) => p.id);
       const { data: rooms } = await supabase
         .from('room_units')
         .select('id, property_id, room_name, description, max_guests, base_price, active')
         .in('property_id', propertyIds)
         .eq('active', true);
 
-      propertiesWithRooms = source.map((p) => ({
+      propertiesWithRooms = source.map((p: any) => ({
         ...p,
-        rooms: rooms ? rooms.filter((r) => r.property_id === p.id) : [],
+        rooms: rooms && rooms.length > 0 ? rooms.filter((r) => r.property_id === p.id) : p.rooms || [],
       }));
     }
 
@@ -72,21 +71,30 @@ async function getStaysData() {
       destinations: destinationsWithCounts,
     };
   } catch {
+    const cleanFallback = EXISTING_PROPERTIES.filter((p: any) => p.slug !== 'wonderway-retreat');
     const destinationsWithCounts = destinations.map((d) => ({
       ...d,
-      propertyCount: 0,
+      propertyCount: filterPropertiesForDestination(cleanFallback, d).length,
     }));
 
     return {
-      properties: [],
+      properties: cleanFallback,
       destinations: destinationsWithCounts,
     };
   }
 }
 
 interface StaysPageProps {
-  searchParams?: {
+  searchParams?: Promise<{
     destination?: string;
+    q?: string;
+    checkIn?: string;
+    checkOut?: string;
+    guests?: string;
+    type?: string;
+  }> | {
+    destination?: string;
+    q?: string;
     checkIn?: string;
     checkOut?: string;
     guests?: string;
@@ -95,17 +103,58 @@ interface StaysPageProps {
 }
 
 export default async function StaysPage({ searchParams }: StaysPageProps) {
-  const { properties, destinations } = await getStaysData();
+  const [{ properties, destinations }, resolvedParams] = await Promise.all([
+    getStaysData(),
+    Promise.resolve(searchParams || {}),
+  ]);
 
-  // If a destination filter was supplied via search, filter accordingly
+  // If a destination filter or free-text query was supplied via search, filter accordingly
   let filteredProperties = properties;
-  const destinationQuery = (searchParams?.destination || '').toLowerCase().trim();
+  const destinationQuery = (resolvedParams?.destination || '').toLowerCase().trim();
+  const textQuery = (resolvedParams?.q || '').toLowerCase().trim();
+
   if (destinationQuery) {
     const matchedDest = destinations.find(
-      (d) => d.slug === destinationQuery || d.name.toLowerCase() === destinationQuery
+      (d) =>
+        d.slug === destinationQuery ||
+        d.name.toLowerCase() === destinationQuery ||
+        d.matchTerms?.some((t) => t.toLowerCase() === destinationQuery)
     );
     if (matchedDest) {
       filteredProperties = filterPropertiesForDestination(properties, matchedDest);
+    }
+  } else if (textQuery) {
+    const matchedDest = destinations.find(
+      (d) =>
+        d.slug === textQuery ||
+        d.name.toLowerCase().includes(textQuery) ||
+        d.matchTerms?.some((t) => t.toLowerCase().includes(textQuery))
+    );
+    filteredProperties = properties.filter((p: any) => {
+      const inProp =
+        p.name?.toLowerCase().includes(textQuery) ||
+        p.village?.toLowerCase().includes(textQuery) ||
+        p.district?.toLowerCase().includes(textQuery) ||
+        p.description?.toLowerCase().includes(textQuery);
+      if (inProp) return true;
+      if (matchedDest) {
+        return filterPropertiesForDestination([p], matchedDest).length > 0;
+      }
+      return false;
+    });
+  }
+
+  const typeParam = (resolvedParams?.type || '').toLowerCase().trim();
+  if (typeParam) {
+    const selectedTypes = typeParam
+      .split(',')
+      .map((t) => t.trim().replace(/s$/, ''))
+      .filter(Boolean);
+    if (selectedTypes.length > 0) {
+      filteredProperties = filteredProperties.filter((p: any) => {
+        const pt = (p.property_type || 'homestay').toLowerCase().replace(/s$/, '');
+        return selectedTypes.some((st) => pt.includes(st) || st.includes(pt));
+      });
     }
   }
 
@@ -130,7 +179,12 @@ export default async function StaysPage({ searchParams }: StaysPageProps) {
 
         {/* Quick Search */}
         <div className="pt-4 max-w-3xl mx-auto">
-          <SearchBar />
+          <SearchBar
+            initialDestination={resolvedParams?.destination || ''}
+            initialCheckIn={resolvedParams?.checkIn || ''}
+            initialCheckOut={resolvedParams?.checkOut || ''}
+            initialGuests={resolvedParams?.guests ? Number(resolvedParams.guests) || 2 : 2}
+          />
         </div>
 
         {/* Trust Badges */}

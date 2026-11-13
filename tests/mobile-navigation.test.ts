@@ -7,15 +7,15 @@ import {
   resolveUserAvatarDisplay,
   resolveMobileSearchContext,
   hasUnreadNotifications,
-} from '../lib/mobile-navigation.ts';
-import { globalEcosystemSearchHandler } from '../lib/smart-suggestions.ts';
-import { toggleSavedItemInList } from '../lib/favourites.ts';
-import { CURATED_DESTINATIONS } from '../lib/destinations.ts';
+} from '../lib/mobile-navigation';
+import { globalEcosystemSearchHandler } from '../lib/smart-suggestions';
+import { toggleSavedItemInList } from '../lib/favourites';
+import { CURATED_DESTINATIONS } from '../lib/destinations';
 import {
   AUTHENTIC_PRODUCTIONS,
   EXISTING_PROPERTIES,
   PRODUCT_CATEGORIES,
-} from '../lib/constants.ts';
+} from '../lib/constants';
 
 test('resolveActivePillarFromPathname maps routes to dynamic 2nd bottom nav item', () => {
   const home = resolveActivePillarFromPathname('/');

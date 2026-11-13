@@ -10,9 +10,10 @@ export async function GET() {
     // Query published and approved properties (public locality only)
     const { data: properties, error: propError } = await supabase
       .from('properties')
-      .select('id, slug, name, description, village, district, state, property_type, booking_mode, amenities, photos, published, moderation_status')
+      .select('*')
       .eq('published', true)
       .eq('moderation_status', 'approved')
+      .neq('slug', 'wonderway-retreat')
       .order('name', { ascending: true });
 
     if (propError || !properties || properties.length === 0) {

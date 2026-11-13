@@ -39,6 +39,7 @@ const CATEGORIES = [
 
 export default function ProductionPage() {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [searchQuery, setSearchQuery] = useState<string>('');
   const [activeVideo, setActiveVideo] = useState<Production | null>(null);
   const [watchHistory, setWatchHistory] = useState<string[]>([]);
 
@@ -50,6 +51,20 @@ export default function ProductionPage() {
       }
     } catch {
       // localStorage may be restricted
+    }
+
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const genreParam = params.get('genre') || params.get('category');
+      const queryParam = params.get('q');
+      if (genreParam && CATEGORIES.some((c) => c.id === genreParam)) {
+        setSelectedCategory(genreParam);
+      }
+      if (queryParam) {
+        setSearchQuery(queryParam);
+      }
+    } catch {
+      // ignore URL parsing errors
     }
   }, []);
 
@@ -64,9 +79,16 @@ export default function ProductionPage() {
     }
   };
 
-  const filtered = selectedCategory === 'all'
-    ? AUTHORIZED_PRODUCTIONS
-    : AUTHORIZED_PRODUCTIONS.filter((p) => p.category === selectedCategory);
+  const filtered = AUTHORIZED_PRODUCTIONS.filter((p) => {
+    const matchesCat = selectedCategory === 'all' || p.category === selectedCategory;
+    const q = searchQuery.trim().toLowerCase();
+    const matchesQ =
+      !q ||
+      p.title.toLowerCase().includes(q) ||
+      p.category.toLowerCase().includes(q) ||
+      p.description.toLowerCase().includes(q);
+    return matchesCat && matchesQ;
+  });
 
   const watchedVideos = AUTHORIZED_PRODUCTIONS.filter((p) => watchHistory.includes(p.id));
 

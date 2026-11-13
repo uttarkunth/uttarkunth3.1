@@ -145,142 +145,42 @@ export const PROPERTY_TYPES = [
 // Preserved live properties from Supabase for static fallback resilience
 export const EXISTING_PROPERTIES = [
   {
-    id: '7fab8bb8-a04a-462a-8124-26eb100d172f',
+    id: 'd9bba1a1-23bc-4844-a70b-aebcc820cf37',
     slug: 'yash-home-stay',
-    canonical_slug: 'yash-home-stay-jari-4u07',
     name: 'Yash Home Stay',
-    description:
-      'A  homestay nestled amidst beautiful mountains.  Experience peaceful village hospitality,enjoy traditional pahadi meals,  deodar forest air  and peaceful village vibes .',
-    address: 'Jari, Kullu, Himachal Pradesh',
+    description: 'A peaceful homestay in Jari, close to the mountains and village life. A welcoming place to relax, enjoy home-style food, and experience the Himalayas.',
     village: 'Jari',
     district: 'Kullu',
     state: 'Himachal Pradesh',
-    property_type: 'homestay',
-    booking_mode: 'request',
+    property_type: 'other',
+    booking_mode: 'request_only',
     published: true,
     moderation_status: 'approved',
-    house_rules:
-      'Quiet hours after 10:00 PM. Home-cooked vegetarian or non-vegetarian meals served on advance notice. Smoking strictly outdoors only.',
-    check_in_time: '12:00 PM',
-    check_out_time: '11:00 AM',
-    cover_photo:
-      'https://xyplgugxpmlnjsvlosdg.supabase.co/storage/v1/object/public/property-photos/host-uploads/137984ba-31be-490e-9ccd-d582f9a58a5b/deduplicated/b64cc671cd52f73f1b9f64df01d6f565bd9dad55afa9308986484a1ffa01bf0b.jpg',
     photos: [
-      'https://xyplgugxpmlnjsvlosdg.supabase.co/storage/v1/object/public/property-photos/host-uploads/137984ba-31be-490e-9ccd-d582f9a58a5b/deduplicated/6d106bd898ce9e4a01985866142ed8a3b7125703e54c4ee1ad675e20dc958d41.png',
-      'https://xyplgugxpmlnjsvlosdg.supabase.co/storage/v1/object/public/property-photos/host-uploads/137984ba-31be-490e-9ccd-d582f9a58a5b/deduplicated/b64cc671cd52f73f1b9f64df01d6f565bd9dad55afa9308986484a1ffa01bf0b.jpg',
-    ],
-    shared_washroom_photos: [
-      'https://xyplgugxpmlnjsvlosdg.supabase.co/storage/v1/object/public/property-photos/host-uploads/137984ba-31be-490e-9ccd-d582f9a58a5b/deduplicated/0f8015db1df2f388997d843e17abc0067acb60cd4b6b39cfe643869297ead8b0.jpg',
+      'https://xyplgugxpmlnjsvlosdg.supabase.co/storage/v1/object/public/property-photos/Yash%20home%20stay/unnamed.png',
+      'https://xyplgugxpmlnjsvlosdg.supabase.co/storage/v1/object/public/property-photos/Yash%20home%20stay/64749a66-252f-4c8f-a67e-028ce7557ce6.jpeg',
+      'https://xyplgugxpmlnjsvlosdg.supabase.co/storage/v1/object/public/property-photos/Yash%20home%20stay/17e473d2-e8a8-4904-85f2-0fccdb760b2e.jpeg'
     ],
     amenities: [
-      'Mountain View Balcony',
-      'Home-Cooked Himachali Meals',
-      'Hot Water Geyser',
-      'High-Speed Wi-Fi',
-      'Orchard / Garden Sit-Out',
-      'Guided Village Walks',
-      'Bonfire Facility',
-      'Wood-Fired Bukhari / Heater',
-      'Pet Friendly',
       'Free Wi-Fi',
       'Mountain-view room',
-      'Laundry',
-      'Hot Water',
-      'Kitchenette',
-      'Tea and coffee',
       'Breakfast and dinner meal plans',
-      'Bonfire on Request',
-      'Local Guided Hikes',
+      'Tea and coffee',
+      'Laundry',
+      'Pet-friendly by prior agreement'
     ],
     rooms: [
       {
-        id: '50b7b4aa-7168-49c1-bd0e-9274e0c6e106',
-        property_id: '7fab8bb8-a04a-462a-8124-26eb100d172f',
-        room_name: 'Village View Room',
-        description: 'Next to your window , you will Persimons and Apple  orchard.',
-        max_guests: 2,
-        base_price: 1000,
-        attached_washroom: false,
-        view_type: 'village',
-        bed_type: 'King / Double Bed',
-        photos: [
-          'https://xyplgugxpmlnjsvlosdg.supabase.co/storage/v1/object/public/property-photos/host-uploads/137984ba-31be-490e-9ccd-d582f9a58a5b/deduplicated/4be05dbdeae7e41427f74e802ff48543f324a619f15bbe87032db6c3d6147a07.jpg',
-        ],
-        washroom_photos: [],
-        sort_order: 1,
-        active: true,
-      },
-      {
-        id: '2e2b367b-1491-47e5-80c1-d0c0abf3e012',
-        property_id: '7fab8bb8-a04a-462a-8124-26eb100d172f',
-        room_name: 'Standard Room',
-        description: 'Standard room with peaceful vibes.',
-        max_guests: 2,
-        base_price: 900,
-        attached_washroom: false,
-        view_type: 'none',
-        bed_type: 'King Bed + Single Bed (Triple)',
-        photos: [
-          'https://xyplgugxpmlnjsvlosdg.supabase.co/storage/v1/object/public/property-photos/host-uploads/137984ba-31be-490e-9ccd-d582f9a58a5b/deduplicated/12798c2df2771f46177cb9c8d37b1c533861e8a41e26022ddc1d94ff63984c26.jpg',
-        ],
-        washroom_photos: [],
-        sort_order: 2,
-        active: true,
-      },
-      {
-        id: '9e7d68d1-f84d-49bf-91c7-8cd38c12666e',
-        property_id: '7fab8bb8-a04a-462a-8124-26eb100d172f',
+        id: 'c7391669-92a0-4456-8e13-c7bab6661681',
+        property_id: 'd9bba1a1-23bc-4844-a70b-aebcc820cf37',
         room_name: 'Mountain View Room',
-        description: 'Cozy mountain view room with peaceful vibes .',
+        description: 'A peaceful room with mountain views, ideal for relaxing or working from the mountains.',
         max_guests: 2,
-        base_price: 1000,
-        attached_washroom: false,
-        view_type: 'mountain',
-        bed_type: 'King / Double Bed',
-        photos: [
-          'https://xyplgugxpmlnjsvlosdg.supabase.co/storage/v1/object/public/property-photos/host-uploads/137984ba-31be-490e-9ccd-d582f9a58a5b/deduplicated/19ecd3d1186369164d3ca060c9df1a332b01befd668581ca790cbd3a624b7719.jpg',
-        ],
-        washroom_photos: [],
-        sort_order: 3,
-        active: true,
-      },
-      {
-        id: '15dba374-83c1-4222-96b1-f3e039ef3678',
-        property_id: '7fab8bb8-a04a-462a-8124-26eb100d172f',
-        room_name: 'Village View Room',
-        description: 'Next to your window , you will see a Temple made with traditional Kath-Kuni architecture.',
-        max_guests: 2,
-        base_price: 1500,
-        attached_washroom: true,
-        view_type: 'village',
-        bed_type: 'King / Double Bed',
-        photos: [
-          'https://xyplgugxpmlnjsvlosdg.supabase.co/storage/v1/object/public/property-photos/host-uploads/137984ba-31be-490e-9ccd-d582f9a58a5b/deduplicated/8df5e82c3856100b1adfe3812ea002c2eb792c4885281e87293c7619bac62457.jpg',
-        ],
-        washroom_photos: [
-          'https://xyplgugxpmlnjsvlosdg.supabase.co/storage/v1/object/public/property-photos/host-uploads/137984ba-31be-490e-9ccd-d582f9a58a5b/deduplicated/fc403821001058382c22bc3ff6e7e97fc759b0af042feabd82a966d73ed4b2da.jpg',
-        ],
-        sort_order: 4,
-        active: true,
-      },
-    ],
-  },
-  {
-    id: '23e7bd58-7b5e-4e64-b5fb-76db18037d6b',
-    slug: 'wonderway-retreat',
-    name: 'Wonderway Retreat',
-    description: 'Archived reference retreat record.',
-    village: 'Jari',
-    district: 'Kullu',
-    state: 'Himachal Pradesh',
-    property_type: 'retreat',
-    booking_mode: 'request_only',
-    published: false,
-    moderation_status: 'archived',
-    photos: [],
-    amenities: [],
-    rooms: [],
-  },
+        base_price: 900.0,
+        active: true
+      }
+    ]
+  }
 ];
 
 export const PRODUCT_CATEGORIES = [
@@ -494,3 +394,4 @@ export const COMMUNITY_STORIES: Array<{
   readTime: string;
   content: string;
 }> = [];
+
