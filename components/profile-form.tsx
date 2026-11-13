@@ -88,16 +88,17 @@ export function ProfileForm({
     <form onSubmit={handleSubmit} className="space-y-6">
       {message && (
         <div
+          role="alert"
           className={`p-4 rounded-xl flex items-start gap-2.5 text-xs ${
             message.type === 'success'
-              ? 'bg-green-50 border border-green-200 text-green-800'
-              : 'bg-red-50 border border-red-200 text-red-800'
+              ? 'bg-emerald-50 border border-emerald-200 text-emerald-900'
+              : 'bg-red-50 border border-red-200 text-red-900'
           }`}
         >
           {message.type === 'success' ? (
-            <CheckCircle2 className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
+            <CheckCircle2 className="w-4 h-4 text-emerald-700 flex-shrink-0 mt-0.5" />
           ) : (
-            <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0 mt-0.5" />
+            <AlertCircle className="w-4 h-4 text-red-700 flex-shrink-0 mt-0.5" />
           )}
           <span>{message.text}</span>
         </div>
@@ -105,65 +106,69 @@ export function ProfileForm({
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
-          <label className="block text-xs font-semibold text-charcoal-muted mb-1.5">
-            Full Legal / Display Name *
+          <label className="block text-xs font-semibold text-charcoal mb-1.5">
+            Full Legal / Display Name <span className="text-terracotta">*</span>
           </label>
           <div className="relative">
-            <User className="w-4 h-4 text-charcoal-muted absolute left-3 top-3" />
-            <input suppressHydrationWarning
+            <User className="w-4 h-4 text-charcoal-muted absolute left-3.5 top-3" />
+            <input
+              suppressHydrationWarning
               type="text"
               required
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 text-xs bg-ivory-warm border border-forest/20 rounded-xl focus:ring-2 focus:ring-forest focus:outline-none"
+              className="w-full pl-10 pr-3.5 py-2.5 text-xs bg-warm-surface border border-beige-dark/80 rounded-xl focus:ring-2 focus:ring-terracotta/25 focus:border-forest focus:outline-none transition-all"
               placeholder="Your full name"
             />
           </div>
         </div>
 
         <div>
-          <label className="block text-xs font-semibold text-charcoal-muted mb-1.5">
+          <label className="block text-xs font-semibold text-charcoal mb-1.5">
             Preferred Name
           </label>
           <div className="relative">
-            <User className="w-4 h-4 text-charcoal-muted absolute left-3 top-3" />
-            <input suppressHydrationWarning
+            <User className="w-4 h-4 text-charcoal-muted absolute left-3.5 top-3" />
+            <input
+              suppressHydrationWarning
               type="text"
               value={preferredName}
               onChange={(e) => setPreferredName(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 text-xs bg-ivory-warm border border-forest/20 rounded-xl focus:ring-2 focus:ring-forest focus:outline-none"
+              className="w-full pl-10 pr-3.5 py-2.5 text-xs bg-warm-surface border border-beige-dark/80 rounded-xl focus:ring-2 focus:ring-terracotta/25 focus:border-forest focus:outline-none transition-all"
               placeholder="Optional preferred name"
             />
           </div>
         </div>
 
         <div>
-          <label className="block text-xs font-semibold text-charcoal-muted mb-1.5">
+          <label className="block text-xs font-semibold text-charcoal mb-1.5">
             Phone / Contact Number (Private)
           </label>
           <div className="relative">
-            <Phone className="w-4 h-4 text-charcoal-muted absolute left-3 top-3" />
-            <input suppressHydrationWarning
+            <Phone className="w-4 h-4 text-charcoal-muted absolute left-3.5 top-3" />
+            <input
+              suppressHydrationWarning
               type="tel"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 text-xs bg-ivory-warm border border-forest/20 rounded-xl focus:ring-2 focus:ring-forest focus:outline-none"
+              className="w-full pl-10 pr-3.5 py-2.5 text-xs tabular-nums bg-warm-surface border border-beige-dark/80 rounded-xl focus:ring-2 focus:ring-terracotta/25 focus:border-forest focus:outline-none transition-all"
               placeholder="+91 98765 43210"
             />
           </div>
         </div>
 
         <div>
-          <label className="block text-xs font-semibold text-charcoal-muted mb-1.5">
+          <label className="block text-xs font-semibold text-charcoal mb-1.5">
             Home Base / Region
           </label>
           <div className="relative">
-            <MapPin className="w-4 h-4 text-charcoal-muted absolute left-3 top-3" />
-            <input suppressHydrationWarning
+            <MapPin className="w-4 h-4 text-charcoal-muted absolute left-3.5 top-3" />
+            <input
+              suppressHydrationWarning
               type="text"
               value={location}
               onChange={(e) => setLocation(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 text-xs bg-ivory-warm border border-forest/20 rounded-xl focus:ring-2 focus:ring-forest focus:outline-none"
+              className="w-full pl-10 pr-3.5 py-2.5 text-xs bg-warm-surface border border-beige-dark/80 rounded-xl focus:ring-2 focus:ring-terracotta/25 focus:border-forest focus:outline-none transition-all"
               placeholder="e.g. Kullu, Himachal Pradesh or New Delhi"
             />
           </div>
@@ -171,50 +176,53 @@ export function ProfileForm({
       </div>
 
       <div>
-        <label className="block text-xs font-semibold text-charcoal-muted mb-1.5">
+        <label className="block text-xs font-semibold text-charcoal mb-1.5">
           Residential / Delivery Address (Private — never exposed publicly)
         </label>
         <div className="relative">
-          <Home className="w-4 h-4 text-charcoal-muted absolute left-3 top-3" />
-          <input suppressHydrationWarning
+          <Home className="w-4 h-4 text-charcoal-muted absolute left-3.5 top-3" />
+          <input
+            suppressHydrationWarning
             type="text"
             value={address}
             onChange={(e) => setAddress(e.target.value)}
-            className="w-full pl-9 pr-3 py-2 text-xs bg-ivory-warm border border-forest/20 rounded-xl focus:ring-2 focus:ring-forest focus:outline-none"
+            className="w-full pl-10 pr-3.5 py-2.5 text-xs bg-warm-surface border border-beige-dark/80 rounded-xl focus:ring-2 focus:ring-terracotta/25 focus:border-forest focus:outline-none transition-all"
             placeholder="Street, Village/Town, District, State, PIN"
           />
         </div>
       </div>
 
       <div>
-        <label className="block text-xs font-semibold text-charcoal-muted mb-1.5">
+        <label className="block text-xs font-semibold text-charcoal mb-1.5">
           About You / Himalayan Connection
         </label>
-        <textarea suppressHydrationWarning
+        <textarea
+          suppressHydrationWarning
           rows={3}
           value={bio}
           onChange={(e) => setBio(e.target.value)}
-          className="w-full p-3 text-xs bg-ivory-warm border border-forest/20 rounded-xl focus:ring-2 focus:ring-forest focus:outline-none"
+          className="w-full p-3.5 text-xs bg-warm-surface border border-beige-dark/80 rounded-xl focus:ring-2 focus:ring-terracotta/25 focus:border-forest focus:outline-none transition-all"
           placeholder="Tell local hosts and creators a little bit about yourself and your relationship with mountain communities..."
         />
       </div>
 
       <div>
-        <label className="block text-xs font-semibold text-charcoal-muted mb-2">
+        <label className="block text-xs font-semibold text-charcoal mb-2">
           Mountain Interests
         </label>
         <div className="flex flex-wrap gap-2">
           {MOUNTAIN_INTEREST_OPTIONS.map((tag) => {
             const isSelected = interests.includes(tag);
             return (
-              <button suppressHydrationWarning
+              <button
+                suppressHydrationWarning
                 type="button"
                 key={tag}
                 onClick={() => toggleInterest(tag)}
-                className={`px-3 py-1.5 text-xs rounded-full border transition-colors ${
+                className={`px-3.5 py-1.5 text-xs rounded-lg border transition-all duration-200 ease-editorial ${
                   isSelected
-                    ? 'bg-forest text-white border-forest font-semibold'
-                    : 'bg-ivory-warm text-charcoal border-forest/15 hover:border-forest/40'
+                    ? 'bg-forest text-warm-surface border-forest font-semibold shadow-xs'
+                    : 'bg-warm-surface text-charcoal border-beige-dark/70 hover:border-forest/40'
                 }`}
               >
                 {tag}
@@ -225,12 +233,13 @@ export function ProfileForm({
       </div>
 
       <div className="pt-2 flex justify-end">
-        <button suppressHydrationWarning
+        <button
+          suppressHydrationWarning
           type="submit"
           disabled={saving}
-          className="inline-flex items-center gap-2 px-5 py-2.5 bg-forest hover:bg-forest-hover disabled:bg-forest/50 text-white text-xs font-semibold rounded-xl shadow-xs transition-colors"
+          className="inline-flex items-center gap-2 px-5 py-2.5 bg-forest hover:bg-forest-dark disabled:bg-forest/50 text-warm-surface text-xs font-semibold rounded-xl shadow-xs transition-all duration-200 ease-editorial"
         >
-          {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+          {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5 text-terracotta-light" />}
           <span>{saving ? 'Saving...' : 'Save Profile Changes'}</span>
         </button>
       </div>

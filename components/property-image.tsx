@@ -13,6 +13,14 @@ const PROPERTY_PHOTO_HOST = 'xyplgugxpmlnjsvlosdg.supabase.co';
 
 function getTransformedPropertyImageUrl(source: string, width: number, height: number): string {
   try {
+    if (
+      process.env.NODE_ENV !== 'production' ||
+      (typeof window !== 'undefined' &&
+        (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'))
+    ) {
+      return source;
+    }
+
     const url = new URL(source);
     const isApprovedPropertyPhoto =
       url.protocol === 'https:' &&
@@ -25,7 +33,7 @@ function getTransformedPropertyImageUrl(source: string, width: number, height: n
       'width=' + width,
       'height=' + height,
       'fit=cover',
-      'gravity=auto',
+      'gravity=' + 'auto',
       'quality=82',
       'format=auto',
     ].join(',');

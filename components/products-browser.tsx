@@ -17,11 +17,17 @@ import {
 
 interface ProductsBrowserProps {
   products: any[];
+  initialCategory?: string;
+  initialQuery?: string;
 }
 
-export function ProductsBrowser({ products }: ProductsBrowserProps) {
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [searchQuery, setSearchQuery] = useState<string>('');
+export function ProductsBrowser({
+  products,
+  initialCategory = 'all',
+  initialQuery = '',
+}: ProductsBrowserProps) {
+  const [selectedCategory, setSelectedCategory] = useState<string>(initialCategory || 'all');
+  const [searchQuery, setSearchQuery] = useState<string>(initialQuery || '');
 
   const filteredProducts = products.filter((p) => {
     const matchesCategory = selectedCategory === 'all' || p.category === selectedCategory;

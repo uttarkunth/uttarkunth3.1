@@ -81,9 +81,9 @@ export function PartnershipChooser() {
   const Icon = current.icon;
 
   return (
-    <div className="bg-white rounded-3xl border border-forest/15 shadow-soft overflow-hidden">
+    <div className="bg-warm-surface rounded-2xl border border-beige/90 shadow-editorial-md overflow-hidden">
       {/* Tab Selectors */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 border-b border-forest/10 bg-forest/5">
+      <div className="grid grid-cols-2 lg:grid-cols-4 border-b border-beige/90 bg-warm-canvas/60" role="tablist">
         {PATHWAYS.map((pathway) => {
           const TabIcon = pathway.icon;
           const isActive = activeTab === pathway.id;
@@ -91,17 +91,19 @@ export function PartnershipChooser() {
             <button
               suppressHydrationWarning
               type="button"
+              role="tab"
+              aria-selected={isActive}
               key={pathway.id}
               onClick={() => setActiveTab(pathway.id)}
-              className={`p-4 sm:p-5 text-left transition-all flex items-center gap-3 border-b-2 ${
+              className={`p-4 sm:p-5 text-left transition-all duration-200 ease-editorial flex items-center gap-3 border-b-2 ${
                 isActive
-                  ? 'bg-white border-ukorange text-forest shadow-sm'
-                  : 'border-transparent text-charcoal hover:bg-white/50'
+                  ? 'bg-warm-surface border-terracotta text-forest shadow-xs'
+                  : 'border-transparent text-charcoal hover:bg-warm-surface/60'
               }`}
             >
               <div
-                className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${
-                  isActive ? 'bg-ukorange text-white' : 'bg-forest/10 text-forest'
+                className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors ${
+                  isActive ? 'bg-terracotta text-white' : 'bg-forest/10 text-forest'
                 }`}
               >
                 <TabIcon className="w-4 h-4" />
@@ -118,17 +120,17 @@ export function PartnershipChooser() {
       </div>
 
       {/* Tab Content Panel */}
-      <div className="p-6 sm:p-10 lg:p-12 space-y-8">
+      <div className="p-6 sm:p-10 lg:p-12 space-y-8" role="tabpanel">
         <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-6">
           <div className="space-y-3 max-w-2xl">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-ukorange/10 text-ukorange text-xs font-semibold uppercase tracking-wider">
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-terracotta/10 border border-terracotta/25 text-terracotta text-[11px] font-bold uppercase tracking-[0.14em]">
               <ShieldCheck className="w-3.5 h-3.5" />
               {current.badge}
             </div>
-            <h3 className="font-serif text-2xl sm:text-3xl lg:text-4xl font-bold text-forest">
+            <h3 className="font-serif text-2xl sm:text-3xl lg:text-4xl font-bold text-forest tracking-tight">
               {current.heading}
             </h3>
-            <p className="text-sm text-charcoal leading-relaxed font-sans">
+            <p className="text-sm text-charcoal-light leading-relaxed font-sans">
               {current.description}
             </p>
           </div>
@@ -136,23 +138,25 @@ export function PartnershipChooser() {
           <div className="flex-shrink-0">
             <Link
               href={current.ctaLink}
-              className="inline-flex items-center gap-2 bg-forest hover:bg-forest-dark text-ivory px-6 py-3.5 rounded-full font-semibold text-sm transition-all shadow-sm hover:shadow group"
+              className="lantern-btn group bg-[#C85A23]/35 shadow-editorial-sm hover:shadow-editorial-md hover:-translate-y-0.5"
             >
-              <span>{current.ctaText}</span>
-              <ArrowRight className="w-4 h-4 text-ukorange group-hover:translate-x-1 transition-transform" />
+              <span className="lantern-btn-inner bg-[#1A2B23] group-hover:bg-[#263D32] text-warm-surface px-6 py-3.5 font-semibold text-xs uppercase tracking-[0.12em]">
+                <span>{current.ctaText}</span>
+                <ArrowRight className="w-4 h-4 text-terracotta-light group-hover:translate-x-1 transition-transform" />
+              </span>
             </Link>
           </div>
         </div>
 
         {/* Benefits Grid */}
-        <div className="pt-6 border-t border-forest/10">
-          <span className="text-xs font-bold text-charcoal-muted uppercase tracking-wider block mb-4">
+        <div className="pt-6 border-t border-beige/90">
+          <span className="text-[11px] font-bold text-charcoal-muted uppercase tracking-[0.16em] block mb-4">
             Key Partnership Commitments
           </span>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {current.benefits.map((benefit, i) => (
               <div key={i} className="flex items-start gap-3">
-                <CheckCircle2 className="w-4 h-4 text-ukorange flex-shrink-0 mt-0.5" />
+                <CheckCircle2 className="w-4 h-4 text-terracotta flex-shrink-0 mt-0.5" />
                 <span className="text-xs sm:text-sm text-charcoal">{benefit}</span>
               </div>
             ))}
