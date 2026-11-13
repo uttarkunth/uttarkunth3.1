@@ -76,9 +76,10 @@ async function getHomePageData() {
       const propertyIds = source.map((p: any) => p.id);
       const { data: rooms } = await supabase
         .from('room_units')
-        .select('id, property_id, room_name, description, max_guests, base_price, active')
+        .select('*')
         .in('property_id', propertyIds)
-        .eq('active', true);
+        .eq('active', true)
+        .order('sort_order', { ascending: true });
 
       propertiesWithRooms = source.map((p: any) => ({
         ...p,
@@ -349,10 +350,10 @@ export default async function HomePage() {
             className="overflow-hidden border-beige-dark/80 shadow-editorial-lg"
           >
             <div className="grid grid-cols-1 lg:grid-cols-12">
-              {/* Section Cover Asset: /assets/products home page.webp */}
+              {/* Section Cover Asset: /assets/products-home-page.webp */}
               <div className="relative min-h-[280px] sm:min-h-[360px] lg:col-span-5 bg-forest-dark overflow-hidden flex flex-col justify-between p-6 sm:p-8 text-warm-surface">
                 <Image
-                  src="/assets/products home page.webp"
+                  src="/assets/products-home-page.webp"
                   alt="Uttarkunth Products — Section Cover for Himalayan Craft and Makers"
                   fill
                   sizes="(max-width: 1024px) 100vw, 42vw"
@@ -480,10 +481,10 @@ export default async function HomePage() {
         </ScrollReveal>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-stretch">
-          {/* Left Cover Visual Anchor using /assets/productions home.webp */}
+          {/* Left Cover Visual Anchor using /assets/productions-home.webp */}
           <div className="lg:col-span-5 bg-forest-dark text-warm-surface rounded-2xl overflow-hidden border border-forest-light/40 shadow-editorial-lg flex flex-col justify-between relative min-h-[360px]">
             <Image
-              src="/assets/productions home.webp"
+              src="/assets/productions-home.webp"
               alt="Uttarkunth Productions — Himalayan Documentary & Cultural Archive Cover"
               fill
               sizes="(max-width: 1024px) 100vw, 42vw"
@@ -679,10 +680,10 @@ export default async function HomePage() {
               </div>
             </div>
 
-            {/* Right Visual Cover using /assets/community home page.webp */}
+            {/* Right Visual Cover using /assets/community-home-page.webp */}
             <div className="relative min-h-[320px] sm:min-h-[460px] lg:h-full lg:col-span-5 bg-forest-dark overflow-hidden flex flex-col justify-end p-6 sm:p-8 text-warm-surface">
               <Image
-                src="/assets/community home page.webp"
+                src="/assets/community-home-page.webp"
                 alt="Uttarkunth Community — Himalayan Village Collaboration and Karmayog Cover"
                 fill
                 sizes="(max-width: 1024px) 100vw, 42vw"
@@ -783,5 +784,3 @@ export default async function HomePage() {
     </div>
   );
 }
-
-
