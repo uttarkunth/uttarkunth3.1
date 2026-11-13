@@ -3,7 +3,24 @@ import path from 'node:path';
 
 const rootDir = process.cwd();
 
-// 1. Ensure tsconfig.json exists (protects @/* path aliases if accidentally deleted)
+// 1. Clean any stale Cloudflare build output cache to prevent incremental type checking pollution
+try {
+  const nextDir = path.join(rootDir, '.next');
+  if (fs.existsSync(nextDir)) {
+    fs.rmSync(nextDir, { recursive: true, force: true });
+    console.log('[postinstall] Cleaned stale .next build cache');
+  }
+  const openNextDir = path.join(rootDir, '.open-next');
+  if (fs.existsSync(openNextDir)) {
+    fs.rmSync(openNextDir, { recursive: true, force: true });
+    console.log('[postinstall] Cleaned stale .open-next directory');
+  }
+  console.log(`[postinstall] Fresh build environment verified at ${new Date().toISOString()}`);
+} catch {
+  // Ignore errors in read-only environments
+}
+
+// 2. Ensure tsconfig.json exists (protects @/* path aliases if accidentally deleted)
 const tsconfigPath = path.join(rootDir, 'tsconfig.json');
 if (!fs.existsSync(tsconfigPath)) {
   const defaultTsconfig = {
@@ -21,20 +38,20 @@ if (!fs.existsSync(tsconfigPath)) {
       resolveJsonModule: true,
       isolatedModules: true,
       jsx: 'preserve',
-      incremental: true,
+      incremental: false,
       plugins: [{ name: 'next' }],
       paths: {
         '@/*': ['./*'],
       },
     },
-    include: ['next-env.d.ts', '**/*.ts', '**/*.tsx', '.next/types/**/*.ts'],
+    include: ['next-env.d.ts', '**/*.ts', '**/*.tsx'],
     exclude: ['node_modules'],
   };
   fs.writeFileSync(tsconfigPath, JSON.stringify(defaultTsconfig, null, 2) + '\n', 'utf8');
   console.log('[postinstall] Restored missing tsconfig.json');
 }
 
-// 2. Copy static media from /assets to /public/assets if needed
+// 3. Copy static media from /assets to /public/assets if needed
 try {
   const srcDir = path.join(rootDir, 'assets');
   const destDir = path.join(rootDir, 'public', 'assets');
@@ -52,7 +69,7 @@ try {
   // Ignore errors in read-only environments
 }
 
-// 3. Ensure OpenNext LTS compatibility with Next.js 14
+// 4. Ensure OpenNext LTS compatibility with Next.js 14
 try {
   const openNextHelperPath = path.join(
     rootDir,
