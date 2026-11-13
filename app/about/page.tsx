@@ -21,6 +21,31 @@ export const metadata = {
   title: `About Uttarkunth — Himalayan Entrepreneurial Ecosystem`,
   description:
     'Ideas born in the Himalayas. Built through people. Uttarkunth is a Himalayan-born entrepreneurial ecosystem built on one conviction: people working together can become a powerful force for community development.',
+  openGraph: {
+    title: 'About Uttarkunth — Himalayan Entrepreneurial Ecosystem',
+    description: 'Ideas born in the Himalayas. Built through people.',
+    url: 'https://uttarkunth.com/about',
+    siteName: 'Uttarkunth',
+    images: [
+      {
+        url: '/assets/gaurav-negi-founder.webp',
+        width: 1200,
+        height: 630,
+        alt: 'Uttarkunth Founder in the Himalayas',
+      },
+    ],
+    locale: 'en_IN',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'About Uttarkunth — Himalayan Entrepreneurial Ecosystem',
+    description: 'Ideas born in the Himalayas. Built through people.',
+    images: ['/assets/gaurav-negi-founder.webp'],
+  },
+  alternates: {
+    canonical: 'https://uttarkunth.com/about',
+  },
 };
 
 export default function AboutPage() {
