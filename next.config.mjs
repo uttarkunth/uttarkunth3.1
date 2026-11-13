@@ -7,27 +7,13 @@ try {
   const destDir = path.resolve(process.cwd(), 'public', 'assets');
   if (fs.existsSync(srcDir)) {
     fs.mkdirSync(destDir, { recursive: true });
-    for (const file of [
-      'gaurav-negi-founder.webp',
-      'uttarkunth-hero-video.webm',
-      'uttarkunth-stays-homepage-card.webp',
-      'products-home-page.webp',
-      'productions-home.webp',
-      'community-home-page.webp'
-    ]) {
+    for (const file of ['gaurav-negi-founder.webp', 'uttarkunth-hero-video.webm']) {
       const srcFile = path.join(srcDir, file);
       const destFile = path.join(destDir, file);
       if (fs.existsSync(srcFile) && !fs.existsSync(destFile)) {
         fs.copyFileSync(srcFile, destFile);
       }
     }
-  }
-
-  // Ensure favicon.ico is present in /public from /public/logo.png at build time
-  const logoFile = path.resolve(process.cwd(), 'public', 'logo.png');
-  const faviconFile = path.resolve(process.cwd(), 'public', 'favicon.ico');
-  if (fs.existsSync(logoFile) && !fs.existsSync(faviconFile)) {
-    fs.copyFileSync(logoFile, faviconFile);
   }
 } catch {
   // Ignore filesystem write errors in read-only edge environments
@@ -59,16 +45,15 @@ const nextConfig = {
   },
   async redirects() {
     return [
-      { source: '/properties', destination: '/stays', permanent: true },
-      { source: '/properties/:slug', destination: '/stays/:slug', permanent: true },
-      { source: '/productions', destination: '/production', permanent: true },
-      { source: '/productions/:slug', destination: '/production/:slug', permanent: true },
+      { source: '/properties', destination: '/stays', permanent: false },
+      { source: '/properties/:slug', destination: '/stays/:slug', permanent: false },
+      { source: '/productions', destination: '/production', permanent: false },
+      { source: '/productions/:slug', destination: '/production/:slug', permanent: false },
       { source: '/guest/trips', destination: '/trips', permanent: false },
     ];
   },
   async rewrites() {
     return [
-      { source: '/favicon.ico', destination: '/logo.png' },
       { source: '/trips/:id', destination: '/guest/trips/:id' },
       { source: '/stays/:slug', destination: '/properties/:slug' },
     ];
