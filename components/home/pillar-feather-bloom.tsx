@@ -496,14 +496,14 @@ export function PillarFeatherBloom({ activePillar }: PillarFeatherBloomProps) {
                     opacity: item.opacity,
                     transform: `translate3d(${targetX}px, ${targetY}px, 0px) rotate(${item.rotateDeg}deg) scale(${item.scale})`,
                     transition:
-                      'transform 660ms cubic-bezier(0.16, 1, 0.3, 1), opacity 520ms cubic-bezier(0.16, 1, 0.3, 1)',
+                      'transform 780ms cubic-bezier(0.22, 1, 0.36, 1), opacity 620ms cubic-bezier(0.22, 1, 0.36, 1)',
                     transitionDelay: `${item.staggerMs}ms`,
                   }
                 : {
                     opacity: 0,
                     transform: `translate3d(${retractedX}px, ${retractedY}px, 0px) rotate(0deg) scale(0.36)`,
                     transition:
-                      'transform 460ms cubic-bezier(0.4, 0, 0.2, 1), opacity 320ms ease-out',
+                      'transform 560ms cubic-bezier(0.22, 1, 0.36, 1), opacity 420ms ease-out',
                     transitionDelay: '0ms',
                   };
 

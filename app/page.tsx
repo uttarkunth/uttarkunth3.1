@@ -5,6 +5,11 @@ import { HeroVideo } from '@/components/hero-video';
 import { FourPillarsShowcase } from '@/components/home/four-pillars-showcase';
 import { FeaturedStaysRows } from '@/components/home/featured-stays-rows';
 import { DestinationAtlas } from '@/components/home/destination-atlas';
+import { RecentReviewsCarousel } from '@/components/home/recent-reviews-carousel';
+import {
+  EXISTING_REVIEWS,
+  normalizeAndSortRecentReviews,
+} from '@/lib/reviews';
 import {
   LinkButton,
   Card,
@@ -52,7 +57,11 @@ async function getHomePageData() {
 
   try {
     const supabase = createPublicServerSupabaseClient();
-    const [{ data: properties, error }, { data: approvedProducts }] = await Promise.all([
+    const [
+      { data: properties, error },
+      { data: approvedProducts },
+      { data: approvedReviews },
+    ] = await Promise.all([
       supabase
         .from('properties')
         .select('*')
@@ -64,6 +73,14 @@ async function getHomePageData() {
         .from('products')
         .select('id, slug, title, category, description, origin_valley, origin_state, maker_name')
         .eq('moderation_status', 'approved')
+        .limit(12),
+      supabase
+        .from('reviews')
+        .select(
+          'id, property_id, booking_id, reviewer_user_id, reviewer_name, rating, comment, moderation_status, moderated_at, moderated_by, created_at, properties(name, slug, village, district)'
+        )
+        .eq('moderation_status', 'approved')
+        .order('created_at', { ascending: false })
         .limit(12),
     ]);
 
@@ -95,10 +112,17 @@ async function getHomePageData() {
       propertyCount: filterPropertiesForDestination(propertiesWithRooms, d).length,
     }));
 
+    const liveReviews = normalizeAndSortRecentReviews(approvedReviews, propertiesWithRooms, 12);
+    const reviews =
+      liveReviews.length > 0
+        ? liveReviews
+        : normalizeAndSortRecentReviews(EXISTING_REVIEWS, propertiesWithRooms, 12);
+
     return {
       properties: propertiesWithRooms,
       destinations: destinationsWithCounts,
       products: approvedProducts || [],
+      reviews,
     };
   } catch {
     const cleanFallback = EXISTING_PROPERTIES.filter((p: any) => p.slug !== 'wonderway-retreat');
@@ -110,12 +134,13 @@ async function getHomePageData() {
       properties: cleanFallback,
       destinations: destinationsWithCounts,
       products: [],
+      reviews: normalizeAndSortRecentReviews(EXISTING_REVIEWS, cleanFallback, 12),
     };
   }
 }
 
 export default async function HomePage() {
-  const { properties, destinations, products } = await getHomePageData();
+  const { properties, destinations, products, reviews } = await getHomePageData();
   const featuredInitiatives = COMMUNITY_INITIATIVES.slice(0, 4);
 
   return (
@@ -123,7 +148,7 @@ export default async function HomePage() {
       {/* ─────────────────────────────────────────────────────────────────────
           SECTION 3: HERO — ART-DIRECTED RESPONSIVE HIMALAYAN PANORAMA
           • Starts at y=0 (-mt-16) directly behind the Header so there is zero plain header background
-          • Slightly more compact height and element scale for balanced viewport proportion
+          • Larger, clearer editorial typography on mobile viewports
       ───────────────────────────────────────────────────────────────────── */}
       <section
         id="hero"
@@ -132,16 +157,16 @@ export default async function HomePage() {
         <HeroVideo videoSrc="/assets/uttarkunth-hero-video.webm" />
 
         {/* Left-Aligned Hero Editorial Heading — Always Positioned Cleanly Below the Left Dotted Trail & Icons */}
-        <div className="pointer-events-none relative z-20 w-full pt-[9.5%] sm:pt-[11.5%] lg:pt-[16.8%]">
-          <div className="max-w-7xl mx-auto w-full px-3 sm:px-6 lg:px-8">
-            <div className="relative max-w-[210px] sm:max-w-xs lg:max-w-[540px] xl:max-w-[580px] py-1 sm:py-2 lg:py-3 pr-3 sm:pr-5 pl-1 space-y-1 sm:space-y-2 lg:space-y-3.5">
+        <div className="pointer-events-none relative z-20 w-full pt-[10%] sm:pt-[11.5%] lg:pt-[16.8%]">
+          <div className="max-w-7xl mx-auto w-full px-3.5 sm:px-6 lg:px-8">
+            <div className="relative max-w-[252px] sm:max-w-xs lg:max-w-[540px] xl:max-w-[580px] py-1 sm:py-2 lg:py-3 pr-2 sm:pr-5 pl-1 space-y-1.5 sm:space-y-2 lg:space-y-3.5">
               {/* Ultra-Smooth Feathered Radial Vignette (Reaches 0 opacity inside closest-side + blur-2xl feathering = zero visible edges) */}
               <div
                 aria-hidden="true"
-                className="pointer-events-none absolute -inset-x-10 sm:-inset-x-16 lg:-inset-x-24 -inset-y-8 sm:-inset-y-14 lg:-inset-y-20 rounded-full bg-[radial-gradient(closest-side_at_42%_50%,rgba(10,18,14,0.44)_0%,rgba(10,18,14,0.22)_54%,rgba(10,18,14,0)_100%)] blur-2xl"
+                className="pointer-events-none absolute -inset-x-10 sm:-inset-x-16 lg:-inset-x-24 -inset-y-8 sm:-inset-y-14 lg:-inset-y-20 rounded-full bg-[radial-gradient(closest-side_at_42%_50%,rgba(10,18,14,0.48)_0%,rgba(10,18,14,0.24)_54%,rgba(10,18,14,0)_100%)] blur-2xl"
               />
 
-              <h1 className="relative font-serif text-[12.5px] sm:text-xl lg:text-[42px] xl:text-[48px] font-semibold tracking-[0.01em] text-[#FFFDF9] leading-[1.1] [text-shadow:0_2px_14px_rgba(8,14,10,0.85),0_1px_3px_rgba(8,14,10,0.94)]">
+              <h1 className="relative font-serif text-[17px] sm:text-xl lg:text-[42px] xl:text-[48px] font-semibold tracking-[0.01em] text-[#FFFDF9] leading-[1.12] [text-shadow:0_2px_14px_rgba(8,14,10,0.88),0_1px_3px_rgba(8,14,10,0.95)]">
                 Born in the Himalayas.
                 <span className="italic font-normal text-[#FDE2A8] block mt-0.5 lg:mt-1.5">
                   Built Around Community.
@@ -150,25 +175,25 @@ export default async function HomePage() {
 
               <div
                 aria-hidden="true"
-                className="relative h-[1px] sm:h-[1.5px] lg:h-[2px] w-14 sm:w-24 lg:w-44 bg-gradient-to-r from-[#FDE2A8]/85 via-[#E59866]/55 to-transparent"
+                className="relative h-[1px] sm:h-[1.5px] lg:h-[2px] w-16 sm:w-24 lg:w-44 bg-gradient-to-r from-[#FDE2A8]/85 via-[#E59866]/55 to-transparent"
               />
 
-              <p className="relative font-sans text-[8.5px] sm:text-[11px] lg:text-[16.5px] xl:text-[18px] text-[#FAF4E8]/95 font-normal leading-snug sm:leading-relaxed max-w-[195px] sm:max-w-[270px] lg:max-w-[490px] xl:max-w-[530px] [text-shadow:0_1px_10px_rgba(8,14,10,0.9),0_1px_2px_rgba(8,14,10,0.96)]">
+              <p className="relative font-sans text-[11px] sm:text-[12px] lg:text-[16.5px] xl:text-[18px] text-[#FAF4E8]/95 font-normal leading-[1.35] sm:leading-relaxed max-w-[238px] sm:max-w-[280px] lg:max-w-[490px] xl:max-w-[530px] [text-shadow:0_1px_10px_rgba(8,14,10,0.92),0_1px_2px_rgba(8,14,10,0.96)]">
                 Discover meaningful stays, Himalayan products, original stories and opportunities to be
                 part of something bigger.
               </p>
 
-              {/* Clean Minimalist Editorial Explore Uttarkunth CTA */}
-              <div className="relative pt-0.5 sm:pt-1 lg:pt-2 pointer-events-auto">
+              {/* Clean Minimalist Editorial Explore Uttarkunth CTA — Hidden on Mobile, Visible on Tablet/PC */}
+              <div className="hidden sm:block relative pt-1.5 lg:pt-2 pointer-events-auto">
                 <a
                   href="#four-pillars"
-                  className="group inline-flex items-center gap-2 sm:gap-2.5 pl-3 pr-1.5 sm:pl-4 sm:pr-2 lg:pl-5 lg:pr-2.5 py-1 sm:py-1.5 lg:py-2 rounded-full bg-[#FFFDF9] hover:bg-white text-[#1F332A] border border-[#E5DEC9] hover:border-[#C55B23] shadow-[0_4px_14px_rgba(12,20,16,0.22)] text-[8.5px] sm:text-[11px] lg:text-[13.5px] font-semibold tracking-[0.02em] transition-colors duration-200 ease-out"
+                  className="group inline-flex items-center gap-2.5 pl-4 pr-2 lg:pl-5 lg:pr-2.5 py-1.5 lg:py-2 rounded-full bg-[#FFFDF9] hover:bg-white text-[#1F332A] border border-[#E5DEC9] hover:border-[#C55B23] shadow-[0_4px_14px_rgba(12,20,16,0.22)] text-[11.5px] lg:text-[13.5px] font-semibold tracking-[0.02em] transition-colors duration-200 ease-out"
                 >
                   <span>Explore Uttarkunth</span>
-                  <span className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 rounded-full bg-[#F2ECE0] group-hover:bg-[#C55B23] text-[#1F332A] group-hover:text-white flex items-center justify-center transition-colors duration-200">
+                  <span className="w-5 h-5 lg:w-6 lg:h-6 rounded-full bg-[#F2ECE0] group-hover:bg-[#C55B23] text-[#1F332A] group-hover:text-white flex items-center justify-center transition-colors duration-200">
                     <ArrowDown
                       strokeWidth={1.75}
-                      className="w-2.5 h-2.5 sm:w-3 sm:h-3 lg:w-3.5 lg:h-3.5"
+                      className="w-3 h-3 lg:w-3.5 lg:h-3.5"
                     />
                   </span>
                 </a>
@@ -179,14 +204,13 @@ export default async function HomePage() {
       </section>
 
       {/* ─────────────────────────────────────────────────────────────────────
-          SECTION 4 & 5: ONE CONNECTED HIMALAYAN ECOSYSTEM — THE FOUR PILLARS
-          • Balanced breathing space above One Connected Himalayan Ecosystem
-          • Completely borderless, smooth, feathered Himalayan golden-hour & valley mist stage matching the Hero image vibe
-          • Includes the single Context-Aware Adaptive Search & Action Bar directly beneath the carousel
+          SECTION 4 & 5: THE FOUR PILLARS CAROUSEL -> SEARCH BAR -> ONE CONNECTED HIMALAYAN ECOSYSTEM
+          • Calibrated so on mobile load the Carousel Card + Search Bar + "One Connected Himalayan Ecosystem."
+            sit cleanly above the mobile bottom navigation bar
       ───────────────────────────────────────────────────────────────────── */}
       <section
         id="four-pillars"
-        className="relative z-30 !mt-0 w-full pt-4 sm:pt-6 lg:pt-8 pb-3 sm:pb-5 scroll-mt-1 sm:scroll-mt-2 overflow-x-clip overflow-y-visible"
+        className="relative z-30 !mt-0 w-full pt-1.5 sm:pt-5 lg:pt-7 pb-1.5 sm:pb-3 scroll-mt-1 sm:scroll-mt-2 overflow-x-clip overflow-y-visible"
       >
         <div id="ecosystem" className="sr-only" aria-hidden="true" />
         {/* Smooth Unbounded Top-to-Bottom Himalayan Golden-Hour Valley Transition (Zero Hard Edges) */}
@@ -203,9 +227,9 @@ export default async function HomePage() {
           className="pointer-events-none absolute top-1/2 right-1/4 -translate-y-1/2 w-[560px] h-[560px] rounded-full bg-[#263D32]/[0.14] blur-[130px]"
         />
 
-        {/* div:nth-of-type(5) — Borderless, Feathered Smooth Himalayan Sanctuary Stage */}
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-2 pb-2 sm:pt-3 sm:pb-4 space-y-2 sm:space-y-3 bg-[radial-gradient(closest-side_at_50%_46%,rgba(253,226,168,0.48)_0%,rgba(218,142,78,0.18)_44%,rgba(38,61,50,0.08)_74%,rgba(245,240,230,0)_100%)]">
-          {/* Soft Feathered Golden-Hour Sunburst & Mist Aura Behind Heading */}
+        {/* Borderless, Feathered Smooth Himalayan Sanctuary Stage */}
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-0.5 pb-1 sm:pt-3 sm:pb-2 bg-[radial-gradient(closest-side_at_50%_46%,rgba(253,226,168,0.48)_0%,rgba(218,142,78,0.18)_44%,rgba(38,61,50,0.08)_74%,rgba(245,240,230,0)_100%)]">
+          {/* Soft Feathered Golden-Hour Sunburst & Mist Aura */}
           <span
             aria-hidden="true"
             className="pointer-events-none absolute -top-10 left-1/2 -translate-x-1/2 w-[520px] sm:w-[760px] h-[200px] sm:h-[250px] rounded-full bg-[radial-gradient(closest-side,rgba(253,226,168,0.65)_0%,rgba(197,91,35,0.16)_52%,transparent_100%)] blur-2xl"
@@ -235,18 +259,6 @@ export default async function HomePage() {
             />
           </svg>
 
-          <ScrollReveal>
-            <div className="relative z-10 text-center space-y-1">
-              <h2 className="font-serif text-xl sm:text-3xl lg:text-[38px] italic font-semibold text-[#263D32] tracking-tight leading-tight drop-shadow-[0_1px_2px_rgba(255,253,249,0.85)]">
-                One Connected Himalayan Ecosystem.
-              </h2>
-              <div
-                aria-hidden="true"
-                className="mx-auto h-[1.5px] w-24 sm:w-36 bg-gradient-to-r from-transparent via-[#C55B23]/65 to-transparent"
-              />
-            </div>
-          </ScrollReveal>
-
           <div className="relative z-10">
             <FourPillarsShowcase
               destinations={destinations}
@@ -261,82 +273,91 @@ export default async function HomePage() {
 
       {/* ─────────────────────────────────────────────────────────────────────
           SECTION 6: STAYS — LOCATION-GROUPED HORIZONTAL STAYS SHOWCASE
-          • Matches the borderless, feathered Himalayan golden-hour & valley mist stage above
-          • Dynamically renders location rows ("Stays in Parvati Valley, Kullu", "Stays in Manali", etc.)
+          • Distinct yet harmonious Alpine Pine-Sage, Warm Parchment & Cedar Hearth atmosphere
+          • Tightened top gap so "Himalayan Hospitality / Featured Stays" flows naturally from above
       ───────────────────────────────────────────────────────────────────── */}
       <section
         id="stays"
-        className="relative z-20 w-full py-5 sm:py-8 overflow-x-clip"
+        className="relative z-20 !mt-1 sm:!mt-3 w-full pt-2 pb-5 sm:pt-4 sm:pb-7 overflow-x-clip"
       >
-        {/* Smooth Unbounded Himalayan Golden-Hour Valley Atmosphere Matching Above Section */}
+        {/* Distinct Alpine Sage Mist & Warm Sandstone Atmosphere */}
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(245,240,230,0)_0%,rgba(244,230,204,0.82)_22%,rgba(235,216,186,0.68)_54%,rgba(242,231,212,0.78)_82%,rgba(245,240,230,0)_100%)]"
+          className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(245,240,230,0)_0%,rgba(223,232,223,0.76)_18%,rgba(236,227,210,0.9)_52%,rgba(225,233,224,0.74)_85%,rgba(245,240,230,0)_100%)]"
         />
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute top-1/2 left-1/4 -translate-y-1/2 w-[480px] h-[480px] rounded-full bg-[#C55B23]/[0.11] blur-[125px]"
+          className="pointer-events-none absolute top-1/3 left-1/5 -translate-y-1/2 w-[500px] h-[420px] rounded-full bg-[#263D32]/[0.12] blur-[120px]"
         />
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute top-1/2 right-1/4 -translate-y-1/2 w-[480px] h-[480px] rounded-full bg-[#263D32]/[0.11] blur-[125px]"
+          className="pointer-events-none absolute bottom-1/4 right-1/5 w-[460px] h-[380px] rounded-full bg-[#C55B23]/[0.10] blur-[120px]"
         />
 
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 sm:py-3 bg-[radial-gradient(closest-side_at_50%_50%,rgba(253,226,168,0.38)_0%,rgba(218,142,78,0.14)_46%,rgba(38,61,50,0.06)_76%,rgba(245,240,230,0)_100%)]">
-          {/* Soft Feathered Himalayan Valley Ridge Silhouette Watermark */}
-          <svg
-            aria-hidden="true"
-            viewBox="0 0 1440 320"
-            preserveAspectRatio="none"
-            className="pointer-events-none absolute inset-x-0 bottom-0 w-full h-36 sm:h-48 opacity-[0.13] [mask-image:radial-gradient(ellipse_75%_80%_at_50%_60%,#000_25%,transparent_95%)]"
-          >
-            <path
-              d="M0,220 L140,118 L245,178 L390,74 L535,168 L690,88 L845,172 L1010,68 L1165,162 L1310,96 L1440,176 L1440,320 L0,320 Z"
-              fill="#263D32"
-              fillOpacity="0.45"
+        <div className="relative z-10 max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+          <div className="relative overflow-hidden rounded-[26px] sm:rounded-[34px] border border-[#D5C8B3]/75 bg-[linear-gradient(135deg,rgba(255,253,249,0.86)_0%,rgba(243,236,222,0.92)_48%,rgba(227,235,226,0.82)_100%)] shadow-[0_18px_46px_-16px_rgba(31,51,42,0.10),inset_0_1px_0_rgba(255,253,249,0.92)] px-4 py-5 sm:px-7 sm:py-7 lg:px-9 lg:py-8">
+            {/* Subtle Top Warm Terracotta & Pine Accent Line */}
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-x-10 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-[#263D32]/25 to-transparent"
             />
-            <path
-              d="M0,256 C180,210 340,238 520,198 C710,156 890,224 1090,184 C1240,154 1350,196 1440,214 L1440,320 L0,320 Z"
-              fill="#C55B23"
-              fillOpacity="0.32"
-            />
-          </svg>
 
-          <ScrollReveal>
-            {properties.length > 0 ? (
-              <FeaturedStaysRows properties={properties} />
-            ) : (
-              <EmptyState
-                icon={<Building2 className="w-6 h-6 text-terracotta" />}
-                kicker="Curated Onboarding"
-                title="Verified Homestays in Preparation"
-                description="We only display real, verified mountain properties approved by our moderation team. Are you a local homestay host in the Himalayas?"
-                action={
-                  <LinkButton href="/stays/partner" variant="primary" size="md">
-                    Partner With Uttarkunth Stays
-                  </LinkButton>
-                }
+            {/* Soft Feathered Alpine Contour & Valley Ridge Watermark */}
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 1440 320"
+              preserveAspectRatio="none"
+              className="pointer-events-none absolute inset-x-0 bottom-0 w-full h-36 sm:h-48 opacity-[0.11] [mask-image:radial-gradient(ellipse_80%_85%_at_50%_65%,#000_25%,transparent_95%)]"
+            >
+              <path
+                d="M0,236 C220,178 410,248 640,192 C880,134 1110,218 1440,164 L1440,320 L0,320 Z"
+                fill="#263D32"
+                fillOpacity="0.52"
               />
-            )}
-          </ScrollReveal>
-        </div>
-      </section>
+              <path
+                d="M0,268 C260,224 520,258 790,216 C1040,178 1250,232 1440,208 L1440,320 L0,320 Z"
+                fill="#C55B23"
+                fillOpacity="0.28"
+              />
+            </svg>
 
-      {/* ─────────────────────────────────────────────────────────────────────
-          SECTION 7: DESTINATION DISCOVERY — INTERACTIVE HIMALAYAN ATLAS
-      ───────────────────────────────────────────────────────────────────── */}
-      <section id="destinations" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
-        <ScrollReveal>
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-beige pb-4">
-            <div className="space-y-1.5">
-              <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-forest tracking-tight">
-                Explore the Mountain Atlas
-              </h2>
-            </div>
+            <ScrollReveal>
+              <div className="space-y-7 sm:space-y-9">
+                {properties.length > 0 ? (
+                  <FeaturedStaysRows properties={properties} />
+                ) : (
+                  <EmptyState
+                    icon={<Building2 className="w-6 h-6 text-terracotta" />}
+                    kicker="Curated Onboarding"
+                    title="Verified Homestays in Preparation"
+                    description="We only display real, verified mountain properties approved by our moderation team. Are you a local homestay host in the Himalayas?"
+                    action={
+                      <LinkButton href="/stays/partner" variant="primary" size="md">
+                        Partner With Uttarkunth Stays
+                      </LinkButton>
+                    }
+                  />
+                )}
+
+                {/* Pick a Uttarkunth Destination — Part of the Stays Sanctuary Div */}
+                <div
+                  id="destinations"
+                  className="pt-6 sm:pt-7 border-t border-[#D5C8B3]/70 scroll-mt-20"
+                >
+                  <DestinationAtlas destinations={destinations} />
+                </div>
+
+                {/* Recent Reviews Carousel — Dynamic Guest Trust Showcase Using public.reviews Structure */}
+                <div
+                  id="recent-reviews"
+                  className="pt-6 sm:pt-7 border-t border-[#D5C8B3]/70 scroll-mt-20"
+                >
+                  <RecentReviewsCarousel reviews={reviews} properties={properties} />
+                </div>
+              </div>
+            </ScrollReveal>
           </div>
-        </ScrollReveal>
-
-        <DestinationAtlas destinations={destinations} />
+        </div>
       </section>
 
       {/* ─────────────────────────────────────────────────────────────────────
@@ -366,13 +387,13 @@ export default async function HomePage() {
                 </div>
 
                 <div className="relative z-10 space-y-2 pt-10">
-                  <span className="text-xs font-serif italic text-warm-canvas/90 block">
+                  <span className="text-[13px] font-serif italic text-warm-canvas/90 block">
                     Independent Mountain Makers
                   </span>
                   <h3 className="font-serif text-2xl sm:text-3xl font-bold text-warm-surface leading-tight">
                     Crafted in Alpine Valleys. Verified for Provenance.
                   </h3>
-                  <p className="text-xs text-warm-canvas/80 leading-relaxed">
+                  <p className="text-[13px] sm:text-sm text-warm-canvas/85 leading-relaxed">
                     Every maker and batch undergoes origin and quality verification before entering
                     the Uttarkunth catalogue.
                   </p>
@@ -384,7 +405,7 @@ export default async function HomePage() {
                 <div className="space-y-4">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <EditorialKicker>Uttarkunth Products · Local Craft &amp; Commerce</EditorialKicker>
-                    <span className="text-[11px] font-semibold text-forest bg-forest/10 border border-forest/20 px-2.5 py-1 rounded-md">
+                    <span className="text-xs font-semibold text-forest bg-forest/10 border border-forest/20 px-2.5 py-1 rounded-md">
                       Coming Soon · Zero Fictional Stock
                     </span>
                   </div>
@@ -393,7 +414,7 @@ export default async function HomePage() {
                     Our Curated Product Collection is in Preparation
                   </h2>
 
-                  <p className="text-xs sm:text-sm text-charcoal-muted leading-relaxed">
+                  <p className="text-[13.5px] sm:text-sm text-charcoal-muted leading-relaxed">
                     We are onboarding independent Himalayan beekeepers, handloom weavers, wood
                     carvers, and small-batch organic growers. Rather than displaying placeholder
                     listings or fictional stock, products appear here only once their maker
@@ -412,10 +433,10 @@ export default async function HomePage() {
                           href="/products"
                           className="p-3 rounded-xl bg-warm-canvas/70 hover:bg-warm-canvas border border-beige/90 hover:border-forest/35 transition-colors group"
                         >
-                          <span className="text-xs font-bold text-forest group-hover:text-terracotta transition-colors block">
+                          <span className="text-[13px] font-bold text-forest group-hover:text-terracotta transition-colors block">
                             {cat.name}
                           </span>
-                          <span className="text-[11px] text-charcoal-muted line-clamp-1 mt-0.5 block">
+                          <span className="text-xs text-charcoal-muted line-clamp-1 mt-0.5 block">
                             {cat.description}
                           </span>
                         </Link>
@@ -500,13 +521,13 @@ export default async function HomePage() {
             </div>
 
             <div className="relative z-10 p-6 sm:p-8 space-y-4 mt-auto">
-              <span className="text-xs font-serif italic text-terracotta-light block">
+              <span className="text-[13px] font-serif italic text-terracotta-light block">
                 Ethnographic &amp; Cultural Storytelling
               </span>
               <h3 className="font-serif text-2xl sm:text-3xl font-bold text-warm-surface leading-snug">
                 Documenting the Deities, Oral Traditions, and Transitions of the Himalayas
               </h3>
-              <p className="text-xs text-warm-canvas/80 leading-relaxed">
+              <p className="text-[13px] sm:text-sm text-warm-canvas/85 leading-relaxed">
                 Our production unit chronicles authentic village narratives in the Kullu and Parvati
                 valleys—preserving cultural memory without commercial distortion.
               </p>
@@ -561,7 +582,7 @@ export default async function HomePage() {
                       </h3>
                     </Link>
 
-                    <p className="text-xs sm:text-sm text-charcoal-muted leading-relaxed">
+                    <p className="text-[13.5px] sm:text-sm text-charcoal-muted leading-relaxed">
                       {film.description}
                     </p>
                   </div>
@@ -616,7 +637,7 @@ export default async function HomePage() {
                 </h2>
               </div>
 
-              <p className="text-xs sm:text-sm text-charcoal leading-relaxed">
+              <p className="text-[13.5px] sm:text-sm text-charcoal leading-relaxed">
                 Uttarkunth Community connects local residents, youth, researchers, and conscious
                 travelers around practical mountain stewardship. We clearly distinguish our present
                 foundational platform work from our proposed field tracks—never fabricating impact
@@ -628,7 +649,7 @@ export default async function HomePage() {
                 <div className="flex items-center justify-end">
                   <Link
                     href="/community/initiatives"
-                    className="text-xs font-bold text-forest hover:text-terracotta transition-colors"
+                    className="text-[13px] font-bold text-forest hover:text-terracotta transition-colors"
                   >
                     All 9 Tracks →
                   </Link>
@@ -642,17 +663,17 @@ export default async function HomePage() {
                       className="p-4 rounded-xl bg-warm-canvas/65 hover:bg-warm-canvas border border-beige/90 hover:border-forest/40 transition-all group space-y-1.5"
                     >
                       <div className="flex items-center justify-between gap-2">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-terracotta">
+                        <span className="text-[11px] font-bold uppercase tracking-wider text-terracotta">
                           {init.category}
                         </span>
-                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-forest/10 text-forest">
+                        <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-forest/10 text-forest">
                           {init.status}
                         </span>
                       </div>
                       <h4 className="font-serif text-lg font-bold text-forest group-hover:text-terracotta transition-colors leading-snug">
                         {init.title}
                       </h4>
-                      <p className="text-[11px] text-charcoal-muted line-clamp-2">
+                      <p className="text-xs text-charcoal-muted line-clamp-2">
                         {init.tagline}
                       </p>
                     </Link>

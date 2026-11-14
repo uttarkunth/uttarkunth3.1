@@ -1100,7 +1100,7 @@ export function UnifiedHeroSearchBar({
       <div
         data-testid="hero-search-capsule"
         data-attention-pop={spotlightPhase}
-        className={`relative min-h-[52px] sm:min-h-[56px] rounded-full backdrop-blur-md border px-2 sm:px-2.5 py-1.5 flex items-center origin-center transition-[transform,filter,background-color,border-color,box-shadow] [transition-timing-function:cubic-bezier(0.22,1,0.36,1)] ${
+        className={`relative min-h-[48px] sm:min-h-[56px] rounded-full backdrop-blur-md border px-2 sm:px-2.5 py-1 sm:py-1.5 flex items-center origin-center transition-[transform,filter,background-color,border-color,box-shadow] [transition-timing-function:cubic-bezier(0.22,1,0.36,1)] ${
           spotlightPhase === 'peak'
             ? 'duration-300 scale-[1.045] translate-y-0 bg-[#FFFFFF] brightness-[1.12] border-[#FFFDF9] shadow-[0_0_42px_rgba(255,253,249,0.68),0_0_22px_rgba(253,226,168,0.48),0_14px_34px_-6px_rgba(38,61,50,0.18)]'
             : spotlightPhase === 'settling'
@@ -1159,7 +1159,7 @@ export function UnifiedHeroSearchBar({
                 aria-autocomplete="list"
                 aria-expanded={suggestionsOpen}
                 aria-controls="adaptive-hero-search-suggestions"
-                className="w-full bg-transparent text-xs sm:text-sm font-medium text-[#29251F] placeholder:text-[#29251F]/55 focus:outline-none truncate cursor-pointer focus:cursor-text"
+                className="w-full bg-transparent text-[13.5px] sm:text-sm font-medium text-[#29251F] placeholder:text-[#29251F]/55 focus:outline-none truncate cursor-pointer focus:cursor-text"
               />
 
               {activeFilterCount > 0 && (
@@ -1239,18 +1239,11 @@ export function UnifiedHeroSearchBar({
           ═════════════════════════════════════════════════════════════════ */
           <div
             key="community"
-            className="w-full pl-3.5 sm:pl-5 pr-1 flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4 py-1 sm:py-0 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] animate-in fade-in duration-200"
+            className="w-full px-3.5 sm:px-5 flex items-center justify-center py-1 sm:py-0 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] animate-in fade-in duration-200"
           >
-            <p className="text-xs sm:text-sm font-medium text-[#263D32] leading-snug text-center sm:text-left">
+            <p className="text-xs sm:text-sm font-medium text-[#263D32] leading-snug text-center">
               Connect, contribute and collaborate to strengthen Himalayan communities.
             </p>
-            <Link
-              href="/community/join"
-              className="group h-9 sm:h-10 px-4 sm:px-5 rounded-full bg-[#263D32] hover:bg-[#C55B23] text-[#F5F0E6] text-xs font-semibold tracking-wide inline-flex items-center justify-center gap-1.5 transition-all duration-200 shrink-0 self-center sm:self-auto"
-            >
-              <span>Be a Part</span>
-              <ArrowRight className="w-3.5 h-3.5 transition-transform duration-200 group-hover:translate-x-0.5" />
-            </Link>
           </div>
         )}
       </div>

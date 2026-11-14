@@ -84,7 +84,7 @@ function StayRowCard({ property }: { property: any }) {
 
         {/* Top-Left "Guest favourite" Pill Badge */}
         <div className="absolute top-2.5 left-2.5 sm:top-3 sm:left-3 z-20 pointer-events-none">
-          <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-[#FFFDF9]/92 backdrop-blur-md text-[#1F332A] text-[10px] sm:text-[11px] font-semibold tracking-tight shadow-[0_2px_8px_rgba(0,0,0,0.14)]">
+          <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-[#1A2B23]/60 backdrop-blur-md border border-[#FFFDF9]/25 text-[#FFF8EC] text-[10.5px] sm:text-[11px] font-semibold tracking-wide shadow-[0_2px_10px_rgba(0,0,0,0.22)]">
             Guest favourite
           </span>
         </div>
@@ -117,33 +117,17 @@ function StayRowCard({ property }: { property: any }) {
             }`}
           />
         </button>
-
-        {/* Subtle Bottom Dots Indicator when multiple photos exist */}
-        {photos.length > 1 && (
-          <div className="absolute bottom-2.5 inset-x-0 flex items-center justify-center gap-1.5 z-20 pointer-events-none">
-            {photos.map((_, idx) => (
-              <span
-                key={idx}
-                className={` rounded-full transition-all duration-200 ${
-                  idx === photoIndex
-                    ? 'w-1.5 h-1.5 bg-white shadow-xs'
-                    : 'w-1.5 h-1.5 bg-white/55'
-                }`}
-              />
-            ))}
-          </div>
-        )}
       </div>
 
       {/* Compact 2-Line Metadata Below Image (Matching Reference UI/UX) */}
       <div className="pt-2.5 px-0.5 space-y-0.5">
-        <h3 className="font-sans text-[13.5px] sm:text-[15px] font-semibold text-[#1F332A] group-hover:text-[#C55B23] transition-colors leading-snug line-clamp-1">
+        <h3 className="font-sans text-[14.5px] sm:text-[15px] font-semibold text-[#1F332A] group-hover:text-[#C55B23] transition-colors leading-snug line-clamp-1">
           {property.name} in {locality}
         </h3>
-        <p className="text-[12px] sm:text-[13px] text-[#5C5549] font-normal flex items-center gap-1 tabular-nums">
-          <span>{formatINR(twoNightPrice)} for 2 nights</span>
+        <p className="text-[12px] sm:text-[13px] text-[#5C5549] font-normal flex items-center gap-1 tabular-nums whitespace-nowrap">
+          <span className="whitespace-nowrap">{formatINR(twoNightPrice)} for 2 nights</span>
           <span aria-hidden="true">&middot;</span>
-          <span className="inline-flex items-center gap-0.5 text-[#1F332A] font-medium">
+          <span className="inline-flex items-center gap-0.5 text-[#1F332A] font-medium shrink-0">
             <Star className="w-3 h-3 fill-current text-[#1F332A]" />
             <span>5.0</span>
           </span>
@@ -209,7 +193,7 @@ function SeeAllStaysCard({ group }: { group: StayLocationGroup }) {
           </div>
         </div>
 
-        <span className="mt-2 font-sans text-[13.5px] sm:text-[15px] font-semibold text-[#1F332A] group-hover:text-[#C55B23] transition-colors">
+        <span className="mt-2 font-sans text-[14.5px] sm:text-[15px] font-semibold text-[#1F332A] group-hover:text-[#C55B23] transition-colors">
           See all
         </span>
       </div>
@@ -234,15 +218,15 @@ function LocationStaysRow({ group }: { group: StayLocationGroup }) {
           href={group.href}
           className="group/header inline-flex items-center gap-2 sm:gap-2.5 text-inherit no-underline"
         >
-          <h2 className="font-serif text-xl sm:text-2xl lg:text-[28px] font-bold text-[#1F332A] group-hover/header:text-[#C55B23] tracking-tight transition-colors">
+          <h3 className="font-serif text-[22px] sm:text-2xl lg:text-[28px] font-bold text-[#1F332A] group-hover/header:text-[#C55B23] tracking-tight transition-colors">
             {group.title}
-          </h2>
+          </h3>
           <span className="hidden sm:inline-flex w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[#EAE2D3]/90 group-hover/header:bg-[#C55B23] text-[#1F332A] group-hover/header:text-white items-center justify-center transition-colors shadow-2xs">
             <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
           </span>
         </Link>
 
-        {/* Mobile Right Circular Arrow Button (Matching Mobile Reference Image 2) */}
+        {/* Mobile Right Circular Arrow Button */}
         <Link
           href={group.href}
           aria-label={`Explore ${group.title}`}
@@ -300,10 +284,30 @@ export function FeaturedStaysRows({ properties }: { properties: any[] }) {
   }
 
   return (
-    <div className="space-y-8 sm:space-y-10">
-      {groups.map((group) => (
-        <LocationStaysRow key={group.key} group={group} />
-      ))}
+    <div className="space-y-6 sm:space-y-8">
+      {/* Section Heading: Featured Stays (before Stays in Parvati Valley, Kullu) */}
+      <div className="flex items-end justify-between gap-4 border-b border-[#D9CCB8]/80 pb-3 sm:pb-4">
+        <div className="space-y-1">
+          <span className="text-[11px] sm:text-xs font-bold uppercase tracking-[0.16em] text-[#C55B23] block">
+            Himalayan Hospitality
+          </span>
+          <h2 className="font-serif text-3xl sm:text-4xl lg:text-[42px] font-bold text-[#1F332A] tracking-tight leading-tight">
+            Featured Stays
+          </h2>
+        </div>
+        <Link
+          href="/stays"
+          className="text-xs sm:text-sm font-semibold text-[#1F332A] hover:text-[#C55B23] transition-colors shrink-0"
+        >
+          View all stays &rarr;
+        </Link>
+      </div>
+
+      <div className="space-y-8 sm:space-y-10">
+        {groups.map((group) => (
+          <LocationStaysRow key={group.key} group={group} />
+        ))}
+      </div>
     </div>
   );
 }

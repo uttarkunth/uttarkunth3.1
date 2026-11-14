@@ -146,18 +146,26 @@ export function FourPillarsShowcase({
     [totalCards]
   );
 
-  // On the first tap of "Explore Uttarkunth" in a new session, both the active carousel card and
-  // the search bar smoothly scale up & lighten ('peak'), then slowly fade out the light in sync
+  // On PC/Tablet: on the first tap of "Explore Uttarkunth" in a new session, both the active carousel card
+  // and the search bar smoothly scale up & lighten ('peak'), then slowly fade out the light in sync
   // with scaling back to their exact original position ('settling' -> 'idle').
+  // On Mobile (< 640px): since the "Explore Uttarkunth" CTA is hidden on mobile, the spotlight transition
+  // automatically starts on first page load (as soon as the intro splash reveals the homepage).
   useEffect(() => {
     let rafId: number | null = null;
+    let autoStartTimer: ReturnType<typeof setTimeout> | null = null;
     let peakTimer: ReturnType<typeof setTimeout> | null = null;
     let settleTimer: ReturnType<typeof setTimeout> | null = null;
+    let gateObserver: MutationObserver | null = null;
 
     const cleanupTimers = () => {
       if (rafId !== null) {
         cancelAnimationFrame(rafId);
         rafId = null;
+      }
+      if (autoStartTimer) {
+        clearTimeout(autoStartTimer);
+        autoStartTimer = null;
       }
       if (peakTimer) {
         clearTimeout(peakTimer);
@@ -178,6 +186,60 @@ export function FourPillarsShowcase({
         }, EXPLORE_SPOTLIGHT_FADEOUT_MS);
       }, EXPLORE_SPOTLIGHT_PEAK_MS);
     };
+
+    // Automatic first-load spotlight transition on mobile view (< 640px)
+    const scheduleMobileAutoSpotlight = () => {
+      if (typeof window === 'undefined' || window.innerWidth >= 640) return;
+
+      const triggerMobileAutoSpotlight = () => {
+        if (window.innerWidth >= 640) return;
+        const shouldRun = consumeExploreSpotlightSession(
+          typeof window !== 'undefined' ? window.sessionStorage : null,
+          hasShownInSessionRef
+        );
+        if (shouldRun) {
+          runCardAndBarTransition();
+        }
+      };
+
+      const currentGate = document.documentElement.getAttribute('data-uk-intro-gate');
+      const splashActive =
+        currentGate === 'active' ||
+        (!currentGate && Boolean(document.querySelector('[data-uk-intro-root]')));
+
+      if (!splashActive) {
+        const delayMs = currentGate === 'revealing' ? 300 : 200;
+        if (autoStartTimer) clearTimeout(autoStartTimer);
+        autoStartTimer = setTimeout(triggerMobileAutoSpotlight, delayMs);
+      } else if (typeof MutationObserver !== 'undefined' && !gateObserver) {
+        gateObserver = new MutationObserver(() => {
+          const updatedGate = document.documentElement.getAttribute('data-uk-intro-gate');
+          if (updatedGate === 'revealing' || updatedGate === 'completed') {
+            gateObserver?.disconnect();
+            gateObserver = null;
+            const delayMs = updatedGate === 'revealing' ? 320 : 120;
+            if (autoStartTimer) clearTimeout(autoStartTimer);
+            autoStartTimer = setTimeout(triggerMobileAutoSpotlight, delayMs);
+          }
+        });
+        gateObserver.observe(document.documentElement, {
+          attributes: true,
+          attributeFilter: ['data-uk-intro-gate'],
+        });
+      }
+    };
+
+    scheduleMobileAutoSpotlight();
+    const mql =
+      typeof window !== 'undefined' && typeof window.matchMedia === 'function'
+        ? window.matchMedia('(max-width: 639px)')
+        : null;
+    const handleMediaChange = (e: MediaQueryListEvent) => {
+      if (e.matches) {
+        scheduleMobileAutoSpotlight();
+      }
+    };
+    mql?.addEventListener?.('change', handleMediaChange);
 
     const handleDocumentClick = (e: MouseEvent) => {
       const target = e.target as Element | null;
@@ -238,6 +300,8 @@ export function FourPillarsShowcase({
     document.addEventListener('click', handleDocumentClick);
     return () => {
       document.removeEventListener('click', handleDocumentClick);
+      mql?.removeEventListener?.('change', handleMediaChange);
+      gateObserver?.disconnect();
       cleanupTimers();
     };
   }, []);
@@ -258,11 +322,40 @@ export function FourPillarsShowcase({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [currentIndex, isBarInteracting, updateCarousel]);
 
+  const touchStartXRef = useRef<number | null>(null);
+  const touchStartYRef = useRef<number | null>(null);
+
+  const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (e.touches.length !== 1) return;
+    touchStartXRef.current = e.touches[0].clientX;
+    touchStartYRef.current = e.touches[0].clientY;
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (touchStartXRef.current === null || touchStartYRef.current === null) return;
+    const touchEndX = e.changedTouches[0]?.clientX ?? touchStartXRef.current;
+    const touchEndY = e.changedTouches[0]?.clientY ?? touchStartYRef.current;
+    const deltaX = touchEndX - touchStartXRef.current;
+    const deltaY = touchEndY - touchStartYRef.current;
+    touchStartXRef.current = null;
+    touchStartYRef.current = null;
+
+    // Trigger slide only on intentional horizontal swipe
+    if (Math.abs(deltaX) > 36 && Math.abs(deltaX) > Math.abs(deltaY) * 1.2) {
+      if (deltaX < 0) {
+        updateCarousel(currentIndex + 1);
+      } else {
+        updateCarousel(currentIndex - 1);
+      }
+    }
+  };
+
   const getCardState = (idx: number): CardPositionState => {
-    if (idx === currentIndex) return 'active';
-    if (idx === (currentIndex - 1 + totalCards) % totalCards) return 'prev';
-    if (idx === (currentIndex + 1) % totalCards) return 'next';
-    return idx < currentIndex ? 'hidden-left' : 'hidden-right';
+    const relativeOffset = (idx - currentIndex + totalCards) % totalCards;
+    if (relativeOffset === 0) return 'active';
+    if (relativeOffset === 1) return 'next';
+    if (relativeOffset === totalCards - 1) return 'prev';
+    return 'hidden-left';
   };
 
   // Subtle ambient aura transition per active pillar
@@ -272,7 +365,7 @@ export function FourPillarsShowcase({
       : currentIndex === 1
         ? 'from-[#C55B23]/22 via-[#D9CCB8]/40 to-transparent'
         : currentIndex === 2
-          ? 'from-[#1A2B23]/25 via-[#C55B23]/18 to-transparent'
+           ? 'from-[#1A2B23]/25 via-[#C55B23]/18 to-transparent'
           : 'from-[#263D32]/22 via-[#C55B23]/20 to-transparent';
 
   const handleLanternMouseMove = (e: React.MouseEvent<HTMLElement>) => {
@@ -287,13 +380,38 @@ export function FourPillarsShowcase({
       aria-roledescription="carousel"
       aria-label="Uttarkunth Four Pillars Portrait Stack Carousel"
     >
-      {/* Unbounded 3D Portrait Stack Stage with Soft Color Transitions */}
-      <div className="relative w-full max-w-6xl mx-auto h-[312px] sm:h-[372px] flex items-center justify-center px-0 sm:px-4">
+      {/* ─────────────────────────────────────────────────────────────────────
+          A. CONTEXT-AWARE ADAPTIVE HERO SEARCH & ACTION BAR
+          • Mobile (< sm): Positioned ABOVE the 4-pillar carousel cards (order-1)
+          • Tablet / PC (sm+): Positioned BELOW the 4-pillar carousel cards (sm:order-3)
+      ───────────────────────────────────────────────────────────────────── */}
+      <div className="order-1 sm:order-3 relative z-40 w-full mb-2 sm:mb-0 sm:mt-3.5 select-text">
+        <UnifiedHeroSearchBar
+          activePillar={activePillar}
+          destinations={destinations}
+          properties={properties}
+          products={products}
+          productCategories={productCategories}
+          productions={productions}
+          onInteractionChange={setIsBarInteracting}
+          spotlightPhase={spotlightPhase}
+        />
+      </div>
+
+      {/* ─────────────────────────────────────────────────────────────────────
+          B. UNBOUNDED 3D PORTRAIT STACK STAGE (4 PILLAR CARDS)
+          • Center stage on both mobile and desktop (order-2)
+      ───────────────────────────────────────────────────────────────────── */}
+      <div
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+        className="order-2 relative z-20 w-full max-w-6xl mx-auto h-[272px] sm:h-[364px] flex items-center justify-center px-0 sm:px-4 touch-pan-y"
+      >
         {/* Soft Unbounded Ambient Color Aura (Transitions smoothly with active card) */}
         <div
           aria-hidden="true"
           className={cn(
-            'pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] sm:w-[640px] h-[300px] sm:h-[420px] rounded-full bg-radial bg-gradient-to-tr blur-3xl transition-all duration-700',
+            'pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[280px] sm:w-[640px] h-[260px] sm:h-[420px] rounded-full bg-radial bg-gradient-to-tr blur-3xl transition-all duration-1000 ease-out',
             activeAuraClass
           )}
         />
@@ -305,7 +423,7 @@ export function FourPillarsShowcase({
           suppressHydrationWarning
           onClick={() => updateCarousel(currentIndex - 1)}
           aria-label="Previous Pillar Slide"
-          className="group absolute -left-1 sm:left-4 top-1/2 -translate-y-1/2 z-30 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-[#FFFDF9]/90 hover:bg-[#263D32] text-[#263D32] hover:text-[#FFFDF9] border border-[#D9CCB8] hover:border-[#263D32] shadow-sm backdrop-blur-sm flex items-center justify-center transition-all duration-200 active:scale-95 cursor-pointer"
+          className="group absolute -left-1 sm:left-4 top-1/2 -translate-y-1/2 z-30 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-[#FFFDF9]/90 hover:bg-[#263D32] text-[#263D32] hover:text-[#FFFDF9] border border-[#D9CCB8] hover:border-[#263D32] shadow-sm backdrop-blur-sm flex items-center justify-center transition-all duration-300 active:scale-95 cursor-pointer"
         >
           <span
             aria-hidden="true"
@@ -322,7 +440,7 @@ export function FourPillarsShowcase({
           suppressHydrationWarning
           onClick={() => updateCarousel(currentIndex + 1)}
           aria-label="Next Pillar Slide"
-          className="group absolute -right-1 sm:right-4 top-1/2 -translate-y-1/2 z-30 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-[#FFFDF9]/90 hover:bg-[#263D32] text-[#263D32] hover:text-[#FFFDF9] border border-[#D9CCB8] hover:border-[#263D32] shadow-sm backdrop-blur-sm flex items-center justify-center transition-all duration-200 active:scale-95 cursor-pointer"
+          className="group absolute -right-1 sm:right-4 top-1/2 -translate-y-1/2 z-30 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-[#FFFDF9]/90 hover:bg-[#263D32] text-[#263D32] hover:text-[#FFFDF9] border border-[#D9CCB8] hover:border-[#263D32] shadow-sm backdrop-blur-sm flex items-center justify-center transition-all duration-300 active:scale-95 cursor-pointer"
         >
           <span
             aria-hidden="true"
@@ -347,19 +465,17 @@ export function FourPillarsShowcase({
             const isCardPeak = isActive && spotlightPhase === 'peak';
             const isCardSettling = isActive && spotlightPhase === 'settling';
 
-            // 3D state transforms matching the reference Portrait Stack Carousel
+            // Continuous 3D ring transforms so cards orbit smoothly without jumping across the stage
             const positionTransformClass =
               state === 'active'
                 ? isCardPeak
                   ? 'z-20 opacity-100 blur-0 brightness-[1.16] [transform:translate3d(0,0,0)_scale(1.045)]'
                   : 'z-20 opacity-100 blur-0 brightness-100 [transform:translate3d(0,0,0)_scale(1)]'
                 : state === 'prev'
-                  ? 'z-10 opacity-30 blur-[5px] [transform:translate3d(-154px,0,-110px)_scale(0.82)] sm:[transform:translate3d(-336px,0,-120px)_scale(0.82)] cursor-pointer'
+                  ? 'z-10 opacity-35 blur-[3px] sm:blur-[4px] [transform:translate3d(-144px,0,-110px)_scale(0.82)] sm:[transform:translate3d(-336px,0,-120px)_scale(0.82)] cursor-pointer'
                   : state === 'next'
-                    ? 'z-10 opacity-30 blur-[5px] [transform:translate3d(154px,0,-110px)_scale(0.82)] sm:[transform:translate3d(336px,0,-120px)_scale(0.82)] cursor-pointer'
-                    : state === 'hidden-left'
-                      ? 'z-0 opacity-0 blur-[12px] pointer-events-none [transform:translate3d(-440px,0,-200px)_scale(0.7)]'
-                      : 'z-0 opacity-0 blur-[12px] pointer-events-none [transform:translate3d(440px,0,-200px)_scale(0.7)]';
+                    ? 'z-10 opacity-35 blur-[3px] sm:blur-[4px] [transform:translate3d(144px,0,-110px)_scale(0.82)] sm:[transform:translate3d(336px,0,-120px)_scale(0.82)] cursor-pointer'
+                    : 'z-0 opacity-0 blur-[6px] pointer-events-none [transform:translate3d(0,0,-220px)_scale(0.7)]';
 
             return (
               <article
@@ -371,15 +487,15 @@ export function FourPillarsShowcase({
                 data-testid={isActive ? 'active-pillar-carousel-card' : undefined}
                 data-spotlight={isActive ? spotlightPhase : 'idle'}
                 className={cn(
-                  'portrait-card absolute w-[216px] sm:w-[292px] h-[300px] sm:h-[358px] rounded-[20px] sm:rounded-[24px] overflow-hidden',
-                  'transition-[transform,filter,opacity,border-color,box-shadow] will-change-[transform,filter,opacity]',
+                  'portrait-card absolute w-[212px] sm:w-[292px] h-[270px] sm:h-[352px] rounded-[20px] sm:rounded-[24px] overflow-hidden',
+                  'transition-[transform,opacity,filter,border-color,box-shadow] will-change-[transform,opacity]',
                   isCardPeak
-                    ? 'duration-300 [transition-timing-function:cubic-bezier(0.22,1,0.36,1)] border border-[#FFFDF9]/90 shadow-[0_0_46px_rgba(255,253,249,0.52),0_0_24px_rgba(253,226,168,0.45),0_22px_46px_-8px_rgba(16,26,21,0.52)]'
+                    ? 'duration-500 [transition-timing-function:cubic-bezier(0.22,1,0.36,1)] border border-[#FFFDF9]/90 shadow-[0_0_46px_rgba(255,253,249,0.52),0_0_24px_rgba(253,226,168,0.45),0_22px_46px_-8px_rgba(16,26,21,0.52)]'
                     : isCardSettling
-                      ? 'duration-[850ms] [transition-timing-function:cubic-bezier(0.22,1,0.36,1)] border border-[#F5F0E6]/35 shadow-[0_22px_46px_-8px_rgba(16,26,21,0.58)]'
+                      ? 'duration-[900ms] [transition-timing-function:cubic-bezier(0.22,1,0.36,1)] border border-[#F5F0E6]/35 shadow-[0_22px_46px_-8px_rgba(16,26,21,0.58)]'
                       : isActive
-                        ? 'duration-600 [transition-timing-function:cubic-bezier(0.25,1,0.5,1)] border border-[#F5F0E6]/35 shadow-[0_22px_46px_-8px_rgba(16,26,21,0.58)]'
-                        : 'duration-600 [transition-timing-function:cubic-bezier(0.25,1,0.5,1)] border border-[#D9CCB8]/25 shadow-[0_14px_30px_-6px_rgba(16,26,21,0.42)]',
+                        ? 'duration-[820ms] [transition-timing-function:cubic-bezier(0.22,1,0.36,1)] border border-[#F5F0E6]/35 shadow-[0_22px_46px_-8px_rgba(16,26,21,0.58)]'
+                        : 'duration-[820ms] [transition-timing-function:cubic-bezier(0.22,1,0.36,1)] border border-[#D9CCB8]/25 shadow-[0_14px_30px_-6px_rgba(16,26,21,0.42)]',
                   positionTransformClass
                 )}
               >
@@ -395,7 +511,7 @@ export function FourPillarsShowcase({
                 {/* Smooth Aesthetic Himalayan Gradient Vignette Overlay */}
                 <div
                   aria-hidden="true"
-                  className="absolute inset-0 bg-gradient-to-b from-[#1A2B23]/30 via-[#1A2B23]/50 to-[#1A2B23]/92 z-10"
+                  className="absolute inset-0 bg-gradient-to-b from-[#1A2B23]/30 via-[#1A2B23]/52 to-[#1A2B23]/93 z-10"
                 />
 
                 {/* Soft Light Overlay (Lightens up and slowly fades out in sync with scaling back to exact position) */}
@@ -411,17 +527,17 @@ export function FourPillarsShowcase({
                   )}
                 />
 
-                {/* Portrait Card Interior Content — Clean, Simple & Aesthetic (No Viewfinder Lines) */}
-                <div className="relative z-20 h-full w-full p-3.5 sm:p-5 flex flex-col justify-between text-center">
+                {/* Portrait Card Interior Content — Clean, Simple & Aesthetic */}
+                <div className="relative z-20 h-full w-full p-3 sm:p-5 flex flex-col justify-between text-center">
                   {/* Center Editorial Word & Subtitle */}
-                  <div className="my-auto space-y-1 sm:space-y-1.5 py-1">
-                    <span className="text-[10.5px] sm:text-xs font-serif italic text-terracotta-light tracking-wide block">
+                  <div className="my-auto space-y-0.5 sm:space-y-1.5 py-0.5">
+                    <span className="text-[11.5px] sm:text-xs font-serif italic text-terracotta-light tracking-wide block">
                       {pillar.subtitle}
                     </span>
                     <h3
                       className={cn(
-                        'font-serif font-bold uppercase tracking-[0.14em] text-[#FFFDF9] drop-shadow-[0_4px_12px_rgba(0,0,0,0.55)] transition-all duration-500',
-                        isActive ? 'text-xl sm:text-3xl blur-0' : 'text-lg sm:text-xl blur-[1px]'
+                        'font-serif font-bold uppercase tracking-[0.12em] sm:tracking-[0.14em] text-[#FFFDF9] drop-shadow-[0_4px_12px_rgba(0,0,0,0.55)] transition-all duration-700 ease-out',
+                        isActive ? 'text-[22px] sm:text-3xl blur-0' : 'text-lg sm:text-xl blur-[1px]'
                       )}
                     >
                       {pillar.word}
@@ -431,27 +547,27 @@ export function FourPillarsShowcase({
                   {/* Bottom Authentic Description & Concise Balanced Action Buttons */}
                   <div
                     className={cn(
-                      'space-y-2 sm:space-y-2.5 transition-opacity duration-500',
+                      'space-y-1.5 sm:space-y-2.5 transition-opacity duration-700 ease-out',
                       isActive ? 'opacity-100' : 'opacity-0 pointer-events-none'
                     )}
                   >
-                    <p className="text-[10.5px] sm:text-xs text-[#F5F0E6]/90 leading-snug sm:leading-relaxed line-clamp-2 px-1">
+                    <p className="text-[11.5px] sm:text-xs text-[#F5F0E6]/95 leading-snug sm:leading-relaxed line-clamp-2 px-0.5">
                       {pillar.description}
                     </p>
 
-                    <div className="inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full bg-[#1A2B23]/80 border border-[#F5F0E6]/20 text-[9.5px] sm:text-[10px] font-medium text-[#F5F0E6]">
-                      <CheckCircle2 className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-terracotta-light shrink-0" />
+                    <div className="inline-flex items-center gap-1 sm:gap-1.5 px-2.5 py-0.5 sm:py-1 rounded-full bg-[#1A2B23]/85 border border-[#F5F0E6]/20 text-[10.5px] sm:text-[11px] font-medium text-[#F5F0E6]">
+                      <CheckCircle2 className="w-3 h-3 text-terracotta-light shrink-0" />
                       <span>{pillar.highlight}</span>
                     </div>
 
-                    <div className="pt-1.5 sm:pt-2 flex items-center justify-center gap-2">
+                    <div className="pt-1 sm:pt-2 flex items-center justify-center gap-2">
                       <Link
                         href={pillar.href}
                         tabIndex={isActive ? 0 : -1}
                         onMouseMove={handleLanternMouseMove}
                         className="lantern-btn group flex-1 max-w-[96px] sm:max-w-[116px] bg-[#C85A23]/45 shadow-sm whitespace-nowrap"
                       >
-                        <span className="lantern-btn-inner !gap-1 px-3 sm:px-4 py-1.5 sm:py-2 bg-[#C55B23] text-[#FFFDF9] text-[10.5px] sm:text-xs font-semibold tracking-wide whitespace-nowrap">
+                        <span className="lantern-btn-inner !gap-1 px-2.5 sm:px-4 py-1.5 sm:py-2 bg-[#C55B23] text-[#FFFDF9] text-[11.5px] sm:text-xs font-semibold tracking-wide whitespace-nowrap">
                           <span>{pillar.ctaLabel}</span>
                           <ArrowRight className="w-3 h-3 shrink-0" />
                         </span>
@@ -463,7 +579,7 @@ export function FourPillarsShowcase({
                         onMouseMove={handleLanternMouseMove}
                         className="lantern-btn group flex-1 max-w-[96px] sm:max-w-[116px] bg-[#C85A23]/30 whitespace-nowrap"
                       >
-                        <span className="lantern-btn-inner !gap-1 px-3 sm:px-4 py-1.5 sm:py-2 bg-[#FFFDF9] text-[#263D32] text-[10.5px] sm:text-xs font-semibold tracking-wide whitespace-nowrap">
+                        <span className="lantern-btn-inner !gap-1 px-2.5 sm:px-4 py-1.5 sm:py-2 bg-[#FFFDF9] text-[#263D32] text-[11.5px] sm:text-xs font-semibold tracking-wide whitespace-nowrap">
                           <span>{pillar.secondaryLabel}</span>
                           <ArrowUpRight className="w-3 h-3 text-terracotta shrink-0" />
                         </span>
@@ -478,25 +594,23 @@ export function FourPillarsShowcase({
       </div>
 
       {/* ─────────────────────────────────────────────────────────────────────
-          CONTEXT-AWARE ADAPTIVE HERO SEARCH & ACTION BAR
-          • Single component positioned directly beneath the hero carousel
-          • Uses the active carousel slide (activePillar) as its single source of truth
+          C. ONE CONNECTED HIMALAYAN ECOSYSTEM HEADING
+          • Mobile (< sm): Positioned BELOW the 4-pillar cards right above the bottom nav bar (order-3)
+          • Tablet / PC (sm+): Positioned ABOVE the 4-pillar cards (sm:order-1)
       ───────────────────────────────────────────────────────────────────── */}
-      <div className="w-full mt-2.5 sm:mt-3 select-text">
-        <UnifiedHeroSearchBar
-          activePillar={activePillar}
-          destinations={destinations}
-          properties={properties}
-          products={products}
-          productCategories={productCategories}
-          productions={productions}
-          onInteractionChange={setIsBarInteracting}
-          spotlightPhase={spotlightPhase}
+      <div className="order-3 sm:order-1 relative z-10 text-center space-y-1.5 pt-2.5 pb-1 sm:pt-0 sm:pb-4 lg:pb-5">
+        <h2 className="font-serif text-[22px] sm:text-3xl lg:text-[38px] italic font-semibold text-[#263D32] tracking-tight leading-tight drop-shadow-[0_1px_2px_rgba(255,253,249,0.85)]">
+          One Connected Himalayan Ecosystem.
+        </h2>
+        <div
+          aria-hidden="true"
+          className="mx-auto h-[1.5px] w-28 sm:w-36 bg-gradient-to-r from-transparent via-[#C55B23]/65 to-transparent"
         />
       </div>
     </div>
   );
 }
+
 
 
 
