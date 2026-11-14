@@ -84,7 +84,7 @@ async function verifyCloudflareAccessJwt(
     )?.trim();
 
     if (
-      !/^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\\.cloudflareaccess\\.com$/.test(teamDomain) ||
+      !/^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.cloudflareaccess\.com$/.test(teamDomain) ||
       !expectedAudience
     ) {
       return false;
@@ -239,7 +239,31 @@ export async function middleware(request: NextRequest) {
 
   if (supabaseUrl && supabaseAnonKey) {
     try {
-      const supabase = createServerClient<Database>(supabaseUrl, supabaseAnonKey, {\n        cookies: {\n          get(name: string) {\n            return request.cookies.get(name)?.value;\n          },\n          set(name: string, value: string, options: CookieOptions) {\n            request.cookies.set({ name, value, ...options });\n            response = NextResponse.next({\n              request: {\n                headers: requestHeaders,\n              },\n            });\n            response.cookies.set({ name, value, ...options });\n          },\n          remove(name: string, options: CookieOptions) {\n            request.cookies.set({ name, value: '', ...options });\n            response = NextResponse.next({\n              request: {\n                headers: requestHeaders,\n              },\n            });\n            response.cookies.set({ name, value, ...options });\n          },\n        },\n      });
+      const supabase = createServerClient<Database>(supabaseUrl, supabaseAnonKey, {
+        cookies: {
+          get(name: string) {
+            return request.cookies.get(name)?.value;
+          },
+          set(name: string, value: string, options: CookieOptions) {
+            request.cookies.set({ name, value, ...options });
+            response = NextResponse.next({
+              request: {
+                headers: requestHeaders,
+              },
+            });
+            response.cookies.set({ name, value, ...options });
+          },
+          remove(name: string, options: CookieOptions) {
+            request.cookies.set({ name, value: '', ...options });
+            response = NextResponse.next({
+              request: {
+                headers: requestHeaders,
+              },
+            });
+            response.cookies.set({ name, value: '', ...options });
+          },
+        },
+      });
 
       const { data } = await supabase.auth.getUser();
       user = data?.user || null;
@@ -366,6 +390,6 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|logo.png|.*\\\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|logo.png|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 };

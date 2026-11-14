@@ -1089,7 +1089,7 @@ describe('TASK 9 — 12 Strict Verification Scenarios', () => {
   });
 
   // 12. Existing properties and bookings remaining unchanged
-  it('Scenario 12: Existing properties Yash Home Stay and Wonderway Retreat remain intact and canonical', () => {
+  it('Scenario 12: Existing properties Yash Home Stay remains intact and canonical', () => {
     const destinations = CURATED_DESTINATIONS;
     assert.ok(destinations.length >= 22);
 
@@ -1101,6 +1101,15 @@ describe('TASK 9 — 12 Strict Verification Scenarios', () => {
       [
         {
           id: 'prop-1',
+          name: 'Tirthan Cedar Cottage',
+          slug: 'tirthan-cedar-cottage',
+          village: 'Jibhi',
+          district: 'Kullu',
+          published: true,
+          moderation_status: 'approved',
+        },
+        {
+          id: 'prop-deprecated',
           name: 'Wonderway Retreat',
           slug: 'wonderway-retreat',
           village: 'Jibhi',
@@ -1112,15 +1121,15 @@ describe('TASK 9 — 12 Strict Verification Scenarios', () => {
       jibhiDest!
     );
     assert.equal(jibhiProps.length, 1);
-    assert.equal(jibhiProps[0].name, 'Wonderway Retreat');
+    assert.equal(jibhiProps[0].name, 'Tirthan Cedar Cottage');
 
-    // Yash Home Stay in Chehni Kothi
+    // Yash Home Stay in Jari / Kullu
     const yashSlug = getCanonicalDestinationSlug({
       name: 'Yash Home Stay',
-      village: 'Chehni Kothi',
+      village: 'Jari',
       district: 'Kullu',
     });
-    assert.ok(yashSlug);
+    assert.equal(yashSlug, 'kullu-jari');
   });
 });
 

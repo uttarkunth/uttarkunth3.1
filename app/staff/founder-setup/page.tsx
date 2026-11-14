@@ -26,10 +26,12 @@ export default function FounderSetupPage() {
 
   useEffect(() => {
     let active = true;
-    fetch('/api/staff/founder-setup', { cache: 'no-store' })\n      .then(async (response) => {
+    fetch('/api/staff/founder-setup', { cache: 'no-store' })
+      .then(async (response) => {
         const data = await response.json();
         if (!response.ok || !data.ok) throw new Error(data.error || 'Founder setup could not be loaded.');
-        if (!active) return;\n        if (data.alreadyCompleted) {
+        if (!active) return;
+        if (data.alreadyCompleted) {
           router.replace('/staff/login?next=/admin/dashboard');
           return;
         }

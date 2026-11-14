@@ -117,9 +117,8 @@ test('Phase 2I: Four Pillars Ecosystem Integrity', () => {
   assert.equal(BRAND.contactEmail, 'info@uttarkunth.com');
 
   // Pillar 1: Stays
-  assert.equal(EXISTING_PROPERTIES.length, 2, 'Exactly 2 live properties in Jari');
+  assert.equal(EXISTING_PROPERTIES.length, 1, 'Exactly 1 live property in Jari');
   assert.equal(EXISTING_PROPERTIES[0].slug, 'yash-home-stay');
-  assert.equal(EXISTING_PROPERTIES[1].slug, 'wonderway-retreat');
 
   // Pillar 2: Products
   assert.equal(PRODUCT_CATEGORIES.length >= 8, true, 'Curated product categories registered');

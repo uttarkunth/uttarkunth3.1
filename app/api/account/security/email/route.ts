@@ -11,11 +11,6 @@ import {
 } from '@/lib/staff-rbac';
 
 export const dynamic = 'force-dynamic';
-export {
-  validateEmailChangeRequest,
-  type EmailChangeValidationInput,
-  type EmailChangeValidationResult,
-};
 
 export async function POST(req: NextRequest) {
   try {
