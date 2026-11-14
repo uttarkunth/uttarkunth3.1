@@ -27,7 +27,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
     const supabase = createPublicServerSupabaseClient();
     const { data, error } = await supabase
       .from('products')
-      .select('*')
+      .select('id, slug, title, category, description, inventory_status, photos, origin_valley, origin_state, maker_name, price_estimate, craft_type')
       .eq('moderation_status', 'approved')
       .order('created_at', { ascending: false });
 
