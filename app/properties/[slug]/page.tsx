@@ -1,13 +1,16 @@
 import React from 'react';
-import Image from 'next/image';
+import { PropertyImage } from '@/components/property-image';
+import { PropertyPhotoGallery, RoomPhotoCarousel, type PropertyGalleryPhoto } from '@/components/stays/property-photo-gallery';
+import { getPropertyPhotoList } from '@/lib/property-images';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { createAdminClient } from '@/lib/supabase/admin';
-import { EXISTING_PROPERTIES, BRAND } from '@/lib/constants';
+import { createPublicServerSupabaseClient, createServerSupabaseClient } from '@/lib/supabase/server';
+import { BRAND, EXISTING_PROPERTIES } from '@/lib/constants';
 import { BookingWidget } from '@/components/booking-widget';
-import { MapPin, Users, CheckCircle2, ShieldCheck, Clock, Home, Sparkles, ChevronLeft, Wifi, Coffee, Utensils, Car } from 'lucide-react';
+import { RoomAvailabilityCalendar } from '@/components/stays/room-availability-calendar';
+import { MapPin, Users, CheckCircle2, ShieldCheck, Clock, Home, Sparkles, ChevronLeft, Wifi, Coffee, Utensils, Car, Image as ImageIcon } from 'lucide-react';
 
-export const revalidate = 60;
+export const dynamic = 'force-dynamic';
 
 export async function generateMetadata({ params }: { params: { slug: string } }) {
   const property = await getPropertyBySlug(params.slug);
@@ -34,51 +37,72 @@ interface PropertyDetailPageProps {
 }
 
 async function getPropertyBySlug(slug: string) {
+  if (slug === 'wonderway-retreat') return null;
+
+  const isYashAlias =
+    slug === 'yash-home-stay' || slug === 'yash-home-stay-jari-4u07';
+  const slugCandidates = isYashAlias
+    ? ['yash-home-stay-jari-4u07', 'yash-home-stay']
+    : [slug];
+
+  const findFallbackProperty = () =>
+    EXISTING_PROPERTIES.find(
+      (p: any) =>
+        p.slug !== 'wonderway-retreat' &&
+        (p.slug === slug || p.canonical_slug === slug || (isYashAlias && p.slug === 'yash-home-stay'))
+    ) || null;
+
   try {
-    const supabase = createAdminClient();
-    const { data: property, error } = await supabase
+    const supabase = createPublicServerSupabaseClient();
+    const { data: properties, error } = await supabase
       .from('properties')
-      .select('id, slug, name, description, address, village, district, state, property_type, booking_mode, amenities, photos, published, moderation_status')
-      .eq('slug', slug)
+      .select('*')
+      .in('slug', slugCandidates)
       .eq('published', true)
       .eq('moderation_status', 'approved')
-      .single();
+      .limit(1);
+
+    const property = properties?.[0];
 
     if (error || !property) {
-      const fallback = EXISTING_PROPERTIES.find(p => p.slug === slug);
-      return fallback || null;
+      return findFallbackProperty() as any;
     }
 
     const { data: rooms } = await supabase
       .from('room_units')
-      .select('id, property_id, room_name, description, max_guests, base_price, active')
+      .select('*')
       .eq('property_id', property.id)
-      .eq('active', true);
+      .eq('active', true)
+      .order('sort_order', { ascending: true });
+
+    const fallback = findFallbackProperty() as any;
+    const resolvedRooms =
+      rooms && rooms.length > 0 ? rooms : fallback?.rooms || [];
 
     return {
       ...property,
-      rooms: rooms || []
+      rooms: resolvedRooms,
     };
   } catch {
-    const fallback = EXISTING_PROPERTIES.find(p => p.slug === slug);
-    return fallback || null;
+    return findFallbackProperty() as any;
   }
 }
 
 async function getRelatedStays(currentId: string) {
   try {
-    const supabase = createAdminClient();
+    const supabase = createPublicServerSupabaseClient();
     const { data: properties } = await supabase
       .from('properties')
-      .select('id, slug, name, description, village, district, state, property_type, amenities, photos')
+      .select('*')
       .eq('published', true)
       .eq('moderation_status', 'approved')
       .neq('id', currentId)
+      .neq('slug', 'wonderway-retreat')
       .limit(2);
 
-    return properties || [];
+    return (properties || []).filter((p: any) => p.slug !== 'wonderway-retreat');
   } catch {
-    return EXISTING_PROPERTIES.filter(p => p.id !== currentId);
+    return [];
   }
 }
 
@@ -91,11 +115,38 @@ export default async function PropertyDetailPage({ params, searchParams }: Prope
 
   const relatedStays = await getRelatedStays(property.id);
 
-  const photos = Array.isArray(property.photos) ? (property.photos as unknown as string[]) : [];
-  const primaryPhoto = String(photos[0] || 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=1200&q=80');
-  const secondaryPhotos = photos.slice(1).map(String);
   const amenitiesList = Array.isArray(property.amenities) ? (property.amenities as unknown as string[]) : [];
-  const rooms = property.rooms || [];
+  const rooms: any[] = property.rooms || [];
+  const galleryPhotos: PropertyGalleryPhoto[] = [];
+  const seenGalleryUrls = new Set<string>();
+  const addGalleryPhotos = (urls: string[], category: PropertyGalleryPhoto['category'], label: string) => {
+    urls.forEach((url, index) => {
+      if (!url || seenGalleryUrls.has(url)) return;
+      seenGalleryUrls.add(url);
+      galleryPhotos.push({ url, category, label, alt: `${property.name} — ${label} photo ${index + 1}` });
+    });
+  };
+  addGalleryPhotos(getPropertyPhotoList(property.cover_photo, property.photos), 'property', 'Property');
+  rooms.forEach((room: any) => {
+    addGalleryPhotos(getPropertyPhotoList(null, room.photos), 'room', room.room_name || 'Room');
+    if (room.attached_washroom) addGalleryPhotos(getPropertyPhotoList(null, room.washroom_photos), 'washroom', `${room.room_name || 'Room'} private washroom`);
+  });
+  if (rooms.some((room: any) => !room.attached_washroom)) addGalleryPhotos(getPropertyPhotoList(null, property.shared_washroom_photos), 'washroom', 'Shared washroom');
+
+  let currentUser = null;
+  try {
+    const userClient = createServerSupabaseClient();
+    const { data: { user } } = await userClient.auth.getUser();
+    if (user) {
+      currentUser = {
+        name: user.user_metadata?.full_name || user.user_metadata?.name || '',
+        email: user.email || '',
+        phone: user.user_metadata?.phone || user.phone || '',
+      };
+    }
+  } catch {
+    currentUser = null;
+  }
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
@@ -128,44 +179,12 @@ export default async function PropertyDetailPage({ params, searchParams }: Prope
 
         <p className="flex items-center gap-1.5 text-sm text-charcoal-muted">
           <MapPin className="w-4 h-4 text-ukorange flex-shrink-0" />
-          <span>{(property as any).address || `${property.village}, ${property.district}, ${property.state}, India`}</span>
+          <span>{`${property.village}, ${property.district}, ${property.state}, India`}</span>
         </p>
       </div>
 
-      {/* Photo Gallery Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 rounded-3xl overflow-hidden shadow-soft max-h-[500px]">
-        {/* Main Photo */}
-        <div className="md:col-span-2 relative h-80 sm:h-96 md:h-[480px]">
-          <Image
-            src={primaryPhoto}
-            alt={property.name}
-            fill
-            sizes="(max-width: 768px) 100vw, 66vw"
-            className="object-cover"
-            priority
-          />
-        </div>
-
-        {/* Side Photos */}
-        <div className="hidden md:flex flex-col gap-3 h-[480px]">
-          {secondaryPhotos.slice(0, 2).map((photoUrl, idx) => (
-            <div key={idx} className="relative flex-1 overflow-hidden">
-              <Image
-                src={photoUrl}
-                alt={`${property.name} view ${idx + 2}`}
-                fill
-                sizes="33vw"
-                className="object-cover hover:scale-105 transition-transform duration-500"
-              />
-            </div>
-          ))}
-          {secondaryPhotos.length === 0 && (
-            <div className="relative flex-1 bg-ivory-warm flex items-center justify-center p-6 text-center text-xs text-charcoal-muted">
-              <span>Serene mountain surroundings in Jari</span>
-            </div>
-          )}
-        </div>
-      </div>
+      {/* Single-frame photo carousel with a full gallery view. */}
+      <PropertyPhotoGallery propertyName={property.name} photos={galleryPhotos} />
 
       {/* Content & Booking Widget Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 pt-4">
@@ -181,36 +200,67 @@ export default async function PropertyDetailPage({ params, searchParams }: Prope
 
           {/* Room Units & Accommodations */}
           <div className="space-y-4 pb-8 border-b border-forest/10">
-            <h2 className="font-serif text-2xl font-bold text-forest">Room Types & Inventory</h2>
+            <h2 className="font-serif text-2xl font-bold text-forest">Room Types &amp; Inventory</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {rooms.map(room => (
-                <div key={room.id} className="p-5 bg-white rounded-2xl border border-forest/15 shadow-sm space-y-3">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <h3 className="font-serif text-lg font-bold text-forest">{room.room_name}</h3>
-                      <span className="text-xs text-charcoal-muted flex items-center gap-1 mt-0.5">
-                        <Users className="w-3.5 h-3.5 text-ukorange" />
-                        Max {room.max_guests} Guests
-                      </span>
+              {rooms.map((roomItem: any) => {
+                const room = roomItem as any;
+                const roomCardPhotos = getPropertyPhotoList(null, [
+                  ...(Array.isArray(room.photos) ? room.photos : []),
+                  ...(room.attached_washroom && Array.isArray(room.washroom_photos)
+                    ? room.washroom_photos
+                    : []),
+                ]);
+                return (
+                  <div key={room.id} className="p-5 bg-white rounded-2xl border border-forest/15 shadow-sm space-y-3 flex flex-col justify-between">
+                    <RoomPhotoCarousel photos={roomCardPhotos} alt={room.room_name} />
+                    <div className="space-y-2">
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <h3 className="font-serif text-lg font-bold text-forest">{room.room_name}</h3>
+                          <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                            <span className="text-[11px] text-charcoal-muted flex items-center gap-1">
+                              <Users className="w-3.5 h-3.5 text-ukorange" />
+                              Max {room.max_guests} Guests
+                            </span>
+                            {room.attached_washroom !== undefined && (
+                              <span className={`px-2 py-0.5 text-[10px] font-bold rounded-full ${room.attached_washroom ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-100 text-gray-700'}`}>
+                                {room.attached_washroom ? 'Private attached washroom' : 'Shared washroom'}
+                              </span>
+                            )}
+                            {room.view_type && room.view_type !== 'none' && (
+                              <span className="px-2 py-0.5 text-[10px] font-semibold bg-sky-100 text-sky-800 rounded-full capitalize">
+                                {room.view_type} View
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <span className="font-serif text-xl font-bold text-forest whitespace-nowrap">
+                          ₹{Number(room.base_price)}
+                          <span className="text-xs text-charcoal-muted font-sans font-normal"> / night</span>
+                        </span>
+                      </div>
+                      {room.description && (
+                        <p className="text-xs text-charcoal-muted leading-relaxed">
+                          {room.description}
+                        </p>
+                      )}
                     </div>
-                    <span className="font-serif text-xl font-bold text-forest">
-                      ₹{Number(room.base_price)}
-                      <span className="text-xs text-charcoal-muted font-sans font-normal"> / night</span>
-                    </span>
+                    <div className="pt-2 text-[11px] font-medium text-forest flex items-center gap-1 border-t border-forest/5">
+                      <CheckCircle2 className="w-3 h-3 text-ukorange" />
+                      <span>{room.bed_type || 'Double Bed'} • Clean mountain linens included</span>
+                    </div>
                   </div>
-                  {room.description && (
-                    <p className="text-xs text-charcoal-muted leading-relaxed">
-                      {room.description}
-                    </p>
-                  )}
-                  <div className="pt-2 text-[11px] font-medium text-forest flex items-center gap-1">
-                    <CheckCircle2 className="w-3 h-3 text-ukorange" />
-                    Clean linens & mountain views included
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
+
+          {/* Interactive Room Availability Calendar */}
+          <RoomAvailabilityCalendar
+            propertyId={property.id}
+            propertyName={property.name}
+            rooms={rooms as any}
+          />
 
           {/* Amenities */}
           <div className="space-y-4 pb-8 border-b border-forest/10">
@@ -241,14 +291,33 @@ export default async function PropertyDetailPage({ params, searchParams }: Prope
             </p>
           </div>
 
+          {/* General Location & Privacy Policy */}
+          <div className="space-y-2 pb-8 border-b border-forest/10">
+            <h2 className="font-serif text-2xl font-bold text-forest flex items-center gap-2">
+              <MapPin className="w-5 h-5 text-ukorange" />
+              <span>Location &amp; Arrival Privacy</span>
+            </h2>
+            <p className="text-sm font-semibold text-charcoal">
+              {[property.village, property.district, property.state].filter(Boolean).join(', ')}
+            </p>
+            <p className="text-xs text-charcoal-muted leading-relaxed">
+              To protect host and guest privacy, the exact property address, local landmarks, and direct Google Maps navigation link are shared exclusively inside your trip itinerary once your booking is confirmed.
+            </p>
+          </div>
+
           {/* Stay Rules & Cancellation Policy */}
           <div className="space-y-4 pb-8 border-b border-forest/10 text-xs text-charcoal-muted leading-relaxed">
-            <h2 className="font-serif text-2xl font-bold text-forest text-charcoal">House Rules & Stay Policy</h2>
+            <h2 className="font-serif text-2xl font-bold text-forest text-charcoal">House Rules &amp; Stay Policy</h2>
+            {property.house_rules && (
+              <p className="text-xs sm:text-sm text-charcoal leading-relaxed bg-ivory-warm/70 p-3.5 rounded-xl border border-forest/10">
+                {property.house_rules}
+              </p>
+            )}
             <ul className="space-y-2 list-disc list-inside">
-              <li>Check-in: 12:00 PM onwards • Check-out: strictly before 11:00 AM.</li>
+              <li>Check-in: {property.check_in_time || '12:00 PM'} onwards • Check-out: strictly before {property.check_out_time || '11:00 AM'}.</li>
               <li>Host Approval: Every booking request is personally reviewed by the host before confirmation.</li>
               <li>Cancellation: Free cancellation for pending requests. For confirmed stays, cancellation is permitted online prior to check-in day.</li>
-              <li>Respectful Tourism: Parvati Valley is a sacred, fragile mountain ecosystem. Loud outdoor music is prohibited after 9:00 PM.</li>
+              <li>Respectful Tourism: The Himalayas are a sacred, fragile mountain ecosystem. Loud outdoor music is prohibited after 9:30 PM.</li>
             </ul>
           </div>
         </div>
@@ -259,9 +328,11 @@ export default async function PropertyDetailPage({ params, searchParams }: Prope
             propertyId={property.id}
             propertyName={property.name}
             rooms={rooms}
+            sharedWashroomPhotos={getPropertyPhotoList(null, property.shared_washroom_photos)}
             initialCheckIn={searchParams.checkIn}
             initialCheckOut={searchParams.checkOut}
             initialGuests={searchParams.guests ? parseInt(searchParams.guests, 10) : 2}
+            currentUser={currentUser}
           />
         </div>
       </div>
@@ -288,19 +359,29 @@ export default async function PropertyDetailPage({ params, searchParams }: Prope
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {relatedStays.map((rel: any) => {
-              const relPhoto = rel.photos?.[0] || 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=800&q=80';
+              const relPhoto = getPropertyPhotoList(rel.cover_photo, rel.photos)[0] || null;
               return (
                 <div
                   key={rel.id}
                   className="bg-white rounded-3xl border border-forest/15 overflow-hidden shadow-soft hover:shadow-lifted transition-all flex flex-col group"
                 >
-                  <div className="relative aspect-[16/10] bg-forest-dark overflow-hidden">
-                    <Image
-                      src={relPhoto}
-                      alt={rel.name}
-                      fill
-                      className="object-cover group-hover:scale-105 transition-transform duration-500"
-                    />
+                  <div className="relative aspect-[3/2] bg-forest-dark overflow-hidden">
+                    {relPhoto ? (
+                      <PropertyImage
+                        src={relPhoto}
+                        alt={rel.name}
+                        fill
+                        sizes="(max-width: 768px) 100vw, 50vw"
+                        transformWidth={600}
+                        transformHeight={400}
+                        className="object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                    ) : (
+                      <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-forest-dark text-ivory/70">
+                        <ImageIcon className="w-9 h-9" />
+                        <span className="text-xs">Property photographs coming soon</span>
+                      </div>
+                    )}
                     <span className="absolute top-3 left-3 bg-forest/90 text-ivory text-xs font-semibold px-2.5 py-0.5 rounded-full">
                       {rel.property_type || 'Homestay'}
                     </span>
