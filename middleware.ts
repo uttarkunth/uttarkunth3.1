@@ -2,6 +2,163 @@ import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 import type { Database } from '@/lib/supabase/types';
 
+type CloudflareAccessJwk = JsonWebKey & {
+  kid?: string;
+  alg?: string;
+  use?: string;
+};
+
+type CloudflareAccessClaims = {
+  iss?: string;
+  aud?: string | string[];
+  sub?: string;
+  exp?: number;
+  nbf?: number;
+  iat?: number;
+};
+
+let cachedCloudflareAccessKeys: {
+  issuer: string;
+  expiresAt: number;
+  keys: CloudflareAccessJwk[];
+} | null = null;
+
+function decodeBase64Url(value: string): ArrayBuffer {
+  const base64 = value.replace(/-/g, '+').replace(/_/g, '/');
+  const padded = base64.padEnd(Math.ceil(base64.length / 4) * 4, '=');
+  const binary = atob(padded);
+  const buffer = new ArrayBuffer(binary.length);
+  const bytes = new Uint8Array(buffer);
+  for (let index = 0; index < binary.length; index += 1) {
+    bytes[index] = binary.charCodeAt(index);
+  }
+  return buffer;
+}
+
+function decodeJwtJsonPart<T>(value: string): T {
+  return JSON.parse(new TextDecoder().decode(decodeBase64Url(value))) as T;
+}
+
+async function getCloudflareAccessKeys(issuer: string, forceRefresh = false): Promise<CloudflareAccessJwk[]> {
+  const now = Date.now();
+  if (
+    !forceRefresh &&
+    cachedCloudflareAccessKeys &&
+    cachedCloudflareAccessKeys.issuer === issuer &&
+    cachedCloudflareAccessKeys.expiresAt > now
+  ) {
+    return cachedCloudflareAccessKeys.keys;
+  }
+
+  const response = await fetch(`${issuer}/cdn-cgi/access/certs`, {
+    headers: { Accept: 'application/json' },
+    cache: 'no-store',
+  });
+  if (!response.ok) {
+    throw new Error('Cloudflare Access signing keys could not be retrieved.');
+  }
+
+  const payload = (await response.json()) as { keys?: CloudflareAccessJwk[] };
+  if (!Array.isArray(payload.keys) || payload.keys.length === 0) {
+    throw new Error('Cloudflare Access did not return a valid signing key set.');
+  }
+
+  cachedCloudflareAccessKeys = {
+    issuer,
+    expiresAt: now + 5 * 60 * 1000,
+    keys: payload.keys,
+  };
+  return payload.keys;
+}
+
+async function verifyCloudflareAccessJwt(
+  token: string,
+  portal: 'founder' | 'staff'
+): Promise<boolean> {
+  try {
+    const teamDomain = (process.env.CLOUDFLARE_ACCESS_TEAM_DOMAIN || '').trim().toLowerCase();
+    const expectedAudience = (
+      portal === 'founder'
+        ? process.env.CLOUDFLARE_ACCESS_AUD_FOUNDER
+        : process.env.CLOUDFLARE_ACCESS_AUD_STAFF
+    )?.trim();
+
+    if (
+      !/^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\\.cloudflareaccess\\.com$/.test(teamDomain) ||
+      !expectedAudience
+    ) {
+      return false;
+    }
+
+    const issuer = `https://${teamDomain}`;
+    const parts = token.split('.');
+    if (parts.length !== 3) return false;
+
+    const header = decodeJwtJsonPart<{ alg?: string; kid?: string }>(parts[0]);
+    const claims = decodeJwtJsonPart<CloudflareAccessClaims>(parts[1]);
+    if (header.alg !== 'RS256' || !header.kid) return false;
+
+    const audienceMatches = Array.isArray(claims.aud)
+      ? claims.aud.includes(expectedAudience)
+      : claims.aud === expectedAudience;
+    const nowSeconds = Math.floor(Date.now() / 1000);
+
+    if (
+      claims.iss !== issuer ||
+      !audienceMatches ||
+      typeof claims.sub !== 'string' ||
+      claims.sub.length === 0 ||
+      typeof claims.exp !== 'number' ||
+      claims.exp < nowSeconds - 60 ||
+      (claims.nbf !== undefined &&
+        (typeof claims.nbf !== 'number' || claims.nbf > nowSeconds + 60)) ||
+      (claims.iat !== undefined &&
+        (typeof claims.iat !== 'number' || claims.iat > nowSeconds + 60))
+    ) {
+      return false;
+    }
+
+    let keys = await getCloudflareAccessKeys(issuer);
+    let signingKey = keys.find(
+      (key) =>
+        key.kid === header.kid &&
+        key.kty === 'RSA' &&
+        (!key.alg || key.alg === 'RS256') &&
+        (!key.use || key.use === 'sig')
+    );
+
+    if (!signingKey) {
+      keys = await getCloudflareAccessKeys(issuer, true);
+      signingKey = keys.find(
+        (key) =>
+          key.kid === header.kid &&
+          key.kty === 'RSA' &&
+          (!key.alg || key.alg === 'RS256') &&
+          (!key.use || key.use === 'sig')
+      );
+    }
+    if (!signingKey) return false;
+
+    const publicKey = await crypto.subtle.importKey(
+      'jwk',
+      signingKey,
+      { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
+      false,
+      ['verify']
+    );
+
+    const signedContent = new TextEncoder().encode(`${parts[0]}.${parts[1]}`);
+    return await crypto.subtle.verify(
+      'RSASSA-PKCS1-v1_5',
+      publicKey,
+      decodeBase64Url(parts[2]),
+      signedContent
+    );
+  } catch {
+    return false;
+  }
+}
+
 function applySecurityHeaders(res: NextResponse, portalKind: 'founder' | 'staff' | 'public'): NextResponse {
   res.headers.set('X-Content-Type-Options', 'nosniff');
   res.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
@@ -14,16 +171,12 @@ function applySecurityHeaders(res: NextResponse, portalKind: 'founder' | 'staff'
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const hostHeader = (
-    request.headers.get('x-forwarded-host') ||
-    request.headers.get('host') ||
-    ''
-  ).toLowerCase();
+  const hostHeader = request.nextUrl.hostname.toLowerCase();
 
   const isFounderSubdomain =
-    hostHeader.startsWith('admin.uttarkunth.com') || hostHeader.startsWith('admin.');
+    hostHeader === 'admin.uttarkunth.com' || hostHeader.startsWith('admin.');
   const isStaffSubdomain =
-    hostHeader.startsWith('team.uttarkunth.com') || hostHeader.startsWith('team.');
+    hostHeader === 'team.uttarkunth.com' || hostHeader.startsWith('team.');
 
   const portalKind: 'founder' | 'staff' | 'public' = isFounderSubdomain
     ? 'founder'
@@ -40,21 +193,23 @@ export async function middleware(request: NextRequest) {
     },
   });
 
-  // 1. Optional Cloudflare Access perimeter gate on admin.uttarkunth.com and team.uttarkunth.com
-  // Note: Cloudflare Access never replaces application-level staff authentication, RBAC, or AAL2 MFA checks.
+  // 1. Cryptographically verify Cloudflare Access on internal hostnames in production.
   if (
     (isFounderSubdomain || isStaffSubdomain) &&
-    process.env.ENFORCE_CLOUDFLARE_ACCESS === 'true'
+    (process.env.NODE_ENV === 'production' || process.env.ENFORCE_CLOUDFLARE_ACCESS === 'true')
   ) {
     const cfAccessJwt = request.headers.get('cf-access-jwt-assertion');
-    if (!cfAccessJwt) {
+    const portal = isFounderSubdomain ? 'founder' : 'staff';
+    const accessVerified = cfAccessJwt
+      ? await verifyCloudflareAccessJwt(cfAccessJwt, portal)
+      : false;
+
+    if (!accessVerified) {
       return applySecurityHeaders(
         new NextResponse(
           JSON.stringify({
             ok: false,
-            error: `Cloudflare Access verification required for ${
-              isFounderSubdomain ? 'admin.uttarkunth.com' : 'team.uttarkunth.com'
-            }.`,
+            error: 'Cloudflare Access authorization failed. Verify the Access application and its configured audience.',
           }),
           { status: 403, headers: { 'content-type': 'application/json' } }
         ),
@@ -84,31 +239,7 @@ export async function middleware(request: NextRequest) {
 
   if (supabaseUrl && supabaseAnonKey) {
     try {
-      const supabase = createServerClient<Database>(supabaseUrl, supabaseAnonKey, {
-        cookies: {
-          get(name: string) {
-            return request.cookies.get(name)?.value;
-          },
-          set(name: string, value: string, options: CookieOptions) {
-            request.cookies.set({ name, value, ...options });
-            response = NextResponse.next({
-              request: {
-                headers: requestHeaders,
-              },
-            });
-            response.cookies.set({ name, value, ...options });
-          },
-          remove(name: string, options: CookieOptions) {
-            request.cookies.set({ name, value: '', ...options });
-            response = NextResponse.next({
-              request: {
-                headers: requestHeaders,
-              },
-            });
-            response.cookies.set({ name, value: '', ...options });
-          },
-        },
-      });
+      const supabase = createServerClient<Database>(supabaseUrl, supabaseAnonKey, {\n        cookies: {\n          get(name: string) {\n            return request.cookies.get(name)?.value;\n          },\n          set(name: string, value: string, options: CookieOptions) {\n            request.cookies.set({ name, value, ...options });\n            response = NextResponse.next({\n              request: {\n                headers: requestHeaders,\n              },\n            });\n            response.cookies.set({ name, value, ...options });\n          },\n          remove(name: string, options: CookieOptions) {\n            request.cookies.set({ name, value: '', ...options });\n            response = NextResponse.next({\n              request: {\n                headers: requestHeaders,\n              },\n            });\n            response.cookies.set({ name, value, ...options });\n          },\n        },\n      });
 
       const { data } = await supabase.auth.getUser();
       user = data?.user || null;
@@ -130,16 +261,6 @@ export async function middleware(request: NextRequest) {
       );
     }
 
-    if (pathname === '/admin/login') {
-      return applySecurityHeaders(
-        NextResponse.redirect(
-          new URL('/staff/login?portal=founder&next=/admin/dashboard', request.url)
-        ),
-        portalKind
-      );
-    }
-
-    // Block public member routes on admin.uttarkunth.com
     if (
       pathname === '/signup' ||
       pathname === '/login' ||
@@ -168,7 +289,6 @@ export async function middleware(request: NextRequest) {
       );
     }
 
-    // Block public member routes on team.uttarkunth.com
     if (
       pathname === '/signup' ||
       pathname === '/login' ||
@@ -184,8 +304,7 @@ export async function middleware(request: NextRequest) {
       );
     }
 
-    // Block Founder-only governance routes on team.uttarkunth.com
-    if (pathname === '/admin/staff' || pathname === '/admin/dashboard' || pathname === '/admin') {
+    if (pathname === '/admin/staff' || pathname === '/admin/dashboard') {
       const targetPath = user ? '/staff' : '/staff/login?portal=staff&next=/staff';
       return applySecurityHeaders(
         NextResponse.redirect(new URL(targetPath, request.url)),
@@ -209,12 +328,12 @@ export async function middleware(request: NextRequest) {
   }
 
   // 4. Strictly protect private routes — fail closed when unauthenticated.
-  // Separate staff/founder portals (/admin, /staff) from public member routes (/account, /host, /guest, /trips).
   const isProtectedStaffRoute =
     pathname.startsWith('/admin') ||
     (pathname.startsWith('/staff') &&
       !pathname.startsWith('/staff/login') &&
-      !pathname.startsWith('/staff/onboard'));
+      !pathname.startsWith('/staff/onboard') &&
+      !pathname.startsWith('/staff/founder-setup'));
 
   if (!user) {
     if (isProtectedStaffRoute) {
@@ -247,13 +366,6 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - public files (e.g. /logo.png)
-     */
-    '/((?!_next/static|_next/image|favicon.ico|logo.png|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|logo.png|.*\\\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 };
