@@ -1,124 +1,74 @@
 import Link from 'next/link';
-import Image from 'next/image';
-import { 
-  ShoppingBag, 
-  Sparkles, 
-  ShieldCheck, 
-  Truck, 
-  Feather,
-  ArrowRight,
-  Layers
-} from 'lucide-react';
-import ProductsCatalogClient from '@/components/products-catalog-client';
+import { createPublicServerSupabaseClient } from '@/lib/supabase/server';
+import { ProductsBrowser } from '@/components/products-browser';
+import { BRAND } from '@/lib/constants';
+import { ArrowRight, Clock, Store } from 'lucide-react';
+
+export const dynamic = 'force-dynamic';
 
 export const metadata = {
-  title: 'Himalayan Organic Harvests & Artisanal Crafts | Uttarkunth',
-  description: 'Shop genuine GI-tagged Uttarakhand produce: organic red rice, Badri cow ghee, pahadi pulses, wild forest honey, and hand-carved heritage crafts.',
-  keywords: 'Uttarakhand organic products, Badri cow ghee, red rice Uttarakhand, Aipan art crafts, organic pahadi dal, Himalayan superfoods, Uttarkunth products',
-  openGraph: {
-    title: 'Himalayan Organic Harvests & Artisanal Crafts | Uttarkunth',
-    description: 'Ethically sourced directly from high-altitude women-led farmer collectives in Uttarakhand.',
-    url: 'https://uttarkunth.com/products',
-    siteName: 'Uttarkunth',
-    images: [
-      {
-        url: '/assets/products-home-page.webp',
-        width: 1200,
-        height: 630,
-        alt: 'Uttarkunth Organic Himalayan Harvests',
-      },
-    ],
-    locale: 'en_IN',
-    type: 'website',
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: 'Himalayan Organic Harvests & Artisanal Crafts | Uttarkunth',
-    description: 'Ethically sourced directly from high-altitude women-led farmer collectives in Uttarakhand.',
-    images: ['/assets/products-home-page.webp'],
-  },
-  alternates: {
-    canonical: 'https://uttarkunth.com/products',
-  },
+  title: `Himalayan Products & Artisan Goods — ${BRAND.name}`,
+  description:
+    'Discover products from Himalayan makers, local creators, and responsible businesses, with listings shown only after approval.',
+  alternates: { canonical: 'https://uttarkunth.com/products' },
 };
 
-export default function ProductsPage() {
+interface ProductsPageProps {
+  searchParams?: {
+    category?: string;
+    q?: string;
+  };
+}
+
+export default async function ProductsPage({ searchParams }: ProductsPageProps) {
+  let products: any[] = [];
+
+  try {
+    const supabase = createPublicServerSupabaseClient();
+    const { data, error } = await supabase
+      .from('products')
+      .select('*')
+      .eq('moderation_status', 'approved')
+      .order('created_at', { ascending: false });
+
+    if (!error && data) products = data;
+  } catch {
+    // Public catalogue remains usable with its honest empty state when data is unavailable.
+    products = [];
+  }
+
+  const category = searchParams?.category || 'all';
+  const query = searchParams?.q || '';
+
   return (
-    <div className="min-h-screen bg-[#FDFBF7]">
-      {/* Hero Section */}
-      <section className="relative bg-[#2C4A3E] text-white py-20 px-4 sm:px-6 lg:px-8">
-        <div className="absolute inset-0 overflow-hidden opacity-20">
-          <div className="absolute inset-0 bg-[radial-gradient(#FAF8F5_1px,transparent_1px)] [background-size:16px_16px]" />
-        </div>
-
-        <div className="relative max-w-7xl mx-auto text-center space-y-6">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-xs font-semibold tracking-wider uppercase text-[#D4AF37]">
-            <ShoppingBag className="w-3.5 h-3.5" />
-            <span>Pure Mountain Harvests</span>
-          </div>
-
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-serif font-bold tracking-tight">
-            Pahadi Bounty, Delivered to Your Door
-          </h1>
-
-          <p className="max-w-2xl mx-auto text-lg text-stone-200 font-light">
-            Grown in glacial soil without synthetic pesticides or chemicals. Certified native harvests and traditional handcrafted artifacts directly from women-led cooperatives.
-          </p>
-        </div>
-      </section>
-
-      {/* Authenticity Guarantee Bar */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-8 relative z-20">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="bg-white rounded-2xl p-6 shadow-xl border border-[#EADFCB] space-y-3">
-            <div className="w-12 h-12 rounded-xl bg-[#2C4A3E]/10 flex items-center justify-center text-[#2C4A3E]">
-              <Sparkles className="w-6 h-6" />
-            </div>
-            <h3 className="text-xl font-serif font-bold text-[#2C4A3E]">Glacial Purity Guarantee</h3>
-            <p className="text-sm text-[#6D7A71] leading-relaxed">
-              Nourished exclusively by pristine Himalayan snowmelt and traditional composting techniques handed down through generations.
-            </p>
-          </div>
-
-          <div className="bg-white rounded-2xl p-6 shadow-xl border border-[#EADFCB] space-y-3">
-            <div className="w-12 h-12 rounded-xl bg-[#2C4A3E]/10 flex items-center justify-center text-[#2C4A3E]">
-              <ShieldCheck className="w-6 h-6" />
-            </div>
-            <h3 className="text-xl font-serif font-bold text-[#2C4A3E]">GI-Certified Origins</h3>
-            <p className="text-sm text-[#6D7A71] leading-relaxed">
-              Registered geographical indication authenticity for Uttarakhand Himalayan red rice, ringal craft, and Munsyari white rajma.
-            </p>
-          </div>
-
-          <div className="bg-white rounded-2xl p-6 shadow-xl border border-[#EADFCB] space-y-3">
-            <div className="w-12 h-12 rounded-xl bg-[#2C4A3E]/10 flex items-center justify-center text-[#2C4A3E]">
-              <Truck className="w-6 h-6" />
-            </div>
-            <h3 className="text-xl font-serif font-bold text-[#2C4A3E]">Pan-India Sustainable Dispatch</h3>
-            <p className="text-sm text-[#6D7A71] leading-relaxed">
-              Shipped in 100% recyclable, plastic-free biodegradable packaging straight from the mountain processing nodes.
-            </p>
-          </div>
+    <div className="mx-auto max-w-7xl space-y-12 px-4 py-12 pb-24 sm:px-6 lg:px-8">
+      <section className="mx-auto max-w-4xl space-y-5 pt-4 text-center">
+        <span className="inline-flex items-center gap-2 rounded-full bg-terracotta/10 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-terracotta">
+          <Clock className="h-4 w-4" /> Pillar II · Himalayan Products
+        </span>
+        <h1 className="font-serif text-4xl font-bold leading-tight text-forest sm:text-6xl">
+          Discover Something Meaningful.
+        </h1>
+        <p className="mx-auto max-w-2xl text-sm leading-relaxed text-charcoal-muted sm:text-base">
+          Explore products from independent makers and local creators. Only approved
+          catalogue entries appear here; when no products are available, the page
+          presents an honest coming-soon state.
+        </p>
+        <div className="flex flex-wrap justify-center gap-3 pt-2">
+          <Link href="/products/sell" className="inline-flex items-center gap-2 rounded-full bg-terracotta px-6 py-3 text-xs font-semibold text-white transition hover:bg-terracotta/90">
+            <Store className="h-4 w-4" /> Sell your products <ArrowRight className="h-4 w-4" />
+          </Link>
+          <Link href="/contact?subject=Product%20Catalogue%20Enquiry" className="inline-flex items-center gap-2 rounded-full border border-forest/20 bg-white px-6 py-3 text-xs font-semibold text-forest transition hover:bg-forest/5">
+            Join early updates
+          </Link>
         </div>
       </section>
 
-      {/* Catalog Listing */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-        <div className="space-y-4 mb-12">
-          <div className="inline-flex items-center gap-2 text-xs font-semibold text-[#D4AF37] uppercase tracking-wider">
-            <Feather className="w-4 h-4" />
-            <span>Seasonal Harvests & Artifacts</span>
-          </div>
-          <h2 className="text-3xl sm:text-4xl font-serif font-bold text-[#2C4A3E]">
-            Explore the Collection
-          </h2>
-          <p className="text-[#6D7A71] max-w-2xl">
-            Every purchase directly finances local seed preservation banks and sustains independent farming families.
-          </p>
-        </div>
-
-        <ProductsCatalogClient />
-      </section>
+      <ProductsBrowser
+        products={products}
+        initialCategory={category}
+        initialQuery={query}
+      />
     </div>
   );
 }
