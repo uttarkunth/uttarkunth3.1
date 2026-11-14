@@ -1,290 +1,393 @@
-import { Metadata } from 'next';
+import React from 'react';
+import { PropertyImage } from '@/components/property-image';
+import { PropertyPhotoGallery, RoomPhotoCarousel, type PropertyGalleryPhoto } from '@/components/stays/property-photo-gallery';
+import { getPropertyPhotoList } from '@/lib/property-images';
+import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { Suspense } from 'react';
-import { getProperty, getProperties } from '@/lib/properties-data';
-import PropertyDetailClient from '@/components/property-detail-client';
-import PropertySchema from '@/components/property-schema';
-import { createServerClient } from '@supabase/ssr';
-import { cookies } from 'next/headers';
-import { Property } from '@/types/property';
+import { createPublicServerSupabaseClient, createServerSupabaseClient } from '@/lib/supabase/server';
+import { BRAND, EXISTING_PROPERTIES } from '@/lib/constants';
+import { BookingWidget } from '@/components/booking-widget';
+import { RoomAvailabilityCalendar } from '@/components/stays/room-availability-calendar';
+import { MapPin, Users, CheckCircle2, ShieldCheck, Clock, Home, Sparkles, ChevronLeft, Wifi, Coffee, Utensils, Car, Image as ImageIcon } from 'lucide-react';
 
-// Set ISR revalidation to 60 seconds
-export const revalidate = 60;
+export const dynamic = 'force-dynamic';
 
-// Tell Next.js to dynamically render on-demand if a slug wasn't pre-rendered at build time
-export const dynamicParams = true;
-
-/**
- * Generate static params for the most popular/default properties so they are fast on initial load.
- */
-export async function generateStaticParams() {
-  const properties = await getProperties();
-  return properties.map((property) => ({
-    slug: property.slug,
-  }));
-}
-
-/**
- * Generate rich, dynamic SEO metadata for each individual property page.
- */
-export async function generateMetadata({
-  params,
-}: {
-  params: { slug: string };
-}): Promise<Metadata> {
-  const property = await getProperty(params.slug);
-
+export async function generateMetadata({ params }: { params: { slug: string } }) {
+  const property = await getPropertyBySlug(params.slug);
   if (!property) {
     return {
-      title: 'Property Not Found | Uttarkunth',
-      description: 'The requested stay or retreat could not be found.',
+      title: `Stay Not Found — ${BRAND.name}`,
     };
   }
-
-  const title = `${property.name} - ${property.location.village}, ${property.location.district} | Uttarkunth`;
-  const description =
-    property.short_description ||
-    property.description.slice(0, 160) ||
-    `Experience authentic Himalayan hospitality at ${property.name} in ${property.location.state}.`;
-
-  const ogImages = property.images && property.images.length > 0
-    ? property.images.map((img) => ({
-        url: img.url,
-        alt: img.alt || property.name,
-      }))
-    : [
-        {
-          url: '/assets/gaurav-negi-founder.webp',
-          alt: property.name,
-        },
-      ];
-
   return {
-    title,
-    description,
-    openGraph: {
-      title,
-      description,
-      type: 'website',
-      url: `https://uttarkunth.com/properties/${property.slug}`,
-      images: ogImages,
-    },
-    twitter: {
-      card: 'summary_large_image',
-      title,
-      description,
-      images: ogImages.map((img) => img.url),
-    },
-    alternates: {
-      canonical: `https://uttarkunth.com/properties/${property.slug}`,
-    },
+    title: `${property.name} — Mountain Stay in ${property.village || 'Jari'}, ${property.district || 'Kullu'} — ${BRAND.name}`,
+    description: property.description?.slice(0, 160) || `Stay at ${property.name} in Himachal Pradesh. No online payment is currently collected by Uttarkunth. Guests pay their hosts directly at the property.`,
   };
 }
 
-export default async function PropertyDetailPage({
-  params,
-}: {
-  params: { slug: string };
-}) {
-  // First attempt: read from static data / local store
-  let property = await getProperty(params.slug);
+interface PropertyDetailPageProps {
+  params: {
+    slug: string;
+  };
+  searchParams: {
+    checkIn?: string;
+    checkOut?: string;
+    guests?: string;
+  };
+}
 
-  // If not found in static data OR to ensure live availability/pricing from Supabase, query Supabase
-  if (process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-    try {
-      const cookieStore = cookies();
-      const supabase = createServerClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-        {
-          cookies: {
-            get(name: string) {
-              return cookieStore.get(name)?.value;
-            },
-          },
-        }
-      );
+async function getPropertyBySlug(slug: string) {
+  if (slug === 'wonderway-retreat') return null;
 
-      // Clean the incoming slug to prevent query injection and handle aliases
-      const rawSlug = params.slug.trim().toLowerCase();
-      // Handle known aliases (e.g. yash-homestay vs yash-home-stay)
-      const slugQuery = (rawSlug === 'yash-homestay' || rawSlug === 'yash-home-stay')
-        ? 'yash-homestay,yash-home-stay'
-        : rawSlug;
+  try {
+    const supabase = createPublicServerSupabaseClient();
+    const { data: property, error } = await supabase
+      .from('properties')
+      .select('*')
+      .eq('slug', slug)
+      .eq('published', true)
+      .eq('moderation_status', 'approved')
+      .single();
 
-      // Fetch the stay record from Supabase
-      const { data: dbStay, error: stayError } = await supabase
-        .from('stays')
-        .select(`
-          *,
-          stay_images (
-            id,
-            image_url,
-            caption,
-            display_order,
-            is_cover
-          ),
-          rooms (
-            id,
-            name,
-            description,
-            price_per_night,
-            capacity,
-            room_type,
-            available_count
-          )
-        `)
-        .or(slugQuery.includes(',') 
-          ? `slug.in.(${slugQuery})` 
-          : `slug.eq.${slugQuery}`
-        )
-        .eq('is_active', true)
-        .maybeSingle();
-
-      if (!stayError && dbStay) {
-        // Map Supabase stay record into our canonical Property interface
-        const sortedImages = Array.isArray(dbStay.stay_images)
-          ? [...dbStay.stay_images]
-              .sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0))
-              .map((img, idx) => ({
-                id: img.id || `img-${idx}`,
-                url: img.image_url,
-                alt: img.caption || `${dbStay.name} photo ${idx + 1}`,
-                is_cover: img.is_cover || idx === 0,
-              }))
-          : [];
-
-        // If local property has fallback images and DB had none, preserve local images
-        const finalImages = sortedImages.length > 0 ? sortedImages : (property?.images || []);
-
-        const mappedProperty: Property = {
-          id: dbStay.id,
-          name: dbStay.name,
-          slug: dbStay.slug,
-          description: dbStay.description || property?.description || '',
-          short_description: dbStay.short_description || property?.short_description || '',
-          property_type: dbStay.property_type || property?.property_type || 'homestay',
-          rating: dbStay.rating ? Number(dbStay.rating) : (property?.rating || 4.8),
-          review_count: dbStay.reviews_count ? Number(dbStay.reviews_count) : (property?.review_count || 12),
-          starting_price: dbStay.starting_price_per_night ? Number(dbStay.starting_price_per_night) : (property?.starting_price || 1500),
-          location: {
-            village: dbStay.village || property?.location.village || 'Uttarakhand',
-            district: dbStay.district || property?.location.district || 'Garhwal',
-            state: dbStay.state || property?.location.state || 'Uttarakhand',
-            country: 'India',
-            coordinates: dbStay.latitude && dbStay.longitude ? {
-              latitude: Number(dbStay.latitude),
-              longitude: Number(dbStay.longitude),
-            } : property?.location.coordinates,
-            altitude: dbStay.altitude_meters ? Number(dbStay.altitude_meters) : property?.location.altitude,
-            how_to_reach: property?.location.how_to_reach || {
-              by_air: 'Jolly Grant Airport, Dehradun',
-              by_train: 'Rishikesh / Haridwar Railway Station',
-              by_road: 'Well connected via state highway and local village roads',
-            },
-          },
-          host: {
-            name: dbStay.host_name || property?.host.name || 'Local Host',
-            story: dbStay.host_story || property?.host.story || 'A warm and welcoming local family eager to share Himalayan traditions.',
-            languages_spoken: dbStay.host_languages || property?.host.languages_spoken || ['Hindi', 'Garhwali', 'English'],
-            is_superhost: dbStay.is_superhost ?? property?.host.is_superhost ?? true,
-          },
-          amenities: Array.isArray(dbStay.amenities) && dbStay.amenities.length > 0 
-            ? dbStay.amenities 
-            : (property?.amenities || [
-                'Free Wi-Fi',
-                'Home-cooked Himalayan meals',
-                'Mountain view',
-                'Hot water',
-                'Bonfire upon request',
-              ]),
-          experiences: Array.isArray(dbStay.experiences) && dbStay.experiences.length > 0
-            ? dbStay.experiences
-            : (property?.experiences || [
-                {
-                  id: 'exp-1',
-                  title: 'Village Culture Walk & Farm Visit',
-                  description: 'Stroll through organic terraced fields and meet local artisans.',
-                  duration: '2 hours',
-                  price: 0,
-                  included_with_stay: true,
-                },
-                {
-                  id: 'exp-2',
-                  title: 'Himalayan Sunrise Ridge Hike',
-                  description: 'Guided morning trek offering panoramic views of snow-capped peaks.',
-                  duration: '3 hours',
-                  price: 500,
-                  included_with_stay: false,
-                },
-              ]),
-          house_rules: Array.isArray(dbStay.house_rules) && dbStay.house_rules.length > 0
-            ? dbStay.house_rules
-            : (property?.house_rules || [
-                'Check-in: 12:00 PM | Check-out: 11:00 AM',
-                'Respect quiet mountain hours after 10:00 PM',
-                'No smoking indoors',
-                'Zero-waste & plastic-free zone: carry back non-biodegradable waste',
-              ]),
-          rooms: Array.isArray(dbStay.rooms) && dbStay.rooms.length > 0
-            ? dbStay.rooms.map((rm) => ({
-                id: rm.id,
-                name: rm.name,
-                description: rm.description || '',
-                price: Number(rm.price_per_night),
-                capacity: Number(rm.capacity) || 2,
-                room_type: rm.room_type || 'standard',
-                available: Number(rm.available_count) > 0,
-                amenities: ['Attached washroom', 'Mountain view', 'Linen included'],
-                images: finalImages.slice(0, 2),
-              }))
-            : (property?.rooms || [
-                {
-                  id: 'room-std-1',
-                  name: 'Traditional Valley View Room',
-                  description: 'Cozy authentic Himalayan wood-and-stone room overlooking the terraced valleys.',
-                  price: dbStay.starting_price_per_night ? Number(dbStay.starting_price_per_night) : 1500,
-                  capacity: 2,
-                  room_type: 'private_room',
-                  available: true,
-                  amenities: ['Mountain View', 'Hot Water', 'Traditional Architecture', 'Clean Linen'],
-                  images: finalImages.slice(0, 2),
-                },
-              ]),
-          images: finalImages,
-          created_at: dbStay.created_at || new Date().toISOString(),
-          updated_at: dbStay.updated_at || new Date().toISOString(),
-        };
-
-        property = mappedProperty;
-      }
-    } catch (e) {
-      console.warn('Error hydrating stay details from Supabase; using static data fallback:', e);
+    if (error || !property) {
+      const fallback = EXISTING_PROPERTIES.find((p: any) => p.slug === slug && p.slug !== 'wonderway-retreat');
+      return (fallback as any) || null;
     }
-  }
 
-  // If still not resolved via either Supabase or static database
+    const { data: rooms } = await supabase
+      .from('room_units')
+      .select('*')
+      .eq('property_id', property.id)
+      .eq('active', true)
+      .order('sort_order', { ascending: true });
+
+    return {
+      ...property,
+      rooms: rooms || []
+    };
+  } catch {
+    const fallback = EXISTING_PROPERTIES.find((p: any) => p.slug === slug && p.slug !== 'wonderway-retreat');
+    return (fallback as any) || null;
+  }
+}
+
+async function getRelatedStays(currentId: string) {
+  try {
+    const supabase = createPublicServerSupabaseClient();
+    const { data: properties } = await supabase
+      .from('properties')
+      .select('*')
+      .eq('published', true)
+      .eq('moderation_status', 'approved')
+      .neq('id', currentId)
+      .neq('slug', 'wonderway-retreat')
+      .limit(2);
+
+    return (properties || []).filter((p: any) => p.slug !== 'wonderway-retreat');
+  } catch {
+    return [];
+  }
+}
+
+export default async function PropertyDetailPage({ params, searchParams }: PropertyDetailPageProps) {
+  const property = await getPropertyBySlug(params.slug);
+
   if (!property) {
     notFound();
   }
 
+  const relatedStays = await getRelatedStays(property.id);
+
+  const amenitiesList = Array.isArray(property.amenities) ? (property.amenities as unknown as string[]) : [];
+  const rooms: any[] = property.rooms || [];
+  const galleryPhotos: PropertyGalleryPhoto[] = [];
+  const seenGalleryUrls = new Set<string>();
+  const addGalleryPhotos = (urls: string[], category: PropertyGalleryPhoto['category'], label: string) => {
+    urls.forEach((url, index) => {
+      if (!url || seenGalleryUrls.has(url)) return;
+      seenGalleryUrls.add(url);
+      galleryPhotos.push({ url, category, label, alt: `${property.name} — ${label} photo ${index + 1}` });
+    });
+  };
+  addGalleryPhotos(getPropertyPhotoList(property.cover_photo, property.photos), 'property', 'Property');
+  rooms.forEach((room: any) => {
+    addGalleryPhotos(getPropertyPhotoList(null, room.photos), 'room', room.room_name || 'Room');
+    if (room.attached_washroom) addGalleryPhotos(getPropertyPhotoList(null, room.washroom_photos), 'washroom', `${room.room_name || 'Room'} private washroom`);
+  });
+  if (rooms.some((room: any) => !room.attached_washroom)) addGalleryPhotos(getPropertyPhotoList(null, property.shared_washroom_photos), 'washroom', 'Shared washroom');
+
+  let currentUser = null;
+  try {
+    const userClient = createServerSupabaseClient();
+    const { data: { user } } = await userClient.auth.getUser();
+    if (user) {
+      currentUser = {
+        name: user.user_metadata?.full_name || user.user_metadata?.name || '',
+        email: user.email || '',
+        phone: user.user_metadata?.phone || user.phone || '',
+      };
+    }
+  } catch {
+    currentUser = null;
+  }
+
   return (
-    <>
-      <PropertySchema property={property} />
-      <Suspense
-        fallback={
-          <div className="min-h-screen bg-[#FDFBF7] flex items-center justify-center p-8">
-            <div className="flex flex-col items-center space-y-4">
-              <div className="w-12 h-12 border-4 border-[#2C4A3E] border-t-transparent rounded-full animate-spin" />
-              <p className="text-[#2C4A3E] font-medium font-serif">
-                Loading authentic Himalayan stay details...
-              </p>
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+      {/* Back Link */}
+      <div>
+        <Link
+          href="/stays"
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-charcoal-muted hover:text-forest transition-colors"
+        >
+          <ChevronLeft className="w-4 h-4" />
+          <span>Back to All Stays</span>
+        </Link>
+      </div>
+
+      {/* Property Header */}
+      <div className="space-y-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="px-2.5 py-0.5 bg-forest/10 text-forest text-xs font-bold uppercase rounded-full">
+            {property.property_type === 'homestay' ? 'Authentic Homestay' : 'Mountain Retreat'}
+          </span>
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-ukorange/10 text-ukorange text-xs font-semibold rounded-full">
+            <CheckCircle2 className="w-3.5 h-3.5" />
+            Approved Local Host
+          </span>
+        </div>
+
+        <h1 className="font-serif text-3xl sm:text-5xl font-bold text-forest">
+          {property.name}
+        </h1>
+
+        <p className="flex items-center gap-1.5 text-sm text-charcoal-muted">
+          <MapPin className="w-4 h-4 text-ukorange flex-shrink-0" />
+          <span>{`${property.village}, ${property.district}, ${property.state}, India`}</span>
+        </p>
+      </div>
+
+      {/* Single-frame photo carousel with a full gallery view. */}
+      <PropertyPhotoGallery propertyName={property.name} photos={galleryPhotos} />
+
+      {/* Content & Booking Widget Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 pt-4">
+        {/* Main Details Column (2 Cols) */}
+        <div className="lg:col-span-2 space-y-10">
+          {/* Overview */}
+          <div className="space-y-4 pb-8 border-b border-forest/10">
+            <h2 className="font-serif text-2xl font-bold text-forest">About This Stay</h2>
+            <p className="text-sm sm:text-base text-charcoal leading-relaxed whitespace-pre-line font-sans">
+              {property.description}
+            </p>
+          </div>
+
+          {/* Room Units & Accommodations */}
+          <div className="space-y-4 pb-8 border-b border-forest/10">
+            <h2 className="font-serif text-2xl font-bold text-forest">Room Types &amp; Inventory</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {rooms.map((roomItem: any) => {
+                const room = roomItem as any;
+                return (
+                  <div key={room.id} className="p-5 bg-white rounded-2xl border border-forest/15 shadow-sm space-y-3 flex flex-col justify-between">
+                    <RoomPhotoCarousel photos={getPropertyPhotoList(null, room.photos)} alt={room.room_name} />
+                    <div className="space-y-2">
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <h3 className="font-serif text-lg font-bold text-forest">{room.room_name}</h3>
+                          <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                            <span className="text-[11px] text-charcoal-muted flex items-center gap-1">
+                              <Users className="w-3.5 h-3.5 text-ukorange" />
+                              Max {room.max_guests} Guests
+                            </span>
+                            {room.attached_washroom !== undefined && (
+                              <span className={`px-2 py-0.5 text-[10px] font-bold rounded-full ${room.attached_washroom ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-100 text-gray-700'}`}>
+                                {room.attached_washroom ? 'Private attached washroom' : 'Shared washroom'}
+                              </span>
+                            )}
+                            {room.view_type && room.view_type !== 'none' && (
+                              <span className="px-2 py-0.5 text-[10px] font-semibold bg-sky-100 text-sky-800 rounded-full capitalize">
+                                {room.view_type} View
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <span className="font-serif text-xl font-bold text-forest whitespace-nowrap">
+                          ₹{Number(room.base_price)}
+                          <span className="text-xs text-charcoal-muted font-sans font-normal"> / night</span>
+                        </span>
+                      </div>
+                      {room.description && (
+                        <p className="text-xs text-charcoal-muted leading-relaxed">
+                          {room.description}
+                        </p>
+                      )}
+                    </div>
+                    <div className="pt-2 text-[11px] font-medium text-forest flex items-center gap-1 border-t border-forest/5">
+                      <CheckCircle2 className="w-3 h-3 text-ukorange" />
+                      <span>{room.bed_type || 'Double Bed'} • Clean mountain linens included</span>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
-        }
-      >
-        <PropertyDetailClient property={property} />
-      </Suspense>
-    </>
+
+          {/* Interactive Room Availability Calendar */}
+          <RoomAvailabilityCalendar
+            propertyId={property.id}
+            propertyName={property.name}
+            rooms={rooms as any}
+          />
+
+          {/* Amenities */}
+          <div className="space-y-4 pb-8 border-b border-forest/10">
+            <h2 className="font-serif text-2xl font-bold text-forest">Amenities & Stays Features</h2>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              {amenitiesList.map((amenity: any) => (
+                <div key={amenity} className="flex items-center gap-2 p-3 bg-white rounded-xl border border-forest/10 text-xs font-medium text-charcoal">
+                  <CheckCircle2 className="w-4 h-4 text-ukorange flex-shrink-0" />
+                  <span>{amenity}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Host Story & Himalayan Hospitality */}
+          <div className="p-6 bg-ivory-warm rounded-2xl border border-forest/15 space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-full bg-forest text-ivory flex items-center justify-center font-serif text-xl font-bold">
+                U
+              </div>
+              <div>
+                <h3 className="font-serif text-xl font-bold text-forest">Local Himalayan Host</h3>
+                <span className="text-xs text-charcoal-muted">Approved Host Partner of {BRAND.name}</span>
+              </div>
+            </div>
+            <p className="text-xs sm:text-sm text-charcoal leading-relaxed">
+              Our hosts in Jari are native mountain residents who take genuine pride in opening their homes to travelers. You will enjoy peaceful valley views, home-cooked local meals, and direct cultural exchange.
+            </p>
+          </div>
+
+          {/* General Location & Privacy Policy */}
+          <div className="space-y-2 pb-8 border-b border-forest/10">
+            <h2 className="font-serif text-2xl font-bold text-forest flex items-center gap-2">
+              <MapPin className="w-5 h-5 text-ukorange" />
+              <span>Location &amp; Arrival Privacy</span>
+            </h2>
+            <p className="text-sm font-semibold text-charcoal">
+              {[property.village, property.district, property.state].filter(Boolean).join(', ')}
+            </p>
+            <p className="text-xs text-charcoal-muted leading-relaxed">
+              To protect host and guest privacy, the exact property address, local landmarks, and direct Google Maps navigation link are shared exclusively inside your trip itinerary once your booking is confirmed.
+            </p>
+          </div>
+
+          {/* Stay Rules & Cancellation Policy */}
+          <div className="space-y-4 pb-8 border-b border-forest/10 text-xs text-charcoal-muted leading-relaxed">
+            <h2 className="font-serif text-2xl font-bold text-forest text-charcoal">House Rules & Stay Policy</h2>
+            <ul className="space-y-2 list-disc list-inside">
+              <li>Check-in: 12:00 PM onwards • Check-out: strictly before 11:00 AM.</li>
+              <li>Host Approval: Every booking request is personally reviewed by the host before confirmation.</li>
+              <li>Cancellation: Free cancellation for pending requests. For confirmed stays, cancellation is permitted online prior to check-in day.</li>
+              <li>Respectful Tourism: The Himalayas are a sacred, fragile mountain ecosystem. Loud outdoor music is prohibited after 9:30 PM.</li>
+            </ul>
+          </div>
+        </div>
+
+        {/* Sticky Booking Widget Column (1 Col) */}
+        <div>
+          <BookingWidget
+            propertyId={property.id}
+            propertyName={property.name}
+            rooms={rooms}
+            sharedWashroomPhotos={getPropertyPhotoList(null, property.shared_washroom_photos)}
+            initialCheckIn={searchParams.checkIn}
+            initialCheckOut={searchParams.checkOut}
+            initialGuests={searchParams.guests ? parseInt(searchParams.guests, 10) : 2}
+            currentUser={currentUser}
+          />
+        </div>
+      </div>
+
+      {/* Related Real Stays (Directive C) */}
+      {relatedStays.length > 0 && (
+        <div className="pt-12 border-t border-forest/15 space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <span className="text-xs font-bold text-ukorange uppercase tracking-wider">
+                Explore More in Parvati Valley
+              </span>
+              <h2 className="font-serif text-3xl font-bold text-forest mt-1">
+                Other Authentic Himalayan Stays
+              </h2>
+            </div>
+            <Link
+              href="/stays"
+              className="text-xs font-bold text-forest hover:text-ukorange transition-colors"
+            >
+              All Stays →
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {relatedStays.map((rel: any) => {
+              const relPhoto = getPropertyPhotoList(rel.cover_photo, rel.photos)[0] || null;
+              return (
+                <div
+                  key={rel.id}
+                  className="bg-white rounded-3xl border border-forest/15 overflow-hidden shadow-soft hover:shadow-lifted transition-all flex flex-col group"
+                >
+                  <div className="relative aspect-[3/2] bg-forest-dark overflow-hidden">
+                    {relPhoto ? (
+                      <PropertyImage
+                        src={relPhoto}
+                        alt={rel.name}
+                        fill
+                        sizes="(max-width: 768px) 100vw, 50vw"
+                        transformWidth={600}
+                        transformHeight={400}
+                        className="object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                    ) : (
+                      <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-forest-dark text-ivory/70">
+                        <ImageIcon className="w-9 h-9" />
+                        <span className="text-xs">Property photographs coming soon</span>
+                      </div>
+                    )}
+                    <span className="absolute top-3 left-3 bg-forest/90 text-ivory text-xs font-semibold px-2.5 py-0.5 rounded-full">
+                      {rel.property_type || 'Homestay'}
+                    </span>
+                  </div>
+                  <div className="p-6 space-y-3 flex-1 flex flex-col justify-between">
+                    <div>
+                      <div className="text-xs text-ukorange font-semibold">
+                        📍 {rel.village || 'Jari'}, {rel.district || 'Kullu'}
+                      </div>
+                      <h3 className="font-serif text-xl font-bold text-forest mt-1">
+                        {rel.name}
+                      </h3>
+                      <p className="text-xs text-charcoal-muted line-clamp-2 mt-1">
+                        {rel.description}
+                      </p>
+                    </div>
+                    <div className="pt-3 border-t border-forest/10 flex items-center justify-between">
+                      <span className="text-[11px] font-semibold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-full">
+                        Request-Based Booking
+                      </span>
+                      <Link
+                        href={`/stays/${rel.slug}`}
+                        className="text-xs font-bold text-forest hover:text-ukorange"
+                      >
+                        View Stay Details →
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
