@@ -36,6 +36,7 @@ import {
   MicOff,
 } from 'lucide-react';
 import type { Destination } from '@/lib/destinations';
+import { computeMobileSearchScrollTarget } from '@/lib/explore-spotlight';
 import { parseVoiceSearchCommand } from '@/lib/voice-search';
 import {
   unifiedClientSearchHandler,
@@ -175,6 +176,8 @@ export function UnifiedHeroSearchBar({
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const wasOpenOnPointerDownRef = useRef<boolean>(false);
+  const savedMobileScrollYRef = useRef<number | null>(null);
+  const isNavigatingAwayRef = useRef<boolean>(false);
 
   // Independent per-category search & filter state (preserved across carousel transitions)
   const [staysState, setStaysState] = useState<{
@@ -265,9 +268,49 @@ export function UnifiedHeroSearchBar({
     onInteractionChange?.(suggestionsOpen);
   }, [suggestionsOpen, onInteractionChange]);
 
-  // Close dropdowns on outside click (ignoring carousel navigation controls so sliding the carousel keeps the search handler open)
+  // On Mobile (< 640px): when the user taps/opens the search bar, smoothly glide the search bar
+  // up near the top of the viewport (below the sticky header) so the user can clearly see what
+  // they are typing and navigate suggestions above the keyboard. When unclicked/closed without
+  // navigating away, automatically return to its original place.
   useEffect(() => {
-    function handleOutsideClick(e: MouseEvent) {
+    if (typeof window === 'undefined' || window.innerWidth >= 640) return;
+
+    let scrollTimer: ReturnType<typeof setTimeout> | null = null;
+
+    if (suggestionsOpen && activePillar !== 'community') {
+      if (savedMobileScrollYRef.current === null) {
+        savedMobileScrollYRef.current = window.scrollY;
+      }
+      scrollTimer = setTimeout(() => {
+        const el = containerRef.current;
+        if (!el) return;
+        const rect = el.getBoundingClientRect();
+        const targetScrollY = computeMobileSearchScrollTarget(window.scrollY, rect.top, 68);
+        if (Math.abs(targetScrollY - window.scrollY) > 6) {
+          window.scrollTo({ top: targetScrollY, behavior: 'smooth' });
+        }
+      }, 60);
+    } else if (!suggestionsOpen) {
+      if (savedMobileScrollYRef.current !== null && !isNavigatingAwayRef.current) {
+        const restoreY = savedMobileScrollYRef.current;
+        savedMobileScrollYRef.current = null;
+        inputRef.current?.blur();
+        scrollTimer = setTimeout(() => {
+          if (Math.abs(window.scrollY - restoreY) > 4) {
+            window.scrollTo({ top: restoreY, behavior: 'smooth' });
+          }
+        }, 40);
+      }
+    }
+
+    return () => {
+      if (scrollTimer) clearTimeout(scrollTimer);
+    };
+  }, [suggestionsOpen, activePillar]);
+
+  // Close dropdowns on outside click/tap (ignoring carousel navigation controls so sliding the carousel keeps the search handler open)
+  useEffect(() => {
+    function handleOutsidePointer(e: MouseEvent | TouchEvent) {
       const target = e.target as Element | null;
       if (target?.closest?.('[data-carousel-nav="true"]')) {
         return;
@@ -277,8 +320,12 @@ export function UnifiedHeroSearchBar({
         setHighlightedIndex(-1);
       }
     }
-    document.addEventListener('mousedown', handleOutsideClick);
-    return () => document.removeEventListener('mousedown', handleOutsideClick);
+    document.addEventListener('mousedown', handleOutsidePointer);
+    document.addEventListener('touchstart', handleOutsidePointer, { passive: true });
+    return () => {
+      document.removeEventListener('mousedown', handleOutsidePointer);
+      document.removeEventListener('touchstart', handleOutsidePointer);
+    };
   }, []);
 
   // Save a recent search entry for a specific service (deduplicated, most recent first, max 5)
@@ -762,6 +809,7 @@ export function UnifiedHeroSearchBar({
           },
         });
 
+        isNavigatingAwayRef.current = true;
         setSuggestionsOpen(false);
         router.push(targetUrl);
         return;
@@ -824,6 +872,7 @@ export function UnifiedHeroSearchBar({
           filters: { categories },
         });
 
+        isNavigatingAwayRef.current = true;
         setSuggestionsOpen(false);
         router.push(targetUrl);
         return;
@@ -874,6 +923,7 @@ export function UnifiedHeroSearchBar({
           filters: { genres },
         });
 
+        isNavigatingAwayRef.current = true;
         setSuggestionsOpen(false);
         router.push(targetUrl);
       }
@@ -1100,14 +1150,14 @@ export function UnifiedHeroSearchBar({
       <div
         data-testid="hero-search-capsule"
         data-attention-pop={spotlightPhase}
-        className={`relative min-h-[48px] sm:min-h-[56px] rounded-full backdrop-blur-md border px-2 sm:px-2.5 py-1 sm:py-1.5 flex items-center origin-center transition-[transform,filter,background-color,border-color,box-shadow] [transition-timing-function:cubic-bezier(0.22,1,0.36,1)] ${
+        className={`relative min-h-[48px] sm:min-h-[56px] rounded-full backdrop-blur-md border px-2 sm:px-2.5 py-1 sm:py-1.5 flex items-center origin-center touch-manipulation transition-[transform,filter,background-color,border-color,box-shadow] [transition-timing-function:cubic-bezier(0.22,1,0.36,1)] ${
           spotlightPhase === 'peak'
-            ? 'duration-300 scale-[1.045] translate-y-0 bg-[#FFFFFF] brightness-[1.12] border-[#FFFDF9] shadow-[0_0_42px_rgba(255,253,249,0.68),0_0_22px_rgba(253,226,168,0.48),0_14px_34px_-6px_rgba(38,61,50,0.18)]'
+            ? 'duration-300 scale-[1.055] sm:scale-[1.045] translate-y-0 bg-[#FFFFFF] brightness-[1.12] border-[#FFFDF9] shadow-[0_0_42px_rgba(255,253,249,0.68),0_0_22px_rgba(253,226,168,0.48),0_14px_34px_-6px_rgba(38,61,50,0.18)]'
             : spotlightPhase === 'settling'
               ? 'duration-[850ms] scale-100 translate-y-0 bg-[#FFFDF9] brightness-100 border-[#D9CCB8] shadow-[0_10px_28px_-6px_rgba(38,61,50,0.12),0_2px_8px_-2px_rgba(38,61,50,0.05)]'
               : suggestionsOpen
-                ? 'duration-150 scale-100 translate-y-0 bg-[#FFFDF9] brightness-100 border-[#C55B23] ring-4 ring-[#C55B23]/10 shadow-[0_14px_34px_-6px_rgba(38,61,50,0.18)]'
-                : 'duration-150 scale-100 translate-y-0 bg-[#FFFDF9] brightness-100 border-[#D9CCB8] shadow-[0_10px_28px_-6px_rgba(38,61,50,0.12),0_2px_8px_-2px_rgba(38,61,50,0.05)] hover:border-[#263D32]/40'
+                ? 'duration-200 scale-100 -translate-y-1 sm:translate-y-0 bg-[#FFFDF9] brightness-100 border-[#C55B23] ring-4 ring-[#C55B23]/10 shadow-[0_14px_34px_-6px_rgba(38,61,50,0.18)]'
+                : 'duration-200 scale-100 translate-y-0 bg-[#FFFDF9] brightness-100 border-[#D9CCB8] shadow-[0_10px_28px_-6px_rgba(38,61,50,0.12),0_2px_8px_-2px_rgba(38,61,50,0.05)] hover:border-[#263D32]/40'
         }`}
       >
         {/* Soft Light Overlay (Lightens up and slowly fades out in sync with scaling back to exact position) */}
@@ -1126,7 +1176,7 @@ export function UnifiedHeroSearchBar({
             key={activePillar}
             className="w-full flex items-center gap-2 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] animate-in fade-in duration-200"
           >
-            {/* 1. Main Search Input (Click toggles open/close when empty) */}
+            {/* 1. Main Search Input (Click toggles open/close when empty; 16px on mobile prevents browser zoom) */}
             <div className="flex-1 min-w-0 flex items-center gap-2 pl-3.5 sm:pl-4 pr-1">
               <input
                 ref={inputRef}
@@ -1134,7 +1184,7 @@ export function UnifiedHeroSearchBar({
                 type="text"
                 role="combobox"
                 value={currentQuery}
-                onMouseDown={() => {
+                onPointerDown={() => {
                   wasOpenOnPointerDownRef.current = suggestionsOpen;
                 }}
                 onFocus={() => {
@@ -1159,7 +1209,7 @@ export function UnifiedHeroSearchBar({
                 aria-autocomplete="list"
                 aria-expanded={suggestionsOpen}
                 aria-controls="adaptive-hero-search-suggestions"
-                className="w-full bg-transparent text-[13.5px] sm:text-sm font-medium text-[#29251F] placeholder:text-[#29251F]/55 focus:outline-none truncate cursor-pointer focus:cursor-text"
+                className="w-full bg-transparent text-[16px] sm:text-sm leading-tight font-medium text-[#29251F] placeholder:text-[#29251F]/55 placeholder:text-[13.5px] sm:placeholder:text-sm focus:outline-none truncate cursor-pointer focus:cursor-text touch-manipulation"
               />
 
               {activeFilterCount > 0 && (
@@ -1289,10 +1339,10 @@ export function UnifiedHeroSearchBar({
             className="h-[2px] w-full bg-gradient-to-r from-transparent via-[#C55B23]/45 to-transparent"
           />
 
-          <div className="max-h-[390px] overflow-y-auto overscroll-auto no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden divide-y divide-[#E6DEC8]/65">
+          <div className="max-h-[54vh] sm:max-h-[390px] overflow-y-auto overscroll-auto no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden divide-y divide-[#E6DEC8]/65">
             {/* 1. CONCISE ICON FILTER ROW ("Property Type" / "Category" / "Genre") */}
             <div className="px-3.5 py-3 sm:px-4 sm:py-3.5 bg-gradient-to-b from-[#F8F3EA] to-[#FAF7F2] space-y-2">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-2">
                 <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-[#263D32]/85">
                   {activeSearchService === 'stays'
                     ? 'Property Type'
@@ -1300,15 +1350,29 @@ export function UnifiedHeroSearchBar({
                       ? 'Category'
                       : 'Genre'}
                 </span>
-                {activeFilterCount > 0 && (
+                <div className="flex items-center gap-2.5">
+                  {activeFilterCount > 0 && (
+                    <button
+                      type="button"
+                      onClick={clearActiveFilters}
+                      className="text-[11px] font-semibold text-[#C55B23] hover:text-[#263D32] transition-colors cursor-pointer"
+                    >
+                      Clear ({activeFilterCount})
+                    </button>
+                  )}
                   <button
                     type="button"
-                    onClick={clearActiveFilters}
-                    className="text-[11px] font-semibold text-[#C55B23] hover:text-[#263D32] transition-colors cursor-pointer"
+                    data-testid="close-mobile-search-suggestions"
+                    onClick={() => {
+                      setSuggestionsOpen(false);
+                      setHighlightedIndex(-1);
+                    }}
+                    className="sm:hidden px-2 py-0.5 rounded-full bg-[#EAE2D3]/85 text-[#1F332A] text-[10.5px] font-semibold inline-flex items-center gap-1 cursor-pointer"
                   >
-                    Clear ({activeFilterCount})
+                    <span>Done</span>
+                    <X className="w-3 h-3" />
                   </button>
-                )}
+                </div>
               </div>
 
               {/* Stays: Property Type Icon Pills */}

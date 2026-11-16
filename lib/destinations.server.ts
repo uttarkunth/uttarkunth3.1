@@ -45,7 +45,7 @@ export async function getActiveDestinations(): Promise<Destination[]> {
       return CURATED_DESTINATIONS;
     }
 
-    return data.map((d: any) => ({
+    const dbMapped: Destination[] = data.map((d: any) => ({
       id: d.id,
       slug: d.slug,
       name: d.name,
@@ -55,6 +55,10 @@ export async function getActiveDestinations(): Promise<Destination[]> {
       matchTerms: d.match_terms || [],
       featured: d.featured || false,
     }));
+
+    const existingSlugs = new Set(dbMapped.map((d) => d.slug));
+    const missingCurated = CURATED_DESTINATIONS.filter((d) => !existingSlugs.has(d.slug));
+    return [...dbMapped, ...missingCurated];
   } catch {
     return CURATED_DESTINATIONS;
   }
@@ -69,11 +73,14 @@ export async function getDestinationBySlug(slug: string): Promise<Destination | 
   const direct = all.find((d) => d.slug === normalized);
   if (direct) return direct;
 
+  const curatedDirect = CURATED_DESTINATIONS.find((d) => d.slug === normalized);
+  if (curatedDirect) return curatedDirect;
+
   // Handle common aliases
   if (normalized === 'kasol-and-parvati-valley' || normalized === 'parvati-valley') {
     return all.find((d) => d.slug === 'kasol') || null;
   }
-  if (normalized === 'kullu' || normalized === 'jari') {
+  if (normalized === 'jari') {
     return all.find((d) => d.slug === 'kullu-jari') || null;
   }
   if (normalized === 'jibhi-and-tirthan-valley' || normalized === 'tirthan') {

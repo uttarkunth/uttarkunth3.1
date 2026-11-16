@@ -6,7 +6,6 @@ import Image from 'next/image';
 import {
   ArrowRight,
   ArrowUpRight,
-  CheckCircle2,
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react';
@@ -136,6 +135,7 @@ export function FourPillarsShowcase({
   const [isBarInteracting, setIsBarInteracting] = useState<boolean>(false);
   const [spotlightPhase, setSpotlightPhase] = useState<SpotlightPhase>('idle');
   const hasShownInSessionRef = useRef<boolean>(false);
+  const hasTriggeredMobileMountRef = useRef<boolean>(false);
   const totalCards = PILLARS_DATA.length;
   const activePillar = PILLARS_DATA[currentIndex]?.id ?? 'stays';
 
@@ -149,8 +149,8 @@ export function FourPillarsShowcase({
   // On PC/Tablet: on the first tap of "Explore Uttarkunth" in a new session, both the active carousel card
   // and the search bar smoothly scale up & lighten ('peak'), then slowly fade out the light in sync
   // with scaling back to their exact original position ('settling' -> 'idle').
-  // On Mobile (< 640px): since the "Explore Uttarkunth" CTA is hidden on mobile, the spotlight transition
-  // automatically starts on first page load (as soon as the intro splash reveals the homepage).
+  // On Mobile (< 640px): after the intro splash finishes and the homepage opens, the search bar
+  // and active pillar card automatically perform their scale-up & glow transition.
   useEffect(() => {
     let rafId: number | null = null;
     let autoStartTimer: ReturnType<typeof setTimeout> | null = null;
@@ -187,39 +187,45 @@ export function FourPillarsShowcase({
       }, EXPLORE_SPOTLIGHT_PEAK_MS);
     };
 
-    // Automatic first-load spotlight transition on mobile view (< 640px)
+    const triggerMobileAutoSpotlight = () => {
+      if (typeof window === 'undefined' || window.innerWidth >= 640) return;
+      if (hasTriggeredMobileMountRef.current) return;
+      hasTriggeredMobileMountRef.current = true;
+      consumeExploreSpotlightSession(
+        typeof window !== 'undefined' ? window.sessionStorage : null,
+        hasShownInSessionRef
+      );
+      runCardAndBarTransition();
+    };
+
+    const handleSplashCompletedEvent = () => {
+      if (typeof window === 'undefined' || window.innerWidth >= 640) return;
+      if (hasTriggeredMobileMountRef.current) return;
+      if (autoStartTimer) clearTimeout(autoStartTimer);
+      autoStartTimer = setTimeout(triggerMobileAutoSpotlight, 160);
+    };
+
+    // Automatic spotlight transition on mobile view (< 640px) once the splash ends and homepage is open
     const scheduleMobileAutoSpotlight = () => {
       if (typeof window === 'undefined' || window.innerWidth >= 640) return;
-
-      const triggerMobileAutoSpotlight = () => {
-        if (window.innerWidth >= 640) return;
-        const shouldRun = consumeExploreSpotlightSession(
-          typeof window !== 'undefined' ? window.sessionStorage : null,
-          hasShownInSessionRef
-        );
-        if (shouldRun) {
-          runCardAndBarTransition();
-        }
-      };
+      if (hasTriggeredMobileMountRef.current) return;
 
       const currentGate = document.documentElement.getAttribute('data-uk-intro-gate');
-      const splashActive =
-        currentGate === 'active' ||
-        (!currentGate && Boolean(document.querySelector('[data-uk-intro-root]')));
+      const splashFinished =
+        currentGate === 'completed' ||
+        (!currentGate && !document.querySelector('[data-uk-intro-root]'));
 
-      if (!splashActive) {
-        const delayMs = currentGate === 'revealing' ? 300 : 200;
+      if (splashFinished) {
         if (autoStartTimer) clearTimeout(autoStartTimer);
-        autoStartTimer = setTimeout(triggerMobileAutoSpotlight, delayMs);
+        autoStartTimer = setTimeout(triggerMobileAutoSpotlight, 180);
       } else if (typeof MutationObserver !== 'undefined' && !gateObserver) {
         gateObserver = new MutationObserver(() => {
           const updatedGate = document.documentElement.getAttribute('data-uk-intro-gate');
-          if (updatedGate === 'revealing' || updatedGate === 'completed') {
+          if (updatedGate === 'completed') {
             gateObserver?.disconnect();
             gateObserver = null;
-            const delayMs = updatedGate === 'revealing' ? 320 : 120;
             if (autoStartTimer) clearTimeout(autoStartTimer);
-            autoStartTimer = setTimeout(triggerMobileAutoSpotlight, delayMs);
+            autoStartTimer = setTimeout(triggerMobileAutoSpotlight, 160);
           }
         });
         gateObserver.observe(document.documentElement, {
@@ -229,6 +235,7 @@ export function FourPillarsShowcase({
       }
     };
 
+    window.addEventListener('uk:splash-completed', handleSplashCompletedEvent);
     scheduleMobileAutoSpotlight();
     const mql =
       typeof window !== 'undefined' && typeof window.matchMedia === 'function'
@@ -300,6 +307,7 @@ export function FourPillarsShowcase({
     document.addEventListener('click', handleDocumentClick);
     return () => {
       document.removeEventListener('click', handleDocumentClick);
+      window.removeEventListener('uk:splash-completed', handleSplashCompletedEvent);
       mql?.removeEventListener?.('change', handleMediaChange);
       gateObserver?.disconnect();
       cleanupTimers();
@@ -452,7 +460,6 @@ export function FourPillarsShowcase({
 
         {/* 3D Transform Track (perspective: 1000px) */}
         <div
-          data-carousel-nav="true"
           className="relative w-full h-full flex items-center justify-center [perspective:1000px]"
         >
           {/* Decorative Pillar Feather Icon Bloom Layer (z-[16]: behind active card z-20, above side cards z-10) */}
@@ -469,12 +476,12 @@ export function FourPillarsShowcase({
             const positionTransformClass =
               state === 'active'
                 ? isCardPeak
-                  ? 'z-20 opacity-100 blur-0 brightness-[1.16] [transform:translate3d(0,0,0)_scale(1.045)]'
+                  ? 'z-20 opacity-100 blur-0 brightness-[1.18] [transform:translate3d(0,0,0)_scale(1.06)] sm:[transform:translate3d(0,0,0)_scale(1.045)]'
                   : 'z-20 opacity-100 blur-0 brightness-100 [transform:translate3d(0,0,0)_scale(1)]'
                 : state === 'prev'
-                  ? 'z-10 opacity-35 blur-[3px] sm:blur-[4px] [transform:translate3d(-144px,0,-110px)_scale(0.82)] sm:[transform:translate3d(-336px,0,-120px)_scale(0.82)] cursor-pointer'
+                  ? 'z-10 opacity-65 sm:opacity-70 blur-[1px] sm:blur-[1.5px] [transform:translate3d(-144px,0,-110px)_scale(0.82)] sm:[transform:translate3d(-336px,0,-120px)_scale(0.82)] cursor-pointer'
                   : state === 'next'
-                    ? 'z-10 opacity-35 blur-[3px] sm:blur-[4px] [transform:translate3d(144px,0,-110px)_scale(0.82)] sm:[transform:translate3d(336px,0,-120px)_scale(0.82)] cursor-pointer'
+                    ? 'z-10 opacity-65 sm:opacity-70 blur-[1px] sm:blur-[1.5px] [transform:translate3d(144px,0,-110px)_scale(0.82)] sm:[transform:translate3d(336px,0,-120px)_scale(0.82)] cursor-pointer'
                     : 'z-0 opacity-0 blur-[6px] pointer-events-none [transform:translate3d(0,0,-220px)_scale(0.7)]';
 
             return (
@@ -484,6 +491,7 @@ export function FourPillarsShowcase({
                   if (isSide) updateCarousel(idx);
                 }}
                 aria-hidden={!isActive}
+                data-carousel-nav={isSide ? 'true' : undefined}
                 data-testid={isActive ? 'active-pillar-carousel-card' : undefined}
                 data-spotlight={isActive ? spotlightPhase : 'idle'}
                 className={cn(
@@ -495,7 +503,7 @@ export function FourPillarsShowcase({
                       ? 'duration-[900ms] [transition-timing-function:cubic-bezier(0.22,1,0.36,1)] border border-[#F5F0E6]/35 shadow-[0_22px_46px_-8px_rgba(16,26,21,0.58)]'
                       : isActive
                         ? 'duration-[820ms] [transition-timing-function:cubic-bezier(0.22,1,0.36,1)] border border-[#F5F0E6]/35 shadow-[0_22px_46px_-8px_rgba(16,26,21,0.58)]'
-                        : 'duration-[820ms] [transition-timing-function:cubic-bezier(0.22,1,0.36,1)] border border-[#D9CCB8]/25 shadow-[0_14px_30px_-6px_rgba(16,26,21,0.42)]',
+                        : 'duration-[820ms] [transition-timing-function:cubic-bezier(0.22,1,0.36,1)] border border-[#D9CCB8]/40 shadow-[0_14px_30px_-6px_rgba(16,26,21,0.42)]',
                   positionTransformClass
                 )}
               >
@@ -530,36 +538,27 @@ export function FourPillarsShowcase({
                 {/* Portrait Card Interior Content — Clean, Simple & Aesthetic */}
                 <div className="relative z-20 h-full w-full p-3 sm:p-5 flex flex-col justify-between text-center">
                   {/* Center Editorial Word & Subtitle */}
-                  <div className="my-auto space-y-0.5 sm:space-y-1.5 py-0.5">
-                    <span className="text-[11.5px] sm:text-xs font-serif italic text-terracotta-light tracking-wide block">
-                      {pillar.subtitle}
-                    </span>
+                  <div className="my-auto space-y-1 sm:space-y-1.5 py-1 px-1.5 rounded-xl bg-[#1A2B23]/25 backdrop-blur-[1px]">
                     <h3
                       className={cn(
-                        'font-serif font-bold uppercase tracking-[0.12em] sm:tracking-[0.14em] text-[#FFFDF9] drop-shadow-[0_4px_12px_rgba(0,0,0,0.55)] transition-all duration-700 ease-out',
-                        isActive ? 'text-[22px] sm:text-3xl blur-0' : 'text-lg sm:text-xl blur-[1px]'
+                        'font-serif font-bold uppercase tracking-[0.12em] sm:tracking-[0.14em] text-[#FFFDF9] drop-shadow-[0_4px_14px_rgba(0,0,0,0.8)] transition-all duration-700 ease-out',
+                        isActive ? 'text-[22px] sm:text-3xl blur-0' : 'text-[19px] sm:text-2xl blur-0'
                       )}
                     >
                       {pillar.word}
                     </h3>
+                    <span className="text-[12px] sm:text-[13px] font-serif italic font-medium text-[#FDE2A8] tracking-wide block drop-shadow-[0_2px_8px_rgba(0,0,0,0.85)]">
+                      {pillar.subtitle}
+                    </span>
                   </div>
 
-                  {/* Bottom Authentic Description & Concise Balanced Action Buttons */}
+                  {/* Bottom Concise Balanced Action Buttons */}
                   <div
                     className={cn(
                       'space-y-1.5 sm:space-y-2.5 transition-opacity duration-700 ease-out',
                       isActive ? 'opacity-100' : 'opacity-0 pointer-events-none'
                     )}
                   >
-                    <p className="text-[11.5px] sm:text-xs text-[#F5F0E6]/95 leading-snug sm:leading-relaxed line-clamp-2 px-0.5">
-                      {pillar.description}
-                    </p>
-
-                    <div className="inline-flex items-center gap-1 sm:gap-1.5 px-2.5 py-0.5 sm:py-1 rounded-full bg-[#1A2B23]/85 border border-[#F5F0E6]/20 text-[10.5px] sm:text-[11px] font-medium text-[#F5F0E6]">
-                      <CheckCircle2 className="w-3 h-3 text-terracotta-light shrink-0" />
-                      <span>{pillar.highlight}</span>
-                    </div>
-
                     <div className="pt-1 sm:pt-2 flex items-center justify-center gap-2">
                       <Link
                         href={pillar.href}

@@ -3,6 +3,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { PropertyImage } from '@/components/property-image';
+import { PropertyQuickViewButton } from '@/components/stays/property-quick-view-modal';
 import { getPropertyPhotoList } from '@/lib/property-images';
 import { groupPropertiesByLocation, type StayLocationGroup } from '@/lib/stays-grouping';
 import { formatINR } from '@/lib/utils';
@@ -37,41 +38,47 @@ function StayRowCard({ property }: { property: any }) {
   }, [property.id, property.slug]);
 
   return (
-    <Link
-      href={`/stays/${property.slug}`}
-      className="group w-[calc(50%-7px)] min-w-[154px] max-w-[200px] sm:w-[224px] sm:max-w-none md:w-[236px] lg:w-[246px] shrink-0 snap-start flex flex-col cursor-pointer text-inherit no-underline select-none"
+    <article
+      data-testid={`featured-stay-card-${property.slug}`}
+      className="group w-[calc(50%-7px)] min-w-[154px] max-w-[200px] sm:w-[224px] sm:max-w-none md:w-[236px] lg:w-[246px] shrink-0 snap-start flex flex-col text-inherit select-none"
     >
       {/* Square-ish Rounded Image Frame matching Reference UI */}
       <div
         className="relative aspect-[20/19] w-full rounded-[20px] overflow-hidden bg-[#1F332A] shadow-[0_6px_18px_rgba(24,36,29,0.09)] group-hover:shadow-[0_12px_26px_rgba(24,36,29,0.15)] transition-all duration-300"
         onMouseLeave={() => setPhotoIndex(0)}
       >
-        {photos.length > 0 ? (
-          <PropertyImage
-            src={photos[photoIndex] || photos[0]}
-            alt={`${property.name} in ${locality}`}
-            fill
-            sizes="(max-width: 640px) 48vw, (max-width: 1024px) 240px, 260px"
-            transformWidth={520}
-            transformHeight={494}
-            className="object-cover transition-transform duration-500 ease-out group-hover:scale-[1.04]"
-          />
-        ) : (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 bg-[#1F332A] text-[#FAF6EE]/70">
-            <ImageIcon className="w-7 h-7" />
-            <span className="text-[11px] font-medium">Photos coming soon</span>
-          </div>
-        )}
+        <Link
+          href={`/stays/${property.slug}`}
+          aria-label={`View ${property.name} in ${locality}`}
+          className="relative block w-full h-full"
+        >
+          {photos.length > 0 ? (
+            <PropertyImage
+              src={photos[photoIndex] || photos[0]}
+              alt={`${property.name} in ${locality}`}
+              fill
+              sizes="(max-width: 640px) 48vw, (max-width: 1024px) 240px, 260px"
+              transformWidth={520}
+              transformHeight={494}
+              className="object-cover transition-transform duration-500 ease-out group-hover:scale-[1.04]"
+            />
+          ) : (
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 bg-[#1F332A] text-[#FAF6EE]/70">
+              <ImageIcon className="w-7 h-7" />
+              <span className="text-[11px] font-medium">Photos coming soon</span>
+            </div>
+          )}
 
-        {/* Subtle Top Scrim for Badge & Heart Contrast */}
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-x-0 top-0 h-14 bg-gradient-to-b from-black/25 to-transparent"
-        />
+          {/* Subtle Top Scrim for Badge & Heart Contrast */}
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-x-0 top-0 h-14 bg-gradient-to-b from-black/25 to-transparent"
+          />
+        </Link>
 
         {/* Desktop Hover Photo Scrubber Zones */}
         {photos.length > 1 && (
-          <div className="hidden sm:flex absolute inset-0 z-10">
+          <div className="hidden sm:flex absolute inset-0 z-10 pointer-events-none">
             {photos.map((_, idx) => (
               <div
                 key={idx}
@@ -117,12 +124,19 @@ function StayRowCard({ property }: { property: any }) {
             }`}
           />
         </button>
+
+        {/* Bottom-Right Quick View Pill Trigger */}
+        <div className="absolute bottom-2.5 right-2.5 z-30">
+          <PropertyQuickViewButton property={property} variant="overlay" />
+        </div>
       </div>
 
       {/* Compact 2-Line Metadata Below Image (Matching Reference UI/UX) */}
       <div className="pt-2.5 px-0.5 space-y-0.5">
         <h3 className="font-sans text-[14.5px] sm:text-[15px] font-semibold text-[#1F332A] group-hover:text-[#C55B23] transition-colors leading-snug line-clamp-1">
-          {property.name} in {locality}
+          <Link href={`/stays/${property.slug}`} className="no-underline text-inherit">
+            {property.name} in {locality}
+          </Link>
         </h3>
         <p className="text-[12px] sm:text-[13px] text-[#5C5549] font-normal flex items-center gap-1 tabular-nums whitespace-nowrap">
           <span className="whitespace-nowrap">{formatINR(twoNightPrice)} for 2 nights</span>
@@ -133,7 +147,7 @@ function StayRowCard({ property }: { property: any }) {
           </span>
         </p>
       </div>
-    </Link>
+    </article>
   );
 }
 
@@ -285,13 +299,14 @@ export function FeaturedStaysRows({ properties }: { properties: any[] }) {
 
   return (
     <div className="space-y-6 sm:space-y-8">
-      {/* Section Heading: Featured Stays (before Stays in Parvati Valley, Kullu) */}
-      <div className="flex items-end justify-between gap-4 border-b border-[#D9CCB8]/80 pb-3 sm:pb-4">
-        <div className="space-y-1">
-          <span className="text-[11px] sm:text-xs font-bold uppercase tracking-[0.16em] text-[#C55B23] block">
+      {/* Section Heading: Highlighted Pillar Heading "Himalayan Hospitality" + Featured Stays */}
+      <div className="flex items-end justify-between gap-4 border-b border-[#D9CCB8]/80 pb-3.5 sm:pb-4">
+        <div className="space-y-2">
+          <span className="inline-flex items-center gap-2 px-3.5 sm:px-4 py-1 sm:py-1.5 rounded-xl bg-gradient-to-r from-[#1F332A] via-[#263D32] to-[#2C4639] text-[#FAF4E8] border-l-4 border-[#C55B23] shadow-[0_6px_18px_rgba(31,51,42,0.14)] font-serif text-[17px] sm:text-xl md:text-2xl font-bold tracking-wide">
+            <span className="w-2 h-2 rounded-full bg-[#FDE2A8] ring-2 ring-[#C55B23]/60 shrink-0" />
             Himalayan Hospitality
           </span>
-          <h2 className="font-serif text-3xl sm:text-4xl lg:text-[42px] font-bold text-[#1F332A] tracking-tight leading-tight">
+          <h2 className="font-serif text-[22px] sm:text-3xl md:text-4xl lg:text-[42px] font-bold text-[#1F332A] tracking-tight leading-[1.15] sm:leading-tight block">
             Featured Stays
           </h2>
         </div>

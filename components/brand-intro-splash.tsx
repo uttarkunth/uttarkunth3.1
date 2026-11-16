@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 
 interface BrandIntroSplashProps {
@@ -13,43 +13,63 @@ export function BrandIntroSplash({ forceShow = false }: BrandIntroSplashProps) {
   const [visible, setVisible] = useState(true);
   const [closing, setClosing] = useState(false);
   const [progress, setProgress] = useState(0);
+  const rafRef = useRef<number | null>(null);
+  const closeTimerRef = useRef<number | null>(null);
+  const hasFinishedRef = useRef<boolean>(false);
+
+  const finishSplash = useCallback(() => {
+    if (hasFinishedRef.current) return;
+    hasFinishedRef.current = true;
+
+    if (rafRef.current !== null) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    }
+
+    setClosing(true);
+    document.documentElement.setAttribute('data-uk-intro-gate', 'revealing');
+    try {
+      sessionStorage.setItem('uk_splash_seen', '1');
+    } catch {
+      // Ignore storage errors
+    }
+
+    if (closeTimerRef.current !== null) {
+      clearTimeout(closeTimerRef.current);
+    }
+    closeTimerRef.current = window.setTimeout(() => {
+      document.documentElement.setAttribute('data-uk-intro-gate', 'completed');
+      setVisible(false);
+      window.dispatchEvent(new CustomEvent('uk:splash-completed'));
+    }, 950);
+  }, []);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const skipForAutostart = params.get('autostart') === '1';
     const alreadySeen =
-      typeof window !== 'undefined' && sessionStorage.getItem('uk_splash_seen');
+      typeof window !== 'undefined' && sessionStorage.getItem('uk_splash_seen') === '1';
     const prefersReducedMotion =
       typeof window !== 'undefined' &&
       window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     if (!forceShow && (alreadySeen || prefersReducedMotion || skipForAutostart)) {
+      hasFinishedRef.current = true;
       document.documentElement.setAttribute('data-uk-intro-gate', 'completed');
       setVisible(false);
+      window.dispatchEvent(new CustomEvent('uk:splash-completed'));
       return;
     }
 
+    hasFinishedRef.current = false;
     document.documentElement.setAttribute('data-uk-intro-gate', 'active');
     setVisible(true);
 
     const startTime = performance.now();
     const duration = 2200; // 2.2s elegant loading
-    let animationFrameId: number;
-    let closeTimeoutId: number | undefined;
-
-    const finish = () => {
-      setClosing(true);
-      document.documentElement.setAttribute('data-uk-intro-gate', 'revealing');
-      try {
-        sessionStorage.setItem('uk_splash_seen', '1');
-      } catch (e) {}
-      closeTimeoutId = window.setTimeout(() => {
-        document.documentElement.setAttribute('data-uk-intro-gate', 'completed');
-        setVisible(false);
-      }, 950);
-    };
 
     const tick = (now: number) => {
+      if (hasFinishedRef.current) return;
       const elapsed = now - startTime;
       const rawProgress = Math.min(1, elapsed / duration);
       // Ease out cubic
@@ -58,27 +78,31 @@ export function BrandIntroSplash({ forceShow = false }: BrandIntroSplashProps) {
       setProgress(currentPct);
 
       if (rawProgress < 1) {
-        animationFrameId = requestAnimationFrame(tick);
+        rafRef.current = requestAnimationFrame(tick);
       } else {
-        finish();
+        finishSplash();
       }
     };
 
-    animationFrameId = requestAnimationFrame(tick);
+    rafRef.current = requestAnimationFrame(tick);
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') finish();
+      if (e.key === 'Escape') finishSplash();
     };
     window.addEventListener('keydown', handleKeyDown);
 
     return () => {
-      cancelAnimationFrame(animationFrameId);
-      if (closeTimeoutId !== undefined) {
-        clearTimeout(closeTimeoutId);
+      if (rafRef.current !== null) {
+        cancelAnimationFrame(rafRef.current);
+        rafRef.current = null;
+      }
+      if (closeTimerRef.current !== null) {
+        clearTimeout(closeTimerRef.current);
+        closeTimerRef.current = null;
       }
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [forceShow]);
+  }, [forceShow, finishSplash]);
 
   if (!visible) return null;
 
@@ -147,17 +171,8 @@ export function BrandIntroSplash({ forceShow = false }: BrandIntroSplashProps) {
 
         {/* Skip Button */}
         <button
-          onClick={() => {
-            setClosing(true);
-            document.documentElement.setAttribute('data-uk-intro-gate', 'revealing');
-            try {
-              sessionStorage.setItem('uk_splash_seen', '1');
-            } catch (e) {}
-            setTimeout(() => {
-              document.documentElement.setAttribute('data-uk-intro-gate', 'completed');
-              setVisible(false);
-            }, 950);
-          }}
+          type="button"
+          onClick={finishSplash}
           className="absolute bottom-8 right-8 text-xs uppercase tracking-widest text-ivory/60 hover:text-ivory transition-colors px-4 py-2 rounded-full border border-ivory/20 hover:border-ivory/50"
         >
           Skip

@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { PRODUCT_CATEGORIES } from '@/lib/constants';
+import { INITIAL_CURATED_PRODUCTS } from '@/lib/home-pillars';
 import { ProductWaitlistModal } from '@/components/product-waitlist-modal';
 import {
   Package,
@@ -29,7 +30,10 @@ export function ProductsBrowser({
   const [selectedCategory, setSelectedCategory] = useState<string>(initialCategory || 'all');
   const [searchQuery, setSearchQuery] = useState<string>(initialQuery || '');
 
-  const filteredProducts = products.filter((p) => {
+  const sourceProducts =
+    Array.isArray(products) && products.length > 0 ? products : INITIAL_CURATED_PRODUCTS;
+
+  const filteredProducts = sourceProducts.filter((p) => {
     const matchesCategory = selectedCategory === 'all' || p.category === selectedCategory;
     const matchesSearch =
       searchQuery.trim() === '' ||
@@ -127,33 +131,39 @@ export function ProductsBrowser({
                   <span className="text-[11px] font-bold uppercase tracking-wider text-ukorange block">
                     {p.category}
                   </span>
-                  <h3 className="font-serif text-lg font-bold text-forest group-hover:text-ukorange transition-colors">
+                  <h3 className="font-serif text-xl font-bold text-forest group-hover:text-ukorange transition-colors">
                     {p.title}
                   </h3>
-                  <p className="text-xs text-charcoal-muted line-clamp-2 leading-relaxed">
-                    {p.description}
-                  </p>
-                  <p className="text-xs text-charcoal-muted flex items-center gap-1 pt-1">
-                    <MapPin className="w-3.5 h-3.5 text-ukorange" />
+                  <div className="pt-0.5">
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-forest/8 border border-forest/15 text-xs sm:text-[13px] font-bold text-forest">
+                      <Store className="w-3.5 h-3.5 text-ukorange shrink-0" />
+                      <span>Brand: {p.maker_name}</span>
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-charcoal-muted flex items-center gap-1 pt-0.5">
+                    <MapPin className="w-3 h-3 text-ukorange shrink-0" />
                     <span>{p.origin_valley}, {p.origin_state}</span>
+                  </p>
+                  <p className="text-xs text-charcoal-muted line-clamp-2 leading-relaxed pt-0.5">
+                    {p.description}
                   </p>
                 </div>
               </div>
 
-              <div className="px-5 pb-5 pt-2 border-t border-forest/10 flex items-center justify-between">
+              <div className="px-5 pb-5 pt-3 border-t border-forest/10 flex items-center justify-between">
                 <div>
-                  <span className="text-[10px] text-charcoal-muted block">Maker</span>
-                  <span className="text-xs font-semibold text-charcoal">{p.maker_name}</span>
-                </div>
-                <div className="text-right">
                   {p.price_estimate ? (
-                    <span className="font-serif text-base font-bold text-forest">
+                    <span className="font-serif text-xl font-bold text-forest">
                       ₹{Number(p.price_estimate).toLocaleString('en-IN')}
                     </span>
                   ) : (
                     <span className="text-xs font-semibold text-ukorange">Waitlist</span>
                   )}
                 </div>
+                <span className="inline-flex items-center gap-1 text-xs font-bold text-forest group-hover:text-ukorange transition-colors">
+                  <span>View Details</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </span>
               </div>
             </Link>
           ))}

@@ -1,6 +1,6 @@
 export const EXPLORE_SPOTLIGHT_SESSION_KEY = 'uttarkunth_explore_spotlight_shown_v1';
-export const EXPLORE_SPOTLIGHT_PEAK_MS = 320;
-export const EXPLORE_SPOTLIGHT_FADEOUT_MS = 850;
+export const EXPLORE_SPOTLIGHT_PEAK_MS = 520;
+export const EXPLORE_SPOTLIGHT_FADEOUT_MS = 900;
 export const EXPLORE_SPOTLIGHT_DURATION_MS =
   EXPLORE_SPOTLIGHT_PEAK_MS + EXPLORE_SPOTLIGHT_FADEOUT_MS;
 
@@ -51,4 +51,23 @@ export function consumeExploreSpotlightSession(
     }
   }
   return true;
+}
+
+/**
+ * Computes the target window.scrollY on mobile when the user taps the hero search bar,
+ * elevating the search bar near the top of the viewport (below the sticky header) so
+ * the user can clearly see what they are typing and navigate suggestions above the keyboard.
+ */
+export function computeMobileSearchScrollTarget(
+  currentScrollY: number,
+  barViewportTop: number,
+  desiredTopOffset = 68
+): number {
+  const safeScrollY = Number.isFinite(currentScrollY) ? Math.max(0, currentScrollY) : 0;
+  const safeTop = Number.isFinite(barViewportTop) ? barViewportTop : desiredTopOffset;
+  const delta = safeTop - desiredTopOffset;
+  if (Math.abs(delta) <= 6) {
+    return safeScrollY;
+  }
+  return Math.max(0, Math.round(safeScrollY + delta));
 }

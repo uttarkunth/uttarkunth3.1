@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { PropertyImage } from '@/components/property-image';
+import { PropertyQuickViewButton } from '@/components/stays/property-quick-view-modal';
 import { getPropertyPhotoList } from '@/lib/property-images';
 import { formatINR } from '@/lib/utils';
 import {
@@ -167,7 +168,7 @@ export function AestheticPropertyCard({ property }: { property: AestheticPropert
         )}
 
         {/* Price & Action Row */}
-        <div className="pt-3 border-t border-forest/10 flex items-center justify-between">
+        <div className="pt-3 border-t border-forest/10 flex flex-wrap items-center justify-between gap-2">
           <div>
             <span className="font-serif text-2xl font-bold text-forest">
               {formatINR(lowestPrice)}
@@ -175,13 +176,16 @@ export function AestheticPropertyCard({ property }: { property: AestheticPropert
             <span className="text-xs text-charcoal-muted font-normal"> / night</span>
           </div>
 
-          <Link
-            href={`/properties/${property.slug}`}
-            className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-forest hover:bg-forest-hover text-ivory text-xs font-semibold uppercase tracking-wider shadow-sm transition-all hover:gap-2"
-          >
-            <span>View Stay</span>
-            <ArrowRight className="w-3.5 h-3.5 text-ukorange" />
-          </Link>
+          <div className="flex items-center gap-2">
+            <PropertyQuickViewButton property={property} variant="compact" />
+            <Link
+              href={`/stays/${property.slug}`}
+              className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-forest hover:bg-forest-hover text-ivory text-xs font-semibold uppercase tracking-wider shadow-sm transition-all hover:gap-2"
+            >
+              <span>View Stay</span>
+              <ArrowRight className="w-3.5 h-3.5 text-ukorange" />
+            </Link>
+          </div>
         </div>
       </div>
 

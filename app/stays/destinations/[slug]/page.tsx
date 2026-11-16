@@ -1,6 +1,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { PropertyImage } from '@/components/property-image';
+import { PropertyQuickViewButton } from '@/components/stays/property-quick-view-modal';
 import { getPropertyPhotoList } from '@/lib/property-images';
 import { notFound } from 'next/navigation';
 import {
@@ -216,10 +217,8 @@ export default async function DestinationDetailPage({ params }: DestinationPageP
                         </p>
                       </div>
 
-                      <div className="pt-3 border-t border-forest/10 flex items-center justify-between">
-                        <span className="text-xs text-charcoal font-medium">
-                          {property.rooms?.length || 1} Room units
-                        </span>
+                      <div className="pt-3 border-t border-forest/10 flex flex-wrap items-center justify-between gap-2">
+                        <PropertyQuickViewButton property={property} variant="compact" />
                         <Link
                           href={`/stays/${property.slug}`}
                           className="inline-flex items-center gap-1 text-xs font-bold text-forest hover:text-ukorange transition-colors"
@@ -311,10 +310,8 @@ export default async function DestinationDetailPage({ params }: DestinationPageP
                           </p>
                         </div>
 
-                        <div className="pt-3 border-t border-forest/10 flex items-center justify-between">
-                          <span className="text-xs text-charcoal font-medium">
-                            {property.rooms?.length || 1} Room units
-                          </span>
+                        <div className="pt-3 border-t border-forest/10 flex flex-wrap items-center justify-between gap-2">
+                          <PropertyQuickViewButton property={property} variant="compact" />
                           <Link
                             href={`/stays/${property.slug}`}
                             className="inline-flex items-center gap-1 text-xs font-bold text-forest hover:text-ukorange transition-colors"

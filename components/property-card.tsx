@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { PropertyImage } from '@/components/property-image';
+import { PropertyQuickViewButton } from '@/components/stays/property-quick-view-modal';
 import { getPropertyPhotoList } from '@/lib/property-images';
 import { formatINR } from '@/lib/utils';
 import {
@@ -61,45 +62,47 @@ export function PropertyCard({
   }, [property.id, property.slug]);
 
   return (
-    <Link
-      href={`/stays/${property.slug}`}
-      className="group bg-warm-surface rounded-2xl overflow-hidden border border-beige/90 hover:border-forest/35 shadow-editorial-sm hover:shadow-editorial-lg transition-all duration-500 ease-editorial flex flex-col justify-between cursor-pointer block text-inherit no-underline"
+    <article
+      data-testid={`property-card-${property.slug}`}
+      className="group bg-warm-surface rounded-2xl overflow-hidden border border-beige/90 hover:border-forest/35 shadow-editorial-sm hover:shadow-editorial-lg transition-all duration-500 ease-editorial flex flex-col justify-between text-inherit"
     >
       {/* Photo Scrubber Container */}
       <div
         className="relative aspect-[3/2] w-full overflow-hidden bg-forest-dark"
         onMouseLeave={() => setPhotoIndex(0)}
       >
-        {photos.length > 0 ? (
-          <PropertyImage
-            src={photos[photoIndex] || photos[0]}
-            alt={property.name}
-            fill
-            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-            transformWidth={600}
-            transformHeight={400}
-            className="object-cover transition-transform duration-700 ease-editorial group-hover:scale-[1.03]"
-          />
-        ) : (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-forest-dark text-warm-canvas/70">
-            <ImageIcon className="w-9 h-9" />
-            <span className="text-xs font-medium">Property photographs coming soon</span>
-          </div>
-        )}
-        <div className="absolute inset-0 bg-gradient-to-t from-charcoal/85 via-charcoal/15 to-black/20" />
+        <Link
+          href={`/stays/${property.slug}`}
+          aria-label={`View ${property.name}`}
+          className="relative block w-full h-full"
+        >
+          {photos.length > 0 ? (
+            <PropertyImage
+              src={photos[photoIndex] || photos[0]}
+              alt={property.name}
+              fill
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+              transformWidth={600}
+              transformHeight={400}
+              className="object-cover transition-transform duration-700 ease-editorial group-hover:scale-[1.03]"
+            />
+          ) : (
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-forest-dark text-warm-canvas/70">
+              <ImageIcon className="w-9 h-9" />
+              <span className="text-xs font-medium">Property photographs coming soon</span>
+            </div>
+          )}
+          <div className="absolute inset-0 bg-gradient-to-t from-charcoal/85 via-charcoal/15 to-black/20" />
+        </Link>
 
         {/* Pinterest-Style Photo Scrubber Hover Zones */}
         {photos.length > 1 && (
-          <div className="absolute inset-0 flex z-10">
+          <div className="absolute inset-0 flex z-10 pointer-events-none">
             {photos.map((_, idx) => (
               <div
                 key={idx}
-                className="flex-1 h-full cursor-pointer"
-                onMouseEnter={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setPhotoIndex(idx);
-                }}
+                className="flex-1 h-full"
+                onMouseEnter={() => setPhotoIndex(idx)}
               />
             ))}
           </div>
@@ -192,7 +195,7 @@ export function PropertyCard({
           </div>
 
           {/* Price & Action Row */}
-          <div className="pt-3.5 border-t border-beige/90 flex items-center justify-between">
+          <div className="pt-3.5 border-t border-beige/90 flex flex-wrap items-center justify-between gap-2">
             <div>
               <span className="font-serif text-2xl font-bold text-forest tabular-nums">
                 {formatINR(lowestPrice)}
@@ -200,13 +203,19 @@ export function PropertyCard({
               <span className="text-xs text-charcoal-muted font-normal"> / night</span>
             </div>
 
-            <span className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-forest group-hover:bg-forest-dark text-warm-surface text-[11px] font-semibold uppercase tracking-[0.12em] shadow-xs transition-all duration-200 ease-editorial group-hover:gap-2">
-              <span>View Stay</span>
-              <ArrowRight className="w-3.5 h-3.5 text-terracotta-light" />
-            </span>
+            <div className="flex items-center gap-2">
+              <PropertyQuickViewButton property={property} variant="compact" />
+              <Link
+                href={`/stays/${property.slug}`}
+                className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-forest hover:bg-forest-dark text-warm-surface text-[11px] font-semibold uppercase tracking-[0.12em] shadow-xs transition-all duration-200 ease-editorial hover:gap-2 no-underline"
+              >
+                <span>View Stay</span>
+                <ArrowRight className="w-3.5 h-3.5 text-terracotta-light" />
+              </Link>
+            </div>
           </div>
         </div>
       )}
-    </Link>
+    </article>
   );
 }

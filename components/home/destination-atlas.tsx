@@ -2,35 +2,8 @@
 
 import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import {
-  MapPin,
-  ChevronLeft,
-  ChevronRight,
-  Home,
-  Mountain,
-  MountainSnow,
-  Trees,
-  Tent,
-  Landmark,
-  Castle,
-  Wind,
-  TrainFront,
-  Sunrise,
-  Bell,
-  Ship,
-  Snowflake,
-  Footprints,
-  Sun,
-  Waves,
-  CloudSun,
-  Sailboat,
-  Flower2,
-  Apple,
-  Bird,
-  Compass,
-  Sparkles,
-  type LucideIcon,
-} from 'lucide-react';
+import Image from 'next/image';
+import { MapPin, ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export interface AtlasDestination {
@@ -49,249 +22,247 @@ interface DestinationAtlasProps {
 
 type RegionFilter = 'all' | 'nearby' | 'Himachal Pradesh' | 'Uttarakhand' | 'Jammu & Kashmir';
 
-interface DestinationVisualMeta {
+export interface DestinationVisualMeta {
   shortLabel: string;
   subLabel: string;
-  PrimaryIcon: LucideIcon;
-  AccentIcon: LucideIcon;
-  warmBlobClass: string;
-  accentBlobClass: string;
+  illustrationSrc: string;
   lat: number;
   lng: number;
 }
 
-const DESTINATION_VISUALS: Record<string, DestinationVisualMeta> = {
+/**
+ * 27 Hand-Illustrated Uttarkunth Destination Icons:
+ * • 23 extracted directly from the user's reference sheet (/public/assets/aistudio/image_1f9fb3b9.png)
+ * • 4 bespoke generated icons (Dalhousie, Solang, Mandi, Lahaul) in the exact same Uttarkunth palette
+ */
+export const DESTINATION_VISUALS: Record<string, DestinationVisualMeta> = {
   'kullu-jari': {
-    shortLabel: 'Jari & Kullu',
+    shortLabel: 'Jari',
     subLabel: 'Parvati Heartland',
-    PrimaryIcon: Home,
-    AccentIcon: Mountain,
-    warmBlobClass: 'bg-[#F5CBA7]/75 -right-1 top-1 w-7 h-9 rounded-t-full rounded-b-md',
-    accentBlobClass: 'bg-[#E59866]/55 -left-1.5 bottom-2 w-6 h-6 rounded-full',
+    illustrationSrc: '/assets/destinations/kullu-jari.png',
     lat: 32.001,
     lng: 77.245,
+  },
+  manali: {
+    shortLabel: 'Manali',
+    subLabel: 'Hadimba & Cedars',
+    illustrationSrc: '/assets/destinations/manali.png',
+    lat: 32.243,
+    lng: 77.189,
   },
   kasol: {
     shortLabel: 'Kasol',
     subLabel: 'Parvati Valley',
-    PrimaryIcon: Trees,
-    AccentIcon: Waves,
-    warmBlobClass: 'bg-[#FDE2A8]/80 left-0 top-1 w-8 h-8 rounded-full',
-    accentBlobClass: 'bg-[#D98880]/50 right-0 bottom-1.5 w-6 h-7 rounded-t-full',
+    illustrationSrc: '/assets/destinations/kasol.png',
     lat: 32.01,
     lng: 77.315,
   },
-  manali: {
-    shortLabel: 'Manali',
-    subLabel: 'Cedar & Snow Peaks',
-    PrimaryIcon: MountainSnow,
-    AccentIcon: Trees,
-    warmBlobClass: 'bg-[#F5CBA7]/75 right-0 top-0.5 w-7 h-9 rounded-tl-2xl rounded-br-xl',
-    accentBlobClass: 'bg-[#E59866]/50 left-0.5 bottom-2 w-6 h-6 rounded-full',
-    lat: 32.243,
-    lng: 77.189,
+  kullu: {
+    shortLabel: 'Kullu',
+    subLabel: 'Valley of Gods',
+    illustrationSrc: '/assets/destinations/kullu.png',
+    lat: 31.9579,
+    lng: 77.1095,
   },
   jibhi: {
-    shortLabel: 'Jibhi',
+    shortLabel: 'Jibhi & Tirthan',
     subLabel: 'Tirthan Valley',
-    PrimaryIcon: Tent,
-    AccentIcon: Trees,
-    warmBlobClass: 'bg-[#FDE2A8]/80 -right-0.5 top-1 w-7 h-8 rounded-t-full',
-    accentBlobClass: 'bg-[#C55B23]/30 -left-1 bottom-2 w-6 h-6 rounded-full',
+    illustrationSrc: '/assets/destinations/jibhi.png',
     lat: 31.634,
     lng: 77.349,
-  },
-  dharamshala: {
-    shortLabel: 'Dharamshala',
-    subLabel: 'Dhauladhar Crags',
-    PrimaryIcon: Landmark,
-    AccentIcon: MountainSnow,
-    warmBlobClass: 'bg-[#E59866]/45 left-0 top-1 w-7 h-8 rounded-t-xl',
-    accentBlobClass: 'bg-[#FDE2A8]/80 right-0 bottom-2 w-6 h-6 rounded-full',
-    lat: 32.219,
-    lng: 76.323,
-  },
-  'spiti-valley': {
-    shortLabel: 'Spiti Valley',
-    subLabel: 'High Cold Desert',
-    PrimaryIcon: Castle,
-    AccentIcon: Sparkles,
-    warmBlobClass: 'bg-[#F5CBA7]/80 right-0.5 top-0.5 w-7 h-9 rounded-t-full',
-    accentBlobClass: 'bg-[#D98880]/45 left-0 bottom-2 w-6 h-6 rounded-full',
-    lat: 32.246,
-    lng: 78.034,
-  },
-  'bir-billing': {
-    shortLabel: 'Bir Billing',
-    subLabel: 'Glider Thermals',
-    PrimaryIcon: Wind,
-    AccentIcon: Compass,
-    warmBlobClass: 'bg-[#FDE2A8]/80 right-0 top-1 w-8 h-8 rounded-full',
-    accentBlobClass: 'bg-[#E59866]/50 left-0.5 bottom-1.5 w-6 h-7 rounded-t-full',
-    lat: 32.046,
-    lng: 76.729,
   },
   shimla: {
     shortLabel: 'Shimla',
     subLabel: 'Pine Heritage Ridge',
-    PrimaryIcon: TrainFront,
-    AccentIcon: Trees,
-    warmBlobClass: 'bg-[#D98880]/45 right-0 top-1 w-7 h-9 rounded-t-xl',
-    accentBlobClass: 'bg-[#F5CBA7]/80 left-0 bottom-2 w-6 h-6 rounded-full',
+    illustrationSrc: '/assets/destinations/shimla.png',
     lat: 31.104,
     lng: 77.173,
   },
-  dalhousie: {
-    shortLabel: 'Dalhousie',
-    subLabel: 'Deodar Meadows',
-    PrimaryIcon: Sunrise,
-    AccentIcon: Trees,
-    warmBlobClass: 'bg-[#FDE2A8]/85 left-0.5 top-1 w-8 h-7 rounded-full',
-    accentBlobClass: 'bg-[#E59866]/45 right-0 bottom-2 w-6 h-7 rounded-t-full',
-    lat: 32.538,
-    lng: 75.971,
+  dharamshala: {
+    shortLabel: 'Dharamshala',
+    subLabel: 'Dhauladhar Crags',
+    illustrationSrc: '/assets/destinations/dharamshala.png',
+    lat: 32.219,
+    lng: 76.323,
+  },
+  'bir-billing': {
+    shortLabel: 'Bir Billing',
+    subLabel: 'Glider Thermals',
+    illustrationSrc: '/assets/destinations/bir-billing.png',
+    lat: 32.046,
+    lng: 76.729,
+  },
+  'spiti-valley': {
+    shortLabel: 'Spiti Valley',
+    subLabel: 'High Cold Desert',
+    illustrationSrc: '/assets/destinations/spiti-valley.png',
+    lat: 32.246,
+    lng: 78.034,
   },
   chamba: {
     shortLabel: 'Chamba',
     subLabel: 'Ravi River Lore',
-    PrimaryIcon: Bell,
-    AccentIcon: Waves,
-    warmBlobClass: 'bg-[#F5CBA7]/75 right-0 top-1 w-7 h-9 rounded-t-full',
-    accentBlobClass: 'bg-[#D98880]/45 left-0 bottom-2 w-6 h-6 rounded-full',
+    illustrationSrc: '/assets/destinations/chamba.png',
     lat: 32.553,
     lng: 76.126,
   },
+  kinnaur: {
+    shortLabel: 'Kinnaur',
+    subLabel: 'Apple Orchards',
+    illustrationSrc: '/assets/destinations/kinnaur.png',
+    lat: 31.539,
+    lng: 78.275,
+  },
+  dalhousie: {
+    shortLabel: 'Dalhousie',
+    subLabel: 'Deodar Meadows',
+    illustrationSrc: '/assets/destinations/dalhousie.png',
+    lat: 32.538,
+    lng: 75.971,
+  },
+  solang: {
+    shortLabel: 'Solang',
+    subLabel: 'Alpine Ski Slopes',
+    illustrationSrc: '/assets/destinations/solang.png',
+    lat: 32.316,
+    lng: 77.157,
+  },
+  mandi: {
+    shortLabel: 'Mandi',
+    subLabel: 'Carved Stone Temples',
+    illustrationSrc: '/assets/destinations/mandi.png',
+    lat: 31.708,
+    lng: 76.932,
+  },
+  lahaul: {
+    shortLabel: 'Lahaul',
+    subLabel: 'High Passes & Stupas',
+    illustrationSrc: '/assets/destinations/lahaul.png',
+    lat: 32.571,
+    lng: 77.032,
+  },
   srinagar: {
     shortLabel: 'Srinagar',
-    subLabel: 'Dal Lake Houseboats',
-    PrimaryIcon: Ship,
-    AccentIcon: Waves,
-    warmBlobClass: 'bg-[#E59866]/45 left-0 top-1 w-7 h-8 rounded-full',
-    accentBlobClass: 'bg-[#FDE2A8]/80 right-0 bottom-1.5 w-7 h-7 rounded-t-full',
+    subLabel: 'Dal Lake Shikaras',
+    illustrationSrc: '/assets/destinations/srinagar.png',
     lat: 34.083,
     lng: 74.797,
   },
   gulmarg: {
     shortLabel: 'Gulmarg',
-    subLabel: 'Alpine Meadow',
-    PrimaryIcon: Snowflake,
-    AccentIcon: MountainSnow,
-    warmBlobClass: 'bg-[#F5CBA7]/75 right-0 top-1 w-7 h-8 rounded-t-full',
-    accentBlobClass: 'bg-[#D98880]/45 left-0.5 bottom-2 w-6 h-6 rounded-full',
+    subLabel: 'Gondola & Snow Slopes',
+    illustrationSrc: '/assets/destinations/gulmarg.png',
     lat: 34.048,
     lng: 74.38,
   },
   pahalgam: {
     shortLabel: 'Pahalgam',
     subLabel: 'Lidder Pine Valley',
-    PrimaryIcon: Footprints,
-    AccentIcon: Trees,
-    warmBlobClass: 'bg-[#FDE2A8]/80 left-0 top-1 w-7 h-8 rounded-t-full',
-    accentBlobClass: 'bg-[#E59866]/50 right-0 bottom-2 w-6 h-6 rounded-full',
+    illustrationSrc: '/assets/destinations/pahalgam.png',
     lat: 34.016,
     lng: 75.315,
   },
   sonamarg: {
     shortLabel: 'Sonamarg',
     subLabel: 'Meadow of Gold',
-    PrimaryIcon: Sun,
-    AccentIcon: MountainSnow,
-    warmBlobClass: 'bg-[#FDE2A8]/90 right-0 top-0.5 w-8 h-8 rounded-full',
-    accentBlobClass: 'bg-[#E59866]/45 left-0 bottom-2 w-6 h-7 rounded-t-full',
+    illustrationSrc: '/assets/destinations/sonamarg.png',
     lat: 34.303,
     lng: 75.293,
   },
   jammu: {
     shortLabel: 'Jammu',
     subLabel: 'Shivalik Foothills',
-    PrimaryIcon: Landmark,
-    AccentIcon: Sun,
-    warmBlobClass: 'bg-[#F5CBA7]/75 left-0 top-1 w-7 h-9 rounded-t-full',
-    accentBlobClass: 'bg-[#D98880]/45 right-0 bottom-2 w-6 h-6 rounded-full',
+    illustrationSrc: '/assets/destinations/jammu.png',
     lat: 32.726,
     lng: 74.857,
   },
   rishikesh: {
     shortLabel: 'Rishikesh',
     subLabel: 'Sacred Ganges',
-    PrimaryIcon: Waves,
-    AccentIcon: Sunrise,
-    warmBlobClass: 'bg-[#FDE2A8]/85 right-0 top-1 w-8 h-8 rounded-full',
-    accentBlobClass: 'bg-[#E59866]/50 left-0 bottom-1.5 w-6 h-7 rounded-t-full',
+    illustrationSrc: '/assets/destinations/rishikesh.png',
     lat: 30.086,
     lng: 78.267,
   },
   mussoorie: {
     shortLabel: 'Mussoorie',
     subLabel: 'Mist-Clad Ridges',
-    PrimaryIcon: CloudSun,
-    AccentIcon: Mountain,
-    warmBlobClass: 'bg-[#D98880]/45 left-0 top-1 w-7 h-8 rounded-t-full',
-    accentBlobClass: 'bg-[#F5CBA7]/80 right-0 bottom-2 w-6 h-6 rounded-full',
+    illustrationSrc: '/assets/destinations/mussoorie.png',
     lat: 30.459,
     lng: 78.066,
   },
   nainital: {
     shortLabel: 'Nainital',
     subLabel: 'Emerald Kumaon Lake',
-    PrimaryIcon: Sailboat,
-    AccentIcon: Trees,
-    warmBlobClass: 'bg-[#F5CBA7]/80 right-0 top-1 w-7 h-9 rounded-t-full',
-    accentBlobClass: 'bg-[#E59866]/45 left-0 bottom-2 w-6 h-6 rounded-full',
+    illustrationSrc: '/assets/destinations/nainital.png',
     lat: 29.391,
     lng: 79.454,
   },
   auli: {
     shortLabel: 'Auli',
     subLabel: 'Nanda Devi Slopes',
-    PrimaryIcon: MountainSnow,
-    AccentIcon: Snowflake,
-    warmBlobClass: 'bg-[#FDE2A8]/80 left-0 top-1 w-8 h-8 rounded-full',
-    accentBlobClass: 'bg-[#D98880]/45 right-0 bottom-2 w-6 h-7 rounded-t-full',
+    illustrationSrc: '/assets/destinations/auli.png',
     lat: 30.528,
     lng: 79.566,
   },
   chopta: {
     shortLabel: 'Chopta',
     subLabel: 'Tungnath Bugyal',
-    PrimaryIcon: Flower2,
-    AccentIcon: Mountain,
-    warmBlobClass: 'bg-[#E59866]/50 right-0 top-1 w-7 h-8 rounded-t-full',
-    accentBlobClass: 'bg-[#FDE2A8]/80 left-0 bottom-2 w-6 h-6 rounded-full',
+    illustrationSrc: '/assets/destinations/chopta.png',
     lat: 30.485,
     lng: 79.2,
   },
   mukteshwar: {
     shortLabel: 'Mukteshwar',
     subLabel: 'Kumaon Orchards',
-    PrimaryIcon: Apple,
-    AccentIcon: Mountain,
-    warmBlobClass: 'bg-[#D98880]/50 left-0 top-1 w-7 h-8 rounded-full',
-    accentBlobClass: 'bg-[#F5CBA7]/80 right-0 bottom-2 w-6 h-7 rounded-t-full',
+    illustrationSrc: '/assets/destinations/mukteshwar.png',
     lat: 29.472,
     lng: 79.647,
   },
   'jim-corbett': {
     shortLabel: 'Jim Corbett',
     subLabel: 'Foothills Wilderness',
-    PrimaryIcon: Bird,
-    AccentIcon: Trees,
-    warmBlobClass: 'bg-[#FDE2A8]/80 right-0 top-1 w-7 h-9 rounded-t-full',
-    accentBlobClass: 'bg-[#E59866]/45 left-0 bottom-2 w-6 h-6 rounded-full',
+    illustrationSrc: '/assets/destinations/jim-corbett.png',
     lat: 29.53,
     lng: 78.774,
   },
 };
 
-function getVisualMeta(dest: AtlasDestination): DestinationVisualMeta {
+export const SIGNATURE_DESTINATION_PRIORITY_ORDER: string[] = [
+  'kullu-jari',
+  'kasol',
+  'manali',
+  'kullu',
+  'jibhi',
+  'spiti-valley',
+  'shimla',
+  'dharamshala',
+  'bir-billing',
+  'kinnaur',
+  'chamba',
+  'dalhousie',
+  'solang',
+  'mandi',
+  'lahaul',
+  'srinagar',
+  'gulmarg',
+  'pahalgam',
+  'sonamarg',
+  'jammu',
+  'rishikesh',
+  'mussoorie',
+  'nainital',
+  'auli',
+  'chopta',
+  'mukteshwar',
+  'jim-corbett',
+];
+
+export function getVisualMeta(dest: AtlasDestination): DestinationVisualMeta {
   return (
     DESTINATION_VISUALS[dest.slug] || {
       shortLabel: dest.name.split(' and ')[0] || dest.name,
       subLabel: dest.region,
-      PrimaryIcon: Mountain,
-      AccentIcon: Trees,
-      warmBlobClass: 'bg-[#F5CBA7]/75 right-0 top-1 w-7 h-8 rounded-t-full',
-      accentBlobClass: 'bg-[#E59866]/45 left-0 bottom-2 w-6 h-6 rounded-full',
+      illustrationSrc: '/assets/destinations/kullu-jari.png',
       lat: 32.0,
       lng: 77.25,
     }
@@ -317,12 +288,10 @@ export function DestinationAtlas({ destinations }: DestinationAtlasProps) {
   const [scrollProgress, setScrollProgress] = useState(0);
   const [thumbWidthPct, setThumbWidthPct] = useState(32);
 
-  // Order destinations so Kullu/Jari & Parvati Valley lead, followed by curated corridors
   const orderedDestinations = useMemo(() => {
     const base = [...destinations];
 
     if (regionFilter === 'nearby') {
-      // Reference point: either visitor's live GPS coordinates or Uttarkunth's Parvati Valley heartland (Jari: 32.001, 77.245)
       const refLat = userCoords?.lat ?? 32.001;
       const refLng = userCoords?.lng ?? 77.245;
       return base
@@ -343,22 +312,8 @@ export function DestinationAtlas({ destinations }: DestinationAtlasProps) {
       const aCount = a.propertyCount || 0;
       const bCount = b.propertyCount || 0;
       if (aCount !== bCount) return bCount - aCount;
-      const priorityOrder = [
-        'kullu-jari',
-        'kasol',
-        'manali',
-        'jibhi',
-        'dharamshala',
-        'spiti-valley',
-        'bir-billing',
-        'shimla',
-        'rishikesh',
-        'srinagar',
-        'gulmarg',
-        'mussoorie',
-      ];
-      const aIdx = priorityOrder.indexOf(a.slug);
-      const bIdx = priorityOrder.indexOf(b.slug);
+      const aIdx = SIGNATURE_DESTINATION_PRIORITY_ORDER.indexOf(a.slug);
+      const bIdx = SIGNATURE_DESTINATION_PRIORITY_ORDER.indexOf(b.slug);
       if (aIdx !== -1 && bIdx !== -1) return aIdx - bIdx;
       if (aIdx !== -1) return -1;
       if (bIdx !== -1) return 1;
@@ -443,20 +398,20 @@ export function DestinationAtlas({ destinations }: DestinationAtlasProps) {
             : 'translate-x-[195%]';
 
   return (
-    <div className="space-y-4 sm:space-y-5">
-      {/* Header Row: "Pick a Uttarkunth Destination" + "Show nearby locations" + Regional Pills & Scroll Arrows */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-4">
-        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-          <h3 className="font-serif text-[22px] sm:text-2xl lg:text-[28px] font-bold text-[#1F332A] tracking-tight leading-tight">
+    <div className="space-y-5 sm:space-y-7">
+      {/* Header Row: "Pick a Uttarkunth Destination" Title (matching Featured Stays font & size) + "Show nearby locations" + Regional Pills & Scroll Arrows */}
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 sm:gap-4">
+        <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1.5">
+          <h2 className="font-serif text-[22px] sm:text-3xl md:text-4xl lg:text-[42px] font-bold text-[#1F332A] tracking-tight leading-[1.15] sm:leading-tight">
             Pick a Uttarkunth Destination
-          </h3>
+          </h2>
 
           <button
             type="button"
             suppressHydrationWarning
             onClick={handleToggleNearby}
             className={cn(
-              'inline-flex items-center gap-1 text-xs sm:text-[13px] font-medium underline underline-offset-4 transition-colors cursor-pointer',
+              'inline-flex items-center gap-1.5 text-xs sm:text-[13.5px] font-medium underline underline-offset-4 transition-colors cursor-pointer',
               regionFilter === 'nearby'
                 ? 'text-[#C55B23] decoration-[#C55B23] font-semibold'
                 : 'text-[#4A554E] hover:text-[#1F332A] decoration-[#4A554E]/60 hover:decoration-[#1F332A]'
@@ -493,7 +448,7 @@ export function DestinationAtlas({ destinations }: DestinationAtlasProps) {
                     }
                   }}
                   className={cn(
-                    'px-2.5 py-1 rounded-full text-[11px] sm:text-xs font-semibold transition-all duration-200 shrink-0 cursor-pointer',
+                    'px-2.5 py-1 rounded-full text-[11px] sm:text-xs font-semibold transition-all duration-200 shrink-0 cursor-pointer whitespace-nowrap',
                     active
                       ? 'bg-[#1F332A] text-[#FFFDF9] shadow-xs'
                       : 'bg-[#EAE2D3]/70 hover:bg-[#DFD5C3] text-[#3F4B44]'
@@ -532,17 +487,15 @@ export function DestinationAtlas({ destinations }: DestinationAtlasProps) {
         </p>
       )}
 
-      {/* 2-Row Horizontal Illustrated Destination Emblem Track */}
+      {/* 2-Row Horizontal Hand-Illustrated Uttarkunth Destination Grid (Zero Scale Hover) */}
       <div
         ref={scrollRef}
         onScroll={updateScrollIndicator}
-        className="grid grid-rows-2 grid-flow-col auto-cols-[74px] sm:auto-cols-[112px] lg:auto-cols-[122px] gap-x-3 sm:gap-x-5 gap-y-4 sm:gap-y-6 overflow-x-auto snap-x snap-mandatory scroll-smooth no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden pt-1 pb-2"
+        className="grid grid-rows-2 grid-flow-col auto-cols-[calc((100%-1.5rem)/3)] sm:auto-cols-[calc((100%-4.5rem)/4)] lg:auto-cols-[calc((100%-6rem)/5)] gap-x-3 sm:gap-x-6 gap-y-5 sm:gap-y-7 overflow-x-auto snap-x snap-mandatory scroll-smooth no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden pt-1 pb-2"
       >
         {orderedDestinations.map((dest) => {
           const meta = getVisualMeta(dest);
-          const PrimaryIcon = meta.PrimaryIcon;
-          const AccentIcon = meta.AccentIcon;
-          const hasLiveStays = (dest.propertyCount || 0) > 0;
+          const isLive = (dest.propertyCount || 0) > 0;
 
           return (
             <Link
@@ -550,58 +503,46 @@ export function DestinationAtlas({ destinations }: DestinationAtlasProps) {
               href={`/stays/destinations/${dest.slug}`}
               className="group snap-start flex flex-col items-center text-center select-none cursor-pointer no-underline focus:outline-none"
             >
-              {/* Handcrafted Himalayan Line-Art & Warm Organic Blob Emblem */}
-              <div className="relative w-14 h-14 sm:w-16 sm:h-16 flex items-center justify-center rounded-2xl transition-transform duration-300 ease-out group-hover:-translate-y-1">
-                {/* Warm Pastel Amber / Terracotta Organic Shapes (Matching Reference Illustration Vibe) */}
+              {/* Hand-Illustrated Uttarkunth Destination Icon — Zero Scale Hover, Warm Golden-Hour Aura & Horizon Bar Hover */}
+              <div className="relative w-[92px] h-[72px] sm:w-[126px] sm:h-[96px] lg:w-[144px] lg:h-[108px] flex items-center justify-center">
+                {/* Soft Feathered Uttarkunth Golden-Hour & Terracotta Aura on Hover (No Scale Up/Down) */}
                 <span
                   aria-hidden="true"
-                  className={cn(
-                    'pointer-events-none absolute transition-transform duration-300 group-hover:scale-110',
-                    meta.warmBlobClass
-                  )}
+                  className="pointer-events-none absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 bg-[radial-gradient(closest-side_at_50%_50%,rgba(253,226,168,0.85)_0%,rgba(197,91,35,0.22)_52%,rgba(38,61,50,0.08)_80%,rgba(245,240,230,0)_100%)] transition-opacity duration-300"
                 />
+
+                <Image
+                  src={meta.illustrationSrc}
+                  alt={`${meta.shortLabel} — ${meta.subLabel}`}
+                  fill
+                  sizes="(max-width: 640px) 96px, (max-width: 1024px) 132px, 150px"
+                  referrerPolicy="no-referrer"
+                  className="relative z-10 object-contain transition-[filter] duration-300 group-hover:drop-shadow-[0_6px_12px_rgba(31,51,42,0.16)]"
+                />
+
+                {/* Subtle Uttarkunth Terracotta-to-Forest Horizon Accent Bar on Hover */}
                 <span
                   aria-hidden="true"
-                  className={cn(
-                    'pointer-events-none absolute transition-transform duration-300 group-hover:scale-105',
-                    meta.accentBlobClass
-                  )}
+                  className="pointer-events-none absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-0 group-hover:w-12 h-[2px] rounded-full bg-gradient-to-r from-[#263D32]/30 via-[#C55B23] to-[#263D32]/30 opacity-0 group-hover:opacity-100 transition-all duration-300"
                 />
 
-                {/* Secondary Horizon / Peak Accent Icon */}
-                <AccentIcon
-                  strokeWidth={1.35}
-                  className="relative z-10 w-4 h-4 sm:w-4.5 sm:h-4.5 text-[#1F332A]/65 -mr-2 -mt-4 transition-colors duration-200 group-hover:text-[#C55B23]"
-                />
-
-                {/* Primary Architectural / Valley Line-Art Icon */}
-                <PrimaryIcon
-                  strokeWidth={1.5}
-                  className="relative z-20 w-7 h-7 sm:w-8 sm:h-8 text-[#1F332A] transition-colors duration-200 group-hover:text-[#C55B23]"
-                />
-
-                {/* Fine Illustrated Horizon Baseline */}
-                <span
-                  aria-hidden="true"
-                  className="pointer-events-none absolute bottom-1.5 inset-x-2.5 h-[1.5px] rounded-full bg-[#1F332A]/75 group-hover:bg-[#C55B23] transition-colors"
-                />
-
-                {/* Live Approved Stay Indicator Dot */}
-                {hasLiveStays && (
+                {isLive && (
                   <span
-                    title={`${dest.propertyCount} Approved Stay`}
-                    className="absolute -top-0.5 -right-0.5 z-30 px-1.5 py-0.5 rounded-full bg-[#1F332A] text-[#FFF8EC] text-[9px] font-bold tracking-tight shadow-xs"
+                    title={`${dest.propertyCount} Approved Stay${dest.propertyCount === 1 ? '' : 's'}`}
+                    className="absolute top-0 right-1 z-30 px-1.5 py-0.5 rounded-full bg-[#1F332A] text-[#FDE2A8] border border-[#C55B23]/45 text-[9px] font-bold tracking-tight shadow-xs"
                   >
                     Live
                   </span>
                 )}
               </div>
 
-              {/* Destination Name & Subtle Valley Sub-label */}
-              <span className="mt-1.5 font-sans text-[12px] sm:text-[13.5px] font-medium text-[#1F332A] group-hover:text-[#C55B23] transition-colors leading-tight whitespace-nowrap">
+              {/* Destination Name */}
+              <span className="mt-1.5 sm:mt-2 font-sans text-[13px] sm:text-[15px] font-semibold text-[#1F332A] group-hover:text-[#C55B23] transition-colors duration-200 leading-tight whitespace-nowrap">
                 {meta.shortLabel}
               </span>
-              <span className="hidden sm:block text-[10.5px] text-[#5C5549]/85 leading-tight line-clamp-1 mt-0.5">
+
+              {/* 2–3 Word Signature Description — Visible on Laptop & Tablet (sm+), Hidden on Mobile */}
+              <span className="hidden sm:block mt-0.5 font-sans text-[11px] lg:text-[12px] font-normal text-[#5A5246] group-hover:text-[#1F332A] transition-colors duration-200 leading-tight whitespace-nowrap">
                 {meta.subLabel}
               </span>
             </Link>
@@ -609,7 +550,7 @@ export function DestinationAtlas({ destinations }: DestinationAtlasProps) {
         })}
       </div>
 
-      {/* Bottom Centered Scroll Progress Bar (Matching Reference UI) */}
+      {/* Bottom Centered Scroll Progress Bar */}
       <div className="pt-1 flex items-center justify-center">
         <div
           aria-hidden="true"

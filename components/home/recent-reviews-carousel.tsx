@@ -9,7 +9,6 @@ import {
   ChevronRight,
   MapPin,
   Quote,
-  ShieldCheck,
   Star,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -106,19 +105,9 @@ export function RecentReviewsCarousel({
 
   return (
     <div className="space-y-4 sm:space-y-5" data-testid="recent-reviews-carousel">
-      {/* Header Row: Kicker, "Recent Reviews" Title, Trust Summary Badges, and Carousel Controls */}
+      {/* Header Row: "Recent Reviews" Title, Trust Summary Badges, and Carousel Controls */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 sm:gap-4">
         <div className="space-y-1.5">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-[11px] sm:text-xs font-bold uppercase tracking-[0.16em] text-[#C55B23]">
-              Verified Guest Reflections
-            </span>
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#1F332A]/10 border border-[#1F332A]/15 text-[#1F332A] text-[10.5px] font-semibold">
-              <ShieldCheck className="w-3 h-3 text-[#C55B23]" />
-              <span>100% Completed Stays</span>
-            </span>
-          </div>
-
           <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
             <h3 className="font-serif text-[22px] sm:text-2xl lg:text-[28px] font-bold text-[#1F332A] tracking-tight leading-tight">
               Recent Reviews
@@ -128,9 +117,6 @@ export function RecentReviewsCarousel({
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#FDE2A8]/70 border border-[#E59866]/45 text-[#1F332A]">
                 <Star className="w-3.5 h-3.5 fill-[#C55B23] text-[#C55B23]" />
                 <span>{summary.averageRatingFormatted}</span>
-              </span>
-              <span className="text-[#5C5549] font-normal">
-                ({summary.totalReviews} verified guest {summary.totalReviews === 1 ? 'review' : 'reviews'})
               </span>
             </div>
           </div>

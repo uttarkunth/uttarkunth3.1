@@ -1,6 +1,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { PropertyImage } from '@/components/property-image';
+import { PropertyQuickViewButton } from '@/components/stays/property-quick-view-modal';
 import { getPropertyPhotoList } from '@/lib/property-images';
 import { SearchBar } from '@/components/search-bar';
 import { BRAND, EXISTING_PROPERTIES } from '@/lib/constants';
@@ -240,42 +241,51 @@ export default async function StaysPage({ searchParams }: StaysPageProps) {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {filteredProperties.map((property: any) => {
               const coverPhoto = getPropertyPhotoList(property.cover_photo, property.photos)[0] || null;
-              const startingPrice = property.rooms?.[0]?.base_price || 900;
+              const startingPrice =
+                Array.isArray(property.rooms) && property.rooms.length > 0
+                  ? Math.min(...property.rooms.map((r: any) => Number(r.base_price) || 900))
+                  : 900;
               const locationText = `${property.village || 'Jari'}, ${property.district || 'Kullu'}`;
               const amenities = property.amenities || [];
 
               return (
-                <Link
+                <article
                   key={property.id}
-                  href={`/stays/${property.slug}`}
-                  className="bg-white rounded-3xl border border-forest/15 overflow-hidden shadow-soft hover:shadow-lifted transition-all flex flex-col group cursor-pointer"
+                  data-testid={`stays-result-card-${property.slug}`}
+                  className="bg-white rounded-3xl border border-forest/15 overflow-hidden shadow-soft hover:shadow-lifted transition-all flex flex-col group"
                 >
                   <div className="relative aspect-[3/2] w-full bg-forest-dark overflow-hidden">
-                    {coverPhoto ? (
-                      <PropertyImage
-                        src={coverPhoto}
-                        alt={property.name}
-                        fill
-                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                        transformWidth={600}
-                        transformHeight={400}
-                        className="object-cover group-hover:scale-105 transition-transform duration-700"
-                      />
-                    ) : (
-                      /* Neutral branded missing-image presentation */
-                      <div className="absolute inset-0 bg-canvas flex flex-col items-center justify-center p-6 text-center text-forest border-b border-forest/10">
-                        <Building2 className="w-12 h-12 text-forest/40 mb-2" />
-                        <span className="font-serif text-lg font-bold">{property.name}</span>
-                        <span className="text-[11px] text-charcoal-muted uppercase tracking-wider mt-1">
-                          Approved Himalayan Homestay
-                        </span>
-                      </div>
-                    )}
+                    <Link
+                      href={`/stays/${property.slug}`}
+                      aria-label={`View ${property.name}`}
+                      className="relative block w-full h-full"
+                    >
+                      {coverPhoto ? (
+                        <PropertyImage
+                          src={coverPhoto}
+                          alt={property.name}
+                          fill
+                          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                          transformWidth={600}
+                          transformHeight={400}
+                          className="object-cover group-hover:scale-105 transition-transform duration-700"
+                        />
+                      ) : (
+                        /* Neutral branded missing-image presentation */
+                        <div className="absolute inset-0 bg-canvas flex flex-col items-center justify-center p-6 text-center text-forest border-b border-forest/10">
+                          <Building2 className="w-12 h-12 text-forest/40 mb-2" />
+                          <span className="font-serif text-lg font-bold">{property.name}</span>
+                          <span className="text-[11px] text-charcoal-muted uppercase tracking-wider mt-1">
+                            Approved Himalayan Homestay
+                          </span>
+                        </div>
+                      )}
+                    </Link>
 
-                    <div className="absolute top-4 left-4 bg-forest/90 text-ivory text-xs font-semibold px-3 py-1 rounded-full backdrop-blur-sm">
+                    <div className="absolute top-4 left-4 bg-forest/90 text-ivory text-xs font-semibold px-3 py-1 rounded-full backdrop-blur-sm pointer-events-none">
                       {property.property_type || 'Homestay'}
                     </div>
-                    <div className="absolute bottom-3 right-3 bg-black/70 text-ivory text-xs font-bold px-3 py-1 rounded-full backdrop-blur-sm">
+                    <div className="absolute bottom-3 right-3 bg-black/70 text-ivory text-xs font-bold px-3 py-1 rounded-full backdrop-blur-sm pointer-events-none">
                       {formatINR(startingPrice)} <span className="font-normal text-[11px]">/ night</span>
                     </div>
                   </div>
@@ -287,7 +297,9 @@ export default async function StaysPage({ searchParams }: StaysPageProps) {
                         <span>{locationText}</span>
                       </div>
                       <h3 className="font-serif text-2xl font-bold text-forest group-hover:text-ukorange transition-colors">
-                        {property.name}
+                        <Link href={`/stays/${property.slug}`} className="hover:underline">
+                          {property.name}
+                        </Link>
                       </h3>
                       <p className="text-xs text-charcoal-muted line-clamp-2 leading-relaxed">
                         {property.description}
@@ -304,21 +316,27 @@ export default async function StaysPage({ searchParams }: StaysPageProps) {
                               {amenity}
                             </span>
                           ))}
+                          {amenities.length > 3 && (
+                            <span className="text-[10px] bg-forest/8 text-forest px-2 py-0.5 rounded-md font-semibold">
+                              +{amenities.length - 3} more
+                            </span>
+                          )}
                         </div>
                       )}
                     </div>
 
-                    <div className="pt-3 border-t border-forest/10 flex items-center justify-between">
-                      <span className="text-[11px] font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full">
-                        Request-Based Booking
-                      </span>
-                      <span className="inline-flex items-center gap-1 text-xs font-bold text-forest group-hover:text-ukorange transition-colors">
+                    <div className="pt-3 border-t border-forest/10 flex flex-wrap items-center justify-between gap-2">
+                      <PropertyQuickViewButton property={property} variant="compact" />
+                      <Link
+                        href={`/stays/${property.slug}`}
+                        className="inline-flex items-center gap-1 text-xs font-bold text-forest hover:text-ukorange transition-colors"
+                      >
                         <span>View &amp; Request</span>
                         <ArrowRight className="w-3.5 h-3.5" />
-                      </span>
+                      </Link>
                     </div>
                   </div>
-                </Link>
+                </article>
               );
             })}
           </div>

@@ -7,6 +7,7 @@ import {
   EXPLORE_SPOTLIGHT_DURATION_MS,
   shouldTriggerExploreSpotlight,
   consumeExploreSpotlightSession,
+  computeMobileSearchScrollTarget,
   type SessionStorageLike,
 } from '../lib/explore-spotlight';
 
@@ -59,4 +60,15 @@ test('new session allows spotlight transition again and duration supports peak l
   assert.ok(EXPLORE_SPOTLIGHT_PEAK_MS >= 250);
   assert.ok(EXPLORE_SPOTLIGHT_FADEOUT_MS >= 700);
   assert.equal(EXPLORE_SPOTLIGHT_DURATION_MS, EXPLORE_SPOTLIGHT_PEAK_MS + EXPLORE_SPOTLIGHT_FADEOUT_MS);
+});
+
+test('computeMobileSearchScrollTarget elevates search bar to header offset and preserves position when already aligned', () => {
+  // When search bar is at y=296 in viewport and scrollY=0, elevates to topOffset=68 -> scrollY=228
+  assert.equal(computeMobileSearchScrollTarget(0, 296, 68), 228);
+
+  // When already within 6px of desired offset, preserves current scrollY
+  assert.equal(computeMobileSearchScrollTarget(228, 70, 68), 228);
+
+  // Never returns a negative scrollY
+  assert.equal(computeMobileSearchScrollTarget(0, 40, 68), 0);
 });
