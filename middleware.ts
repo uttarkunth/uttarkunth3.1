@@ -193,10 +193,10 @@ export async function middleware(request: NextRequest) {
     },
   });
 
-  // 1. Cryptographically verify Cloudflare Access on internal hostnames in production.
+  // 1. Cryptographically verify Cloudflare Access on internal hostnames when enabled.
   if (
     (isFounderSubdomain || isStaffSubdomain) &&
-    (process.env.NODE_ENV === 'production' || process.env.ENFORCE_CLOUDFLARE_ACCESS === 'true')
+    process.env.ENFORCE_CLOUDFLARE_ACCESS === 'true'
   ) {
     const cfAccessJwt = request.headers.get('cf-access-jwt-assertion');
     const portal = isFounderSubdomain ? 'founder' : 'staff';
