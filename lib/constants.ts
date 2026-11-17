@@ -33,7 +33,8 @@ export const BRAND = {
   description: "Uttarkunth is a growing platform rooted in the Himalayas, bringing together meaningful stays, thoughtful products, creative productions and community initiatives.",
   contactEmail: "info@uttarkunth.com",
   email: "info@uttarkunth.com",
-  phone: "+91 98765 43210",
+  phone: "+91 86270 25502",
+  whatsapp: "918627025502",
   colors: {
     forest: "#263D32",       // Primary brand green
     terracotta: "#C55B23",   // Accent terracotta
@@ -394,4 +395,3 @@ export const COMMUNITY_STORIES: Array<{
   readTime: string;
   content: string;
 }> = [];
-

@@ -299,6 +299,8 @@ export default async function PropertyDetailPage({ params, searchParams }: Prope
           <BookingWidget
             propertyId={property.id}
             propertyName={property.name}
+            hostWhatsapp={property.contact_whatsapp}
+            hostPhone={property.contact_phone}
             rooms={rooms}
             sharedWashroomPhotos={getPropertyPhotoList(null, property.shared_washroom_photos)}
             initialCheckIn={searchParams.checkIn}

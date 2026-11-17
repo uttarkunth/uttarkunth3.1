@@ -23,6 +23,8 @@ interface RoomUnit {
 interface BookingWidgetProps {
   propertyId: string;
   propertyName: string;
+  hostWhatsapp?: string | null;
+  hostPhone?: string | null;
   rooms: RoomUnit[];
   sharedWashroomPhotos?: string[];
   initialCheckIn?: string;
@@ -35,9 +37,22 @@ interface BookingWidgetProps {
   } | null;
 }
 
+function normalizeWhatsAppNumber(phone?: string | null): string {
+  if (!phone) return '';
+  let digits = phone.replace(/[^0-9]/g, '');
+  if (digits.startsWith('0') && digits.length === 11) {
+    digits = '91' + digits.slice(1);
+  } else if (digits.length === 10) {
+    digits = '91' + digits;
+  }
+  return digits;
+}
+
 export function BookingWidget({
   propertyId,
   propertyName,
+  hostWhatsapp,
+  hostPhone,
   rooms,
   sharedWashroomPhotos = [],
   initialCheckIn = '',
@@ -428,10 +443,14 @@ export function BookingWidget({
           )}
         </button>
 
-        {/* WhatsApp Direct Enquiry Action (Directive C) */}
+        {/* WhatsApp Direct Enquiry Action (routes directly to the property host) */}
         <a
-          href={`https://wa.me/919876543210?text=${encodeURIComponent(
-            `Hello Uttarkunth, I am inquiring about booking ${propertyName}${
+          href={`https://wa.me/${
+            normalizeWhatsAppNumber(hostWhatsapp) ||
+            normalizeWhatsAppNumber(hostPhone) ||
+            '918627025502'
+          }?text=${encodeURIComponent(
+            `Hello, I am inquiring about booking ${propertyName}${
               checkIn && checkOut ? ` for dates ${checkIn} to ${checkOut}` : ''
             }.`
           )}`}
