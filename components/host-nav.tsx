@@ -3,6 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { StickySubnavShell } from '@/components/sticky-subnav-shell';
 import { LayoutDashboard, Home, PlusCircle, Inbox, Calendar, Sparkles } from 'lucide-react';
 
 export function HostNav() {
@@ -17,7 +18,10 @@ export function HostNav() {
   ];
 
   return (
-    <div className="bg-white border-b border-forest/10 -mt-2 mb-8">
+    <StickySubnavShell
+      testId="host-secondary-nav"
+      className="bg-white/95 backdrop-blur-md border-b border-forest/10 mb-8 shadow-2xs"
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between overflow-x-auto py-2 gap-4">
           <nav className="flex items-center gap-1 sm:gap-2">
@@ -49,6 +53,6 @@ export function HostNav() {
           </div>
         </div>
       </div>
-    </div>
+    </StickySubnavShell>
   );
 }

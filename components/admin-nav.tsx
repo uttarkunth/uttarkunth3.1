@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { StickySubnavShell } from '@/components/sticky-subnav-shell';
 import {
   Shield,
   Home,
@@ -128,7 +129,10 @@ export function AdminNav() {
   });
 
   return (
-    <div className="bg-forest-dark text-ivory border-b border-forest/20 -mt-2 mb-8 shadow-sm">
+    <StickySubnavShell
+      testId="admin-secondary-nav"
+      className="bg-forest-dark/95 backdrop-blur-md text-ivory border-b border-forest/20 mb-8 shadow-sm"
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between overflow-x-auto no-scrollbar py-2 gap-4">
           <nav className="flex items-center gap-1 sm:gap-2">
@@ -172,6 +176,6 @@ export function AdminNav() {
           </div>
         </div>
       </div>
-    </div>
+    </StickySubnavShell>
   );
 }

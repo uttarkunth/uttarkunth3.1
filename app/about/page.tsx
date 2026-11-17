@@ -2,6 +2,7 @@ import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { BRAND } from '@/lib/constants';
+import { StickySubnavShell } from '@/components/sticky-subnav-shell';
 import {
   Mountain,
   Compass,
@@ -127,8 +128,11 @@ export default function AboutPage() {
 
   return (
     <div className="bg-ivory text-charcoal min-h-screen">
-      {/* Sticky Table of Contents Header */}
-      <div className="sticky top-16 z-30 bg-ivory/95 backdrop-blur-md border-b border-forest/10 py-3 overflow-x-auto scrollbar-none">
+      {/* Sticky Table of Contents Header — Synchronized with Header scroll state */}
+      <StickySubnavShell
+        testId="about-secondary-nav"
+        className="bg-ivory/95 backdrop-blur-md border-b border-forest/10 py-3 overflow-x-auto scrollbar-none shadow-2xs"
+      >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 flex items-center gap-2 sm:gap-4 text-xs font-semibold whitespace-nowrap">
           <span className="text-forest/40 uppercase tracking-widest text-[10px]">Navigate:</span>
           <a href="#idea" className="px-3 py-1 rounded-full bg-forest/5 hover:bg-forest hover:text-ivory text-forest transition-colors">The Idea</a>
@@ -143,7 +147,7 @@ export default function AboutPage() {
           <a href="#faq" className="px-3 py-1 rounded-full bg-forest/5 hover:bg-forest hover:text-ivory text-forest transition-colors">FAQ</a>
           <a href="#founder" className="px-3 py-1 rounded-full bg-forest/5 hover:bg-forest hover:text-ivory text-forest transition-colors">Founder</a>
         </div>
-      </div>
+      </StickySubnavShell>
 
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-12 sm:py-20 space-y-24 sm:space-y-32">
         {/* HERO SECTION */}

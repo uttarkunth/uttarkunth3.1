@@ -3,6 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { StickySubnavShell } from '@/components/sticky-subnav-shell';
 import { 
   Layers, Luggage, ShoppingBag, Film, Users, User, Settings, Shield, Home, ArrowUpRight 
 } from 'lucide-react';
@@ -63,7 +64,10 @@ export function AccountNav({ isAdmin = false, isHost = false, tripsCount = 0 }: 
   ];
 
   return (
-    <div className="w-full bg-warm-surface/95 backdrop-blur-md border-b border-beige/80 sticky top-20 z-30 shadow-xs">
+    <StickySubnavShell
+      testId="account-secondary-nav"
+      className="w-full bg-warm-surface/95 backdrop-blur-md border-b border-beige/80 shadow-xs"
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between gap-4 overflow-x-auto no-scrollbar py-2.5">
           {/* Main Account Tabs */}
@@ -113,6 +117,6 @@ export function AccountNav({ isAdmin = false, isHost = false, tripsCount = 0 }: 
           </div>
         </div>
       </div>
-    </div>
+    </StickySubnavShell>
   );
 }

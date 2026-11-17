@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useSyncExternalStore } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Logo } from './logo';
@@ -12,6 +12,12 @@ import {
   type ProfileMenuIconName,
   type UserIdentityInput,
 } from '@/lib/mobile-navigation';
+import {
+  subscribeHeaderVisibility,
+  getHeaderVisibilitySnapshot,
+  getServerHeaderVisibilitySnapshot,
+  syncHeaderVisibilityOnRouteChange,
+} from '@/lib/sticky-header-offset';
 import {
   ArrowUp,
   User,
@@ -100,12 +106,17 @@ export function Header() {
   const pathname = usePathname();
   const [navExpanded, setNavExpanded] = useState(false);
   const [accountDropdownOpen, setAccountDropdownOpen] = useState(false);
-  const [headerHidden, setHeaderHidden] = useState(false);
   const [user, setUser] = useState<UserIdentityInput | null>(null);
   const [notifications, setNotifications] = useState<Array<{ id?: string; read?: boolean }>>([]);
   const [locallyReadIds, setLocallyReadIds] = useState<string[]>([]);
   const headerRef = useRef<HTMLElement>(null);
-  const lastScrollYRef = useRef(0);
+
+  const headerVisibility = useSyncExternalStore(
+    subscribeHeaderVisibility,
+    getHeaderVisibilitySnapshot,
+    getServerHeaderVisibilitySnapshot
+  );
+  const headerHidden = headerVisibility.headerHidden;
 
   const loadLocallyReadIds = useCallback((): string[] => {
     if (typeof window === 'undefined') return [];
@@ -123,30 +134,13 @@ export function Header() {
     setLocallyReadIds(loadLocallyReadIds());
   }, [loadLocallyReadIds]);
 
-  // Hide logo and side medallions on scroll down; reveal on scroll up
+  // Close menus automatically whenever the header hides on scroll down
   useEffect(() => {
-    lastScrollYRef.current = window.scrollY;
-
-    const handleScroll = () => {
-      const currentScrollY = window.scrollY;
-      const delta = currentScrollY - lastScrollYRef.current;
-
-      if (currentScrollY <= 16) {
-        setHeaderHidden(false);
-      } else if (delta > 6) {
-        setHeaderHidden(true);
-        setNavExpanded(false);
-        setAccountDropdownOpen(false);
-      } else if (delta < -6) {
-        setHeaderHidden(false);
-      }
-
-      lastScrollYRef.current = currentScrollY;
-    };
-
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+    if (headerHidden) {
+      setNavExpanded(false);
+      setAccountDropdownOpen(false);
+    }
+  }, [headerHidden]);
 
   // Global passive pointermove listener to update --mouse-x and --mouse-y on all lantern buttons & cards
   useEffect(() => {
@@ -186,10 +180,11 @@ export function Header() {
     };
   }, []);
 
-  // Close dropdown and expanded nav on route change
+  // Close dropdown, expanded nav, and synchronize header visibility on route change
   useEffect(() => {
     setAccountDropdownOpen(false);
     setNavExpanded(false);
+    syncHeaderVisibilityOnRouteChange();
   }, [pathname]);
 
   // Fetch notifications from existing /api/account/notifications endpoint
@@ -367,6 +362,8 @@ export function Header() {
   return (
     <header
       ref={headerRef}
+      data-testid="site-header"
+      data-header-hidden={headerHidden ? 'true' : 'false'}
       className={`sticky top-0 z-header transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] relative overflow-visible bg-transparent ${
         headerHidden
           ? '-translate-y-24 opacity-0 pointer-events-none'

@@ -1,6 +1,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
+import { StickySubnavShell } from '@/components/sticky-subnav-shell';
 import { resolveFounderOrAdminSession } from '@/lib/auth';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
@@ -364,9 +365,14 @@ export default async function StaffPortalPage() {
             )}
           </div>
         </div>
+      </div>
 
-        {/* Permission-Scoped Dynamic Navigation */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 border-t border-white/10">
+      {/* Permission-Scoped Dynamic Navigation — Sticky & Synchronized with Header */}
+      <StickySubnavShell
+        testId="staff-secondary-nav"
+        className="bg-forest-dark/95 backdrop-blur-md text-ivory border-b border-forest/20 shadow-sm"
+      >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <nav className="flex items-center gap-1 sm:gap-2 overflow-x-auto no-scrollbar py-2">
             {navItems.map((item) => {
               const Icon = item.icon;
@@ -383,7 +389,7 @@ export default async function StaffPortalPage() {
             })}
           </nav>
         </div>
-      </div>
+      </StickySubnavShell>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 space-y-8">
         {/* Staff Identity & Authorization Boundary Card */}
