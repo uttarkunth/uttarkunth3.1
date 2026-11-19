@@ -37,13 +37,19 @@ test('INITIAL_CURATED_PRODUCTS contains 1 product only and formats Brand and Reg
   assert.ok(!first.maker_name.toLowerCase().includes('local brand name'));
 
   const card = formatProductForCard(first);
-  assert.equal(card.brandDisplayLabel, 'Brand: Uttarkunth Mountain Collective');
+  assert.equal(card.brandDisplayLabel, 'Brand: Parvati Valley Apiary');
   assert.equal(card.regionSmallLabel, 'Kullu, Himachal Pradesh');
   assert.equal(card.priceFormatted, '₹680');
 });
 
-test('buildFeaturedProductSubgroups only adds regional rows when products exist from that valley', () => {
+test('buildFeaturedProductSubgroups marks Uttarkunth Products as comingSoonOnly and only adds regional rows when products exist from that valley', () => {
   const defaultGroups = buildFeaturedProductSubgroups(INITIAL_CURATED_PRODUCTS);
+  const uttarkunthGroup = defaultGroups.find((g) => g.key === 'uttarkunth-products');
+  assert.ok(uttarkunthGroup);
+  assert.equal(uttarkunthGroup.title, 'Uttarkunth Products');
+  assert.equal(uttarkunthGroup.comingSoonOnly, true);
+  assert.equal(uttarkunthGroup.products.length, 0);
+
   const groupTitles = defaultGroups.map((g) => g.title);
   assert.ok(groupTitles.includes('Uttarkunth Products'));
   assert.ok(groupTitles.includes('Treasures from Kullu'));
@@ -82,7 +88,7 @@ test('getProductsForSection routes products only into the category sections wher
 
   const makers = extractMakersFromProducts(INITIAL_CURATED_PRODUCTS);
   assert.equal(makers.length, 1);
-  assert.equal(makers[0]?.brandName, 'Uttarkunth Mountain Collective');
+  assert.equal(makers[0]?.brandName, 'Parvati Valley Apiary');
 });
 
 test('COMMUNITY_WELCOME_CATEGORIES defines all 6 categories and highlights Uttarkunth in Village Initiatives', () => {

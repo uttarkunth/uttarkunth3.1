@@ -5,6 +5,7 @@ import {
   subscribeHeaderVisibility,
   getHeaderVisibilitySnapshot,
   getServerHeaderVisibilitySnapshot,
+  getStickySubnavClassList,
 } from '@/lib/sticky-header-offset';
 
 export function useAdaptiveSubnavTop() {
@@ -44,18 +45,25 @@ export function StickySubnavShell({
   testId = 'sticky-subnav-shell',
   ariaLabel,
 }: StickySubnavShellProps) {
-  const { headerHidden, topClass, topStyle } = useAdaptiveSubnavTop();
+  const { headerHidden, isScrolled, topClass, topStyle } = useAdaptiveSubnavTop();
 
   return (
     <div
       data-testid={testId}
       data-header-hidden={headerHidden ? 'true' : 'false'}
+      data-is-scrolled={isScrolled ? 'true' : 'false'}
       data-subnav-state={headerHidden ? 'pinned-to-top' : 'below-header'}
       aria-label={ariaLabel}
       style={{ top: `var(--uk-subnav-top, ${topStyle})` }}
-      className={`sticky ${topClass} z-30 will-change-[top,transform] [transform:translateZ(0)] transition-[top,box-shadow,background-color] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${className}`}
+      className={getStickySubnavClassList({
+        headerHidden,
+        isScrolled,
+        topClass,
+        className,
+      })}
     >
       {children}
     </div>
   );
 }
+

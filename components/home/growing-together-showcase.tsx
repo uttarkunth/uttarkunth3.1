@@ -232,42 +232,41 @@ export function GrowingTogetherShowcase() {
         </div>
       </div>
 
-      {/* Bottom Signature Banner: "Our People · Join Our Mission" */}
+      {/* WANT TO BE A PART OF UTTARKUNTH COMMUNITY? — COMMUNITY CTA */}
       <div
-        data-testid="community-our-people-join-mission"
-        className="rounded-[24px] bg-gradient-to-r from-[#1F332A] via-[#263D32] to-[#1F332A] text-[#FFFDF9] p-6 sm:p-8 border border-[#C55B23]/40 shadow-[0_14px_34px_rgba(24,36,29,0.16)] flex flex-col sm:flex-row sm:items-center justify-between gap-5"
+        data-testid="community-want-to-be-part-cta"
+        className="rounded-[24px] bg-gradient-to-r from-[#1F332A] via-[#263D32] to-[#1F332A] text-[#FFFDF9] p-6 sm:p-8 border border-[#C55B23]/40 shadow-[0_14px_34px_rgba(24,36,29,0.16)] flex flex-col lg:flex-row lg:items-center justify-between gap-6"
       >
-        <div className="space-y-1.5">
-          <span className="text-xs font-bold uppercase tracking-[0.16em] text-[#FDE2A8] block">
-            Our People &middot; Join Our Mission
-          </span>
+        <div className="space-y-2 max-w-2xl">
           <h3 className="font-serif text-2xl sm:text-3xl font-bold text-[#FFFDF9] leading-tight">
-            Our People &middot; Join Our Mission
+            Want to Be a Part of Uttarkunth Community?
           </h3>
-          <p className="text-xs sm:text-sm text-[#FAF4E8]/85 max-w-xl leading-relaxed">
-            Meet the people building Uttarkunth on the ground in Jari and across the Himalayas, or
-            join our mission as a partner, maker, storyteller, or contributor.
+          <p className="text-xs sm:text-sm text-[#FAF4E8]/85 leading-relaxed">
+            Whether you are an entrepreneur, local artisan, village initiative, filmmaker, homestay
+            partner, or contributor—collaborate with Uttarkunth to build responsible livelihoods and
+            lasting value for Himalayan people and places.
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-3 shrink-0">
           <Link
-            href="/about"
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-white/12 hover:bg-white/20 text-[#FFFDF9] border border-white/20 text-xs font-semibold transition-colors no-underline"
-          >
-            <Users className="w-3.5 h-3.5 text-[#FDE2A8]" />
-            <span>Our People</span>
-          </Link>
-          <Link
             href="/community/join"
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#C55B23] hover:bg-[#AD4D1B] text-[#FFFDF9] text-xs font-semibold uppercase tracking-wider transition-colors shadow-sm no-underline"
+            className="inline-flex items-center gap-2 px-5 py-3 rounded-full bg-[#C55B23] hover:bg-[#AD4D1B] text-[#FFFDF9] text-xs font-semibold uppercase tracking-wider transition-colors shadow-sm no-underline"
           >
-            <Heart className="w-3.5 h-3.5" />
+            <Heart className="w-4 h-4" />
             <span>Join Our Mission</span>
             <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
+          <Link
+            href="/community"
+            className="inline-flex items-center gap-1.5 px-4 py-3 rounded-full bg-white/10 hover:bg-white/20 text-[#FFFDF9] border border-white/20 text-xs font-semibold transition-colors no-underline"
+          >
+            <span>Explore Community</span>
           </Link>
         </div>
       </div>
     </div>
   );
 }
+
+

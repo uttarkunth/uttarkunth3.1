@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   HEADER_HEIGHT_PX,
   computeHeaderVisibilityState,
+  getStickySubnavClassList,
 } from '../lib/sticky-header-offset';
 
 test('at top of page (scrollY <= 16), header is visible and secondary navbar sits below header (64px / top-16)', () => {
@@ -113,3 +114,28 @@ test('negative rubber-band overscroll is clamped to 0 and keeps secondary navbar
   assert.equal(bounce.subnavTopOffsetPx, 64);
   assert.equal(bounce.nextLastScrollY, 0);
 });
+
+test('getStickySubnavClassList always includes .sticky-subnav-shell and reflects pinned vs below-header scroll states', () => {
+  const atTopClasses = getStickySubnavClassList({
+    headerHidden: false,
+    isScrolled: false,
+    topClass: 'top-16',
+    className: 'bg-[#FAF7F2]/95 border-b',
+  });
+  assert.ok(atTopClasses.includes('sticky-subnav-shell'));
+  assert.ok(atTopClasses.includes('is-below-header'));
+  assert.ok(atTopClasses.includes('is-at-top'));
+  assert.ok(atTopClasses.includes('top-16'));
+
+  const pinnedClasses = getStickySubnavClassList({
+    headerHidden: true,
+    isScrolled: true,
+    topClass: 'top-0',
+    className: 'bg-[#FAF7F2]/95 border-b',
+  });
+  assert.ok(pinnedClasses.includes('sticky-subnav-shell'));
+  assert.ok(pinnedClasses.includes('is-pinned'));
+  assert.ok(pinnedClasses.includes('is-scrolled'));
+  assert.ok(pinnedClasses.includes('top-0'));
+});
+

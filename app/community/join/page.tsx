@@ -1,7 +1,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { BRAND } from '@/lib/constants';
-import { Heart, Users, CheckCircle2, ArrowRight, Mail } from 'lucide-react';
+import { Heart, ArrowRight, Mail } from 'lucide-react';
 
 export const metadata = {
   title: `Join Our Mission — ${BRAND.name} Community`,
@@ -19,33 +19,6 @@ export default function JoinCommunityPage() {
         <h1 className="font-serif text-4xl sm:text-5xl font-bold text-forest">
           Join the Uttarkunth Mission
         </h1>
-        <p className="text-sm sm:text-base text-charcoal-muted max-w-xl mx-auto">
-          Whether you are an educator, environmentalist, designer, doctor, or passionate traveler, your skills can make a genuine difference in the valley.
-        </p>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="p-6 bg-white rounded-2xl border border-forest/15 shadow-soft space-y-2">
-          <Users className="w-6 h-6 text-ukorange" />
-          <h3 className="font-serif text-lg font-bold text-forest">Volunteer in Jari</h3>
-          <p className="text-xs text-charcoal-muted leading-relaxed">
-            Spend meaningful time in Parvati Valley teaching workshops, assisting in trail cleanups, or supporting homestay digitalization.
-          </p>
-        </div>
-        <div className="p-6 bg-white rounded-2xl border border-forest/15 shadow-soft space-y-2">
-          <Heart className="w-6 h-6 text-forest" />
-          <h3 className="font-serif text-lg font-bold text-forest">Skill Exchange</h3>
-          <p className="text-xs text-charcoal-muted leading-relaxed">
-            Offer specialized knowledge in sustainable energy, architectural conservation, digital arts, or healthcare awareness.
-          </p>
-        </div>
-        <div className="p-6 bg-white rounded-2xl border border-forest/15 shadow-soft space-y-2">
-          <CheckCircle2 className="w-6 h-6 text-ukblue-deep" />
-          <h3 className="font-serif text-lg font-bold text-forest">Partner Organization</h3>
-          <p className="text-xs text-charcoal-muted leading-relaxed">
-            Collaborate on academic research, environmental impact assessments, or responsible alpine tourism policy.
-          </p>
-        </div>
       </div>
 
       <div className="bg-white rounded-3xl p-8 sm:p-12 border border-forest/15 shadow-soft space-y-6">

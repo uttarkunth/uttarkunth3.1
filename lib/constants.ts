@@ -197,9 +197,7 @@ export const PRODUCT_CATEGORIES = [
 ] as const;
 
 // ============================================================================
-// PHASE 2H: PROPOSED COMMUNITY INITIATIVES & GRASSROOTS FRAMEWORK
-// Note: These 9 initiatives represent Uttarkunth's proposed community tracks.
-// No real-world field outcomes, participant counts, or stories are fabricated.
+// PHASE 2H: ACTIVE HIMALAYAN INITIATIVE — UTTARKUNTH
 // ============================================================================
 
 export interface CommunityInitiative {
@@ -212,174 +210,40 @@ export interface CommunityInitiative {
   tagline: string;
   description: string;
   objectives: string[];
-  status: 'Proposed Initiative' | 'Planned Track' | 'Concept & Scoping';
+  status: 'Active Himalayan Initiative' | 'Proposed Initiative' | 'Planned Track' | 'Concept & Scoping';
   cohortSchedule: string;
   outcomes: string[];
 }
 
 export const COMMUNITY_INITIATIVES: CommunityInitiative[] = [
   {
-    id: 'alpine-ecology-trails',
-    slug: 'alpine-ecology-trails',
-    title: 'Alpine Ecology & Zero-Plastic Trails',
-    category: 'Ecology & Waste',
-    valley: 'Parvati Valley',
-    location: 'Jari, Kasol & Kheerganga trails',
-    tagline: 'Proposed stewardship track for clean mountain passes and riverways.',
-    description: 'A proposed grassroots initiative focused on trail clean-up drives, waste segregation at homestays, and community-led pack-it-in/pack-it-out trail guidelines along vulnerable high-altitude water catchment areas.',
+    id: 'uttarkunth',
+    slug: 'uttarkunth',
+    title: 'Uttarkunth — Initiative of the People of Jari',
+    category: 'Economic Upliftment & Grassroots Development',
+    valley: 'Parvati & Kullu Valleys',
+    location: 'Jari, Himachal Pradesh',
+    tagline:
+      'An initiative of the people of Jari for economic upliftment through engines of business—building regional capacity and a grassroots community to solve real mountain problems.',
+    description:
+      'Uttarkunth is an active Himalayan initiative born from the people of Jari for economic upliftment through sustainable engines of business. Rather than relying on external aid, Uttarkunth builds commercial and entrepreneurial strength from within the village so local people have the resources, ownership, and capacity to develop their own region and solve real problems arising on the ground—from environmental, cultural, and economical challenges to educational, developmental, and other regional needs.\n\nAt the heart of building Uttarkunth is a visionary scope: to cultivate a wider Uttarkunth Community dedicated to real grassroots development. Just as Uttarkunth began in Jari, a village initiative—whether a startup, a local enterprise, or any other responsible business—becomes a practical force that helps develop its own village and strengthens the wider Himalayan region.',
     objectives: [
-      'Reduce single-use plastic bottles across partner homestays in Jari and Kasol',
-      'Organize seasonal trail cleanups and waste audits along local trekking paths',
-      'Promote decentralized composting for homestay organic kitchen waste'
+      'Drive economic upliftment for the people of Jari and neighbouring valleys through sustainable engines of business',
+      'Build local capacity and self-reliance to solve real regional problems—spanning environmental, cultural, economical, educational, and developmental challenges',
+      'Cultivate a visionary Uttarkunth Community committed to real grassroots development across Himalayan villages',
+      'Encourage village-born startups and businesses that directly strengthen local livelihoods and help develop their own villages',
     ],
-    status: 'Proposed Initiative',
-    cohortSchedule: 'Proposed — Cohort dates to be announced once field operations open',
-    outcomes: []
+    status: 'Active Himalayan Initiative',
+    cohortSchedule:
+      'Active & Ongoing — Rooted in Jari, open to village startups, businesses, and grassroots collaborators',
+    outcomes: [
+      'Environmental Stewardship & Regional Ecology',
+      'Cultural Heritage & Identity Preservation',
+      'Economic Upliftment & Local Enterprise Engines',
+      'Educational & Youth Capacity Building',
+      'Grassroots Village & Regional Development',
+    ],
   },
-  {
-    id: 'kath-kuni-conservation',
-    slug: 'kath-kuni-conservation',
-    title: 'Kath-Kuni Vernacular Architecture Preservation',
-    category: 'Architecture & Heritage',
-    valley: 'Kullu & Parvati Valleys',
-    location: 'Naggar, Jari, and Upper Kullu hamlets',
-    tagline: 'Proposed documentation track for interlocking timber-and-stone building traditions.',
-    description: 'A proposed architectural documentation program to learn from senior village mistris (master craftsmen), survey traditional homes, and compile reference notes for vernacular repair.',
-    objectives: [
-      'Prepare measured architectural drawings of traditional Kath-Kuni structures',
-      'Record oral interviews with senior master carpenters on wood-jointing traditions',
-      'Host introductory learning workshops with local youth and architecture students'
-    ],
-    status: 'Proposed Initiative',
-    cohortSchedule: 'Proposed — Cohort dates to be announced once field operations open',
-    outcomes: []
-  },
-  {
-    id: 'youth-digital-mentorship',
-    slug: 'youth-digital-mentorship',
-    title: 'Youth Digital & Creative Mentorship',
-    category: 'Education & Livelihoods',
-    valley: 'Parvati Valley',
-    location: 'Jari Community Hub',
-    tagline: 'Proposed skill-sharing track for digital storytelling and hospitality tools.',
-    description: 'A planned mentorship initiative offering practical skill-sharing in photography, video editing, homestay reservation management, and communication to support self-reliant local livelihoods.',
-    objectives: [
-      'Deliver practical sessions on smartphone photography and visual storytelling',
-      'Assist homestay families with digital booking calendar and listing hygiene',
-      'Share wilderness safety and guest communication practices with aspiring local guides'
-    ],
-    status: 'Planned Track',
-    cohortSchedule: 'Proposed — Cohort dates to be announced once field operations open',
-    outcomes: []
-  },
-  {
-    id: 'indigenous-seed-bank',
-    slug: 'indigenous-seed-bank',
-    title: 'High-Altitude Seed Bank & Agroecology',
-    category: 'Agriculture & Food',
-    valley: 'Spiti & Upper Kullu',
-    location: 'High-altitude cold desert & temperate orchards',
-    tagline: 'Proposed conservation track for heirloom mountain grains, millets, and pulses.',
-    description: 'A concept-stage agroecology initiative aimed at documenting and preserving climate-resilient heritage seeds—such as Ogla (buckwheat), Fafra, black soybean, and traditional barley varieties.',
-    objectives: [
-      'Document heirloom seed varieties cultivated in high-altitude villages',
-      'Explore community seed exchange models with local farming families',
-      'Document traditional organic companion planting and soil care practices'
-    ],
-    status: 'Concept & Scoping',
-    cohortSchedule: 'Proposed — Cohort dates to be announced once field operations open',
-    outcomes: []
-  },
-  {
-    id: 'oral-history-archive',
-    slug: 'oral-history-archive',
-    title: 'Himalayan Oral Folk Songs & Living Archives',
-    category: 'Oral History & Folklore',
-    valley: 'Parvati & Seraj Valleys',
-    location: 'Mountain settlements and village squares',
-    tagline: 'Proposed archival track for pastoral songlines, folklore, and village histories.',
-    description: 'A planned cultural archiving track to record consenting elderly singers, traditional musicians, and village elders sharing folk ballads, seasonal harvest songs, and oral histories.',
-    objectives: [
-      'Record traditional Pahari folk songs and oral verses with explicit elder consent',
-      'Transcribe dialect lyrics with bilingual Hindi and English context notes',
-      'Build an open cultural reference archive for students and local communities'
-    ],
-    status: 'Proposed Initiative',
-    cohortSchedule: 'Proposed — Cohort dates to be announced once field operations open',
-    outcomes: []
-  },
-  {
-    id: 'wool-handloom-revival',
-    slug: 'wool-handloom-revival',
-    title: 'Traditional Wool, Weaving & Natural Dye Revival',
-    category: 'Textiles & Crafts',
-    valley: 'Kullu & Kinnaur',
-    location: 'Artisan hamlets across Parvati and Beas basins',
-    tagline: 'Proposed craft track for hand-spun desi wool and botanical dyes.',
-    description: 'A planned craft documentation and support track exploring natural mordants and mountain botanical dye sources (walnut hulls, madder root, pine bark) alongside traditional handloom weavers.',
-    objectives: [
-      'Document indigenous botanical dye recipes with weavers in Kullu',
-      'Connect independent handloom weavers with ethical raw wool sourcing',
-      'Highlight verified chemical-free textile craftsmanship when marketplace operations open'
-    ],
-    status: 'Planned Track',
-    cohortSchedule: 'Proposed — Cohort dates to be announced once field operations open',
-    outcomes: []
-  },
-  {
-    id: 'homestay-waste-stewardship',
-    slug: 'homestay-waste-stewardship',
-    title: 'Community Homestay Waste & Energy Management',
-    category: 'Sustainable Living',
-    valley: 'Parvati Valley',
-    location: 'Jari & surrounding hamlets',
-    tagline: 'Proposed sustainability track for circular waste and passive thermal warmth.',
-    description: 'A proposed technical support track to help independent family homestays evaluate energy-efficient thermal insulation, solar water heating, and greywater filtration options.',
-    objectives: [
-      'Conduct baseline energy and heating assessments for interested family homestays',
-      'Design low-cost passive window draft and roof insulation improvements',
-      'Evaluate practical greywater filtration designs suited to mountain terrain'
-    ],
-    status: 'Proposed Initiative',
-    cohortSchedule: 'Proposed — Cohort dates to be announced once field operations open',
-    outcomes: []
-  },
-  {
-    id: 'flora-forest-documentation',
-    slug: 'flora-forest-documentation',
-    title: 'Mountain Forest & Medicinal Flora Documentation',
-    category: 'Ecology & Botany',
-    valley: 'Great Himalayan National Park Buffer Zone',
-    location: 'Tirthan & Sainj valleys',
-    tagline: 'Proposed botanical documentation of alpine herbs and cedar ecosystems.',
-    description: 'A planned documentation initiative working alongside local herbalists and forest watchers to catalog native flora and encourage responsible conservation awareness.',
-    objectives: [
-      'Catalog native mountain flora with photographic and local-name references',
-      'Observe seasonal flowering cycles across elevation gradients',
-      'Prepare educational biodiversity reference sheets for local nature guides'
-    ],
-    status: 'Planned Track',
-    cohortSchedule: 'Proposed — Cohort dates to be announced once field operations open',
-    outcomes: []
-  },
-  {
-    id: 'pastoralist-route-archiving',
-    slug: 'pastoralist-route-archiving',
-    title: 'Transhumant Pastoralist Rights & Route Archiving',
-    category: 'Culture & Geography',
-    valley: 'Chamba, Kangra, Kullu & Spiti passes',
-    location: 'High-altitude migration passes',
-    tagline: 'Proposed cultural mapping of traditional shepherd trails across mountain passes.',
-    description: 'A concept-stage research initiative to document generational migratory corridors used by transhumant shepherds, recording pastoral ecological terminology and customary camp histories.',
-    objectives: [
-      'Document historic shepherd migration routes across Himachal mountain ranges',
-      'Record pastoral ecological terminology and traditional weather lore',
-      'Compile research notes supporting route safety and seasonal grazing awareness'
-    ],
-    status: 'Concept & Scoping',
-    cohortSchedule: 'Proposed — Cohort dates to be announced once field operations open',
-    outcomes: []
-  }
 ];
 
 export const COMMUNITY_STORIES: Array<{

@@ -500,7 +500,7 @@ export default async function HomePage() {
               Join Community Mission
             </LinkButton>
             <LinkButton href="/contact" variant="outline" size="lg">
-              Contact Jari Headquarters
+              Contact Us
             </LinkButton>
           </div>
         </div>

@@ -237,3 +237,37 @@ export function syncHeaderVisibilityOnRouteChange(): void {
     notifyListeners();
   }
 }
+
+export interface StickySubnavClassInput {
+  headerHidden: boolean;
+  isScrolled: boolean;
+  topClass: 'top-0' | 'top-16';
+  className?: string;
+}
+
+export function getStickySubnavClassList({
+  headerHidden,
+  isScrolled,
+  topClass,
+  className = '',
+}: StickySubnavClassInput): string {
+  const stateClass = headerHidden ? 'is-pinned' : 'is-below-header';
+  const scrollClass = isScrolled ? 'is-scrolled' : 'is-at-top';
+  return [
+    'sticky-subnav-shell',
+    stateClass,
+    scrollClass,
+    'sticky',
+    topClass,
+    'z-30',
+    'will-change-[top,transform]',
+    '[transform:translateZ(0)]',
+    'transition-[top,box-shadow,background-color]',
+    'duration-300',
+    'ease-[cubic-bezier(0.22,1,0.36,1)]',
+    className.trim(),
+  ]
+    .filter(Boolean)
+    .join(' ');
+}
+

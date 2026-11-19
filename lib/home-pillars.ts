@@ -35,6 +35,7 @@ export interface FeaturedProductSubgroup {
   title: string;
   subtitle: string;
   products: FormattedProductCardData[];
+  comingSoonOnly?: boolean;
 }
 
 export interface ProductSectionDefinition {
@@ -110,7 +111,7 @@ export const INITIAL_CURATED_PRODUCTS: HomeProductItem[] = [
     materials: 'Raw unheated high-altitude wildflower nectar',
     description:
       'Harvested sustainably from traditional log hives in upper Kullu & Parvati orchards with zero refined sugar or thermal processing.',
-    maker_name: 'Uttarkunth Mountain Collective',
+    maker_name: 'Parvati Valley Apiary',
     origin_valley: 'Kullu',
     origin_state: 'Himachal Pradesh',
     photos: ['/assets/products-home-page.webp'],
@@ -124,7 +125,7 @@ export function formatProductForCard(raw: Record<string, any>): FormattedProduct
   const id = String(raw?.id || raw?.slug || 'product');
   const slug = String(raw?.slug || raw?.id || 'product');
   const title = String(raw?.title || 'Himalayan Product').trim();
-  const brandName = String(raw?.maker_name || raw?.brand_name || 'Uttarkunth Artisan').trim();
+  const brandName = String(raw?.maker_name || raw?.brand_name || 'Himalayan Artisan').trim();
   const valley = String(raw?.origin_valley || 'Kullu').trim();
   const state = String(raw?.origin_state || 'Himachal Pradesh').trim();
   const regionSmallLabel = [valley, state].filter(Boolean).join(', ');
@@ -179,33 +180,26 @@ export function formatProductForCard(raw: Record<string, any>): FormattedProduct
 }
 
 /**
- * Dynamically builds regional/brand sub-rows inside "Featured Products" ONLY when products
- * from those brands or valleys exist (e.g., "Uttarkunth Products", "Treasures from Kullu",
- * "From the Valleys of Lahaul and Spiti", etc.).
+ * Dynamically builds sub-rows inside "Featured Products":
+ * - "Uttarkunth Products" displays only "Coming Soon".
+ * - Regional rows ("Treasures from Kullu", "From the Valleys of Lahaul and Spiti", etc.)
+ *   are added dynamically when products from those valleys exist.
  */
 export function buildFeaturedProductSubgroups(
   products: Record<string, any>[]
 ): FeaturedProductSubgroup[] {
-  const formatted = products.map(formatProductForCard);
-  if (formatted.length === 0) return [];
-
-  const groups: FeaturedProductSubgroup[] = [];
-
-  // 1. Uttarkunth Products (if any product is by Uttarkunth or curated in-house)
-  const uttarkunthItems = products
-    .filter((p) => {
-      const maker = String(p?.maker_name || '').toLowerCase();
-      return maker.includes('uttarkunth');
-    })
-    .map(formatProductForCard);
-
-  if (uttarkunthItems.length > 0) {
-    groups.push({
+  const groups: FeaturedProductSubgroup[] = [
+    {
       key: 'uttarkunth-products',
       title: 'Uttarkunth Products',
-      subtitle: 'In-house & village collective releases',
-      products: uttarkunthItems,
-    });
+      subtitle: '',
+      products: [],
+      comingSoonOnly: true,
+    },
+  ];
+
+  if (!Array.isArray(products) || products.length === 0) {
+    return groups;
   }
 
   // 2. Treasures from Kullu (only if products from Kullu / Parvati / Jari / Manali exist)

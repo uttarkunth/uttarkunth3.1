@@ -11,11 +11,7 @@ import { formatINR } from '@/lib/utils';
 import {
   MapPin,
   Home,
-  ShieldCheck,
-  CheckCircle2,
   ArrowRight,
-  Compass,
-  Sparkles,
   Building2,
 } from 'lucide-react';
 
@@ -167,10 +163,6 @@ export default async function StaysPage({ searchParams }: StaysPageProps) {
     <div className="space-y-16 sm:space-y-24 py-10 pb-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       {/* 1. STAYS HERO */}
       <section className="text-center space-y-6 max-w-4xl mx-auto pt-6">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-forest/10 text-forest text-xs font-semibold uppercase tracking-wider">
-          <Home className="w-3.5 h-3.5 text-ukorange" />
-          Pillar I • Stays &amp; Hospitality
-        </div>
         <h1 className="font-serif text-4xl sm:text-6xl lg:text-7xl font-bold text-forest leading-tight">
           Find Your Place in the Mountains.
         </h1>
@@ -187,43 +179,9 @@ export default async function StaysPage({ searchParams }: StaysPageProps) {
             initialGuests={resolvedParams?.guests ? Number(resolvedParams.guests) || 2 : 2}
           />
         </div>
-
-        {/* Trust Badges */}
-        <div className="flex flex-wrap items-center justify-center gap-6 text-xs text-charcoal font-medium pt-2">
-          <span className="flex items-center gap-1.5">
-            <CheckCircle2 className="w-4 h-4 text-ukorange" /> Direct Host Payment at Property
-          </span>
-          <span className="flex items-center gap-1.5">
-            <CheckCircle2 className="w-4 h-4 text-ukorange" /> Authentic Mountain Homestays
-          </span>
-          <span className="flex items-center gap-1.5">
-            <CheckCircle2 className="w-4 h-4 text-ukorange" /> Transparent Nightly Rates
-          </span>
-        </div>
       </section>
 
-      {/* 2. DIRECT HOST PAYMENT GUARANTEE BANNER */}
-      <section className="bg-ivory-warm rounded-3xl p-6 sm:p-8 border border-forest/20 flex flex-col sm:flex-row items-center justify-between gap-6">
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-2xl bg-forest text-ivory flex items-center justify-center flex-shrink-0">
-            <ShieldCheck className="w-6 h-6 text-ukorange" />
-          </div>
-          <div className="space-y-1">
-            <h3 className="font-serif text-xl font-bold text-forest">Direct Host Payment Model</h3>
-            <p className="text-xs text-charcoal-muted leading-relaxed max-w-2xl">
-              No online payment is currently collected by Uttarkunth. Guests pay their hosts directly at the property.
-            </p>
-          </div>
-        </div>
-        <Link
-          href="/booking-policy"
-          className="text-xs font-semibold text-ukorange hover:underline whitespace-nowrap self-start sm:self-auto"
-        >
-          Read Booking Policy →
-        </Link>
-      </section>
-
-      {/* 3. VERIFIED MOUNTAIN PROPERTIES */}
+      {/* 2. VERIFIED MOUNTAIN PROPERTIES */}
       <section className="space-y-8">
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-forest/10 pb-4">
           <div>
@@ -359,27 +317,18 @@ export default async function StaysPage({ searchParams }: StaysPageProps) {
         )}
       </section>
 
-      {/* 4. EXPLORE POPULAR DESTINATIONS DIRECTORY (Destination-First Discovery) */}
+      {/* 3. EXPLORE POPULAR DESTINATIONS DIRECTORY */}
       <section id="destinations" className="space-y-12 pt-6">
         <div className="space-y-2">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-ukorange/10 text-ukorange text-xs font-semibold uppercase tracking-wider">
-            <Compass className="w-3.5 h-3.5" />
-            Curated Regional Directory
-          </div>
           <h2 className="font-serif text-3xl sm:text-5xl font-bold text-forest">
             Explore Popular Destinations
           </h2>
-          <p className="text-sm text-charcoal-muted max-w-2xl leading-relaxed">
-            Our curated directory of mountain towns and valleys across Himachal Pradesh, Jammu &amp; Kashmir, and Uttarakhand. New stays appear automatically as hosts complete verification.
-          </p>
         </div>
 
         {/* Region 1: Himachal Pradesh */}
         <div className="space-y-6">
           <div className="flex items-center gap-3 border-b border-forest/15 pb-3">
-            <span className="text-xs uppercase font-bold tracking-widest text-forest">Region</span>
             <h3 className="font-serif text-2xl font-bold text-forest">Himachal Pradesh</h3>
-            <span className="text-xs text-charcoal-muted">({himachalDestinations.length} Destinations)</span>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
@@ -390,16 +339,6 @@ export default async function StaysPage({ searchParams }: StaysPageProps) {
                 className="p-5 bg-white rounded-2xl border border-forest/15 hover:border-ukorange/40 hover:shadow-soft transition-all flex flex-col justify-between group space-y-3"
               >
                 <div className="space-y-1">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-bold text-ukorange uppercase tracking-wider">Himachal</span>
-                    {d.propertyCount! > 0 ? (
-                      <span className="bg-forest/10 text-forest text-[10px] font-bold px-2 py-0.5 rounded-full">
-                        {d.propertyCount} {d.propertyCount === 1 ? 'Stay' : 'Stays'}
-                      </span>
-                    ) : (
-                      <span className="text-[10px] text-charcoal-muted">Coming Soon</span>
-                    )}
-                  </div>
                   <h4 className="font-serif text-lg font-bold text-forest group-hover:text-ukorange transition-colors">
                     {d.name}
                   </h4>
@@ -419,9 +358,7 @@ export default async function StaysPage({ searchParams }: StaysPageProps) {
         {/* Region 2: Jammu & Kashmir */}
         <div className="space-y-6 pt-4">
           <div className="flex items-center gap-3 border-b border-forest/15 pb-3">
-            <span className="text-xs uppercase font-bold tracking-widest text-forest">Region</span>
             <h3 className="font-serif text-2xl font-bold text-forest">Jammu &amp; Kashmir</h3>
-            <span className="text-xs text-charcoal-muted">({jkDestinations.length} Destinations)</span>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
@@ -432,16 +369,6 @@ export default async function StaysPage({ searchParams }: StaysPageProps) {
                 className="p-5 bg-white rounded-2xl border border-forest/15 hover:border-ukorange/40 hover:shadow-soft transition-all flex flex-col justify-between group space-y-3"
               >
                 <div className="space-y-1">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-bold text-ukorange uppercase tracking-wider">J&amp;K</span>
-                    {d.propertyCount! > 0 ? (
-                      <span className="bg-forest/10 text-forest text-[10px] font-bold px-2 py-0.5 rounded-full">
-                        {d.propertyCount} {d.propertyCount === 1 ? 'Stay' : 'Stays'}
-                      </span>
-                    ) : (
-                      <span className="text-[10px] text-charcoal-muted">Coming Soon</span>
-                    )}
-                  </div>
                   <h4 className="font-serif text-lg font-bold text-forest group-hover:text-ukorange transition-colors">
                     {d.name}
                   </h4>
@@ -461,9 +388,7 @@ export default async function StaysPage({ searchParams }: StaysPageProps) {
         {/* Region 3: Uttarakhand */}
         <div className="space-y-6 pt-4">
           <div className="flex items-center gap-3 border-b border-forest/15 pb-3">
-            <span className="text-xs uppercase font-bold tracking-widest text-forest">Region</span>
             <h3 className="font-serif text-2xl font-bold text-forest">Uttarakhand</h3>
-            <span className="text-xs text-charcoal-muted">({uttarakhandDestinations.length} Destinations)</span>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -474,16 +399,6 @@ export default async function StaysPage({ searchParams }: StaysPageProps) {
                 className="p-5 bg-white rounded-2xl border border-forest/15 hover:border-ukorange/40 hover:shadow-soft transition-all flex flex-col justify-between group space-y-3"
               >
                 <div className="space-y-1">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-bold text-ukorange uppercase tracking-wider">Uttarakhand</span>
-                    {d.propertyCount! > 0 ? (
-                      <span className="bg-forest/10 text-forest text-[10px] font-bold px-2 py-0.5 rounded-full">
-                        {d.propertyCount} {d.propertyCount === 1 ? 'Stay' : 'Stays'}
-                      </span>
-                    ) : (
-                      <span className="text-[10px] text-charcoal-muted">Coming Soon</span>
-                    )}
-                  </div>
                   <h4 className="font-serif text-lg font-bold text-forest group-hover:text-ukorange transition-colors">
                     {d.name}
                   </h4>
@@ -501,53 +416,7 @@ export default async function StaysPage({ searchParams }: StaysPageProps) {
         </div>
       </section>
 
-      {/* 5. ACCOMMODATION-TYPE DISCOVERY (StayInBharat Inspired) */}
-      <section className="space-y-6 pt-4">
-        <div className="text-center max-w-2xl mx-auto space-y-2">
-          <span className="text-xs font-bold uppercase tracking-wider text-ukorange">
-            Types of Mountain Stays
-          </span>
-          <h3 className="font-serif text-3xl sm:text-4xl font-bold text-forest">
-            Stay by Architecture &amp; Setting
-          </h3>
-          <p className="text-xs sm:text-sm text-charcoal-muted">
-            Find the right mountain setting for your journey.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-          <div className="bg-white rounded-3xl p-6 border border-forest/15 space-y-2 text-center shadow-soft hover:shadow-lifted transition-all">
-            <div className="text-3xl mb-1">🪵</div>
-            <h4 className="font-serif text-xl font-bold text-forest">Traditional Homestays</h4>
-            <p className="text-xs text-charcoal-muted leading-relaxed">
-              Authentic Kathkuni timber homes hosted by mountain families with home-cooked thalis.
-            </p>
-          </div>
-          <div className="bg-white rounded-3xl p-6 border border-forest/15 space-y-2 text-center shadow-soft hover:shadow-lifted transition-all">
-            <div className="text-3xl mb-1">🌲</div>
-            <h4 className="font-serif text-xl font-bold text-forest">Mountain Retreats</h4>
-            <p className="text-xs text-charcoal-muted leading-relaxed">
-              Riverside suites and secluded pine forest havens designed for peace and deep focus.
-            </p>
-          </div>
-          <div className="bg-white rounded-3xl p-6 border border-forest/15 space-y-2 text-center shadow-soft hover:shadow-lifted transition-all">
-            <div className="text-3xl mb-1">🏡</div>
-            <h4 className="font-serif text-xl font-bold text-forest">Village Cottages</h4>
-            <p className="text-xs text-charcoal-muted leading-relaxed">
-              Quiet independent stone-and-wood cottages for extended writing retreats and family stays.
-            </p>
-          </div>
-          <div className="bg-white rounded-3xl p-6 border border-forest/15 space-y-2 text-center shadow-soft hover:shadow-lifted transition-all">
-            <div className="text-3xl mb-1">🍎</div>
-            <h4 className="font-serif text-xl font-bold text-forest">Orchard Havens</h4>
-            <p className="text-xs text-charcoal-muted leading-relaxed">
-              Active mountain apple and apricot orchards nestled along high Himalayan ridges.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* 6. HOST PARTNERSHIP CTA */}
+      {/* 4. HOST PARTNERSHIP CTA */}
       <section className="bg-forest-dark text-ivory rounded-3xl p-8 sm:p-14 text-center space-y-6 shadow-lifted">
         <span className="text-xs uppercase tracking-widest text-ukorange font-bold block">
           Mountain Hosts &amp; Homestay Owners
@@ -571,3 +440,4 @@ export default async function StaysPage({ searchParams }: StaysPageProps) {
     </div>
   );
 }
+

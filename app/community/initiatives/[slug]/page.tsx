@@ -86,7 +86,7 @@ export default function InitiativeDetailPage({ params }: { params: { slug: strin
 
         {/* Objectives Checklist */}
         <div className="space-y-3 pt-6 border-t border-forest/10">
-          <h3 className="font-serif text-lg font-bold text-forest">Proposed Field Objectives</h3>
+          <h3 className="font-serif text-lg font-bold text-forest">Grassroots Objectives &amp; Visionary Scope</h3>
           <ul className="space-y-2.5">
             {init.objectives.map((obj, i) => (
               <li key={i} className="flex items-start gap-3 text-xs sm:text-sm text-charcoal">
@@ -97,41 +97,42 @@ export default function InitiativeDetailPage({ params }: { params: { slug: strin
           </ul>
         </div>
 
-        {/* Honest Implementation Status */}
+        {/* Active Implementation Status */}
         <div className="p-4 bg-ivory-warm rounded-2xl border border-forest/10 space-y-1 text-xs">
           <span className="font-bold text-ukorange block">Current Operational Status: {init.status}</span>
           <p className="text-charcoal-muted leading-relaxed">
-            This initiative is currently in the proposed planning stage. Uttarkunth does not publish invented participant counts or fabricated field outcomes; verified milestones will be recorded here only after on-ground cohorts complete real fieldwork.
+            Uttarkunth is actively operating from Jari, Parvati Valley—building economic upliftment through engines of business so village communities can develop their regions and solve environmental, cultural, economical, educational, and developmental challenges from within.
           </p>
         </div>
 
-        {/* Residency & Schedule */}
+        {/* Participation & Collaboration */}
         <div className="p-4 bg-warm-canvas rounded-2xl border border-beige flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-xs">
           <div className="flex items-center gap-3">
             <Calendar className="w-5 h-5 text-ukorange flex-shrink-0" />
             <div>
-              <span className="font-bold text-forest block">Field Residency Schedule</span>
+              <span className="font-bold text-forest block">Participation &amp; Collaboration</span>
               <span className="text-charcoal-muted">{init.cohortSchedule}</span>
             </div>
           </div>
 
           <Link
-            href={`/community/participate?initiative=${init.slug}`}
+            href="/community/join"
             className="px-5 py-2.5 bg-forest hover:bg-forest-hover text-white text-xs font-semibold rounded-xl transition-colors flex-shrink-0 inline-flex items-center gap-1.5 justify-center"
           >
             <Heart className="w-3.5 h-3.5 text-ukorange" />
-            <span>Apply for this Initiative</span>
+            <span>Join the Uttarkunth Community</span>
           </Link>
         </div>
       </div>
 
-      {/* Non-NGO Philosophy reminder */}
+      {/* Grassroots Business Ethos reminder */}
       <div className="p-6 bg-forest-dark text-ivory rounded-3xl space-y-2 text-xs">
-        <span className="text-ukorange font-bold uppercase tracking-wider block">Karmayog Field Ethos</span>
+        <span className="text-ukorange font-bold uppercase tracking-wider block">Karmayog &amp; Village Enterprise Ethos</span>
         <p className="text-ivory/80 leading-relaxed">
-          Uttarkunth does not accept cash donations or operate as an aid charity. We welcome dedicated contributors who want to exchange technical skills, ecological knowledge, or creative documentation directly on the ground.
+          Uttarkunth believes that a village initiative—such as an emerging startup or local business—directly helps develop its village by creating sustainable livelihoods, retaining local talent, and building the capacity to solve regional problems together.
         </p>
       </div>
     </div>
   );
 }
+

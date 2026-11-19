@@ -41,20 +41,21 @@ export default function CommunityPage() {
       <section className="mx-auto max-w-7xl space-y-8 px-4 py-16 sm:px-6 lg:px-8">
         <div className="max-w-3xl space-y-3">
           <span className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.16em] text-terracotta">
-            <Compass className="h-4 w-4" /> Ideas and participation
+            <Compass className="h-4 w-4" /> Grassroots Movement from Jari
           </span>
           <h2 className="font-serif text-3xl font-bold text-forest sm:text-4xl">
-            Community initiatives
+            One Active Himalayan Initiative
           </h2>
           <p className="text-sm leading-relaxed text-charcoal-muted">
-            These tracks are shown with their current planning status. Proposed and
-            concept-stage items are not presented as completed projects; dates and
-            outcomes will be added only when they are confirmed.
+            Uttarkunth itself is an active initiative of the people of Jari for economic upliftment
+            through engines of business—building the capacity to develop the region, solve real
+            environmental, cultural, economical, educational, and developmental challenges, and
+            foster a community where village startups and businesses help develop their own villages.
           </p>
         </div>
 
         {COMMUNITY_INITIATIVES.length > 0 ? (
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-6">
             {COMMUNITY_INITIATIVES.map((initiative) => (
               <article key={initiative.id} className="flex h-full flex-col rounded-2xl border border-beige/80 bg-white p-6 shadow-soft">
                 <div className="mb-4 flex items-center justify-between gap-3">
