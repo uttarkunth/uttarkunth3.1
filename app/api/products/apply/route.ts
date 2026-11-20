@@ -79,6 +79,11 @@ export async function POST(req: NextRequest) {
     }
 
     const {
+      seller_type,
+      save_as_draft,
+      agreement_accepted,
+      operating_location,
+      brand_logo_url,
       business_name,
       maker_name,
       valley,
@@ -107,6 +112,17 @@ export async function POST(req: NextRequest) {
       submitted_documents,
       verification_documents,
     } = validation.data;
+
+    if (!save_as_draft && agreement_accepted === false) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error:
+            'You must accept the Uttarkunth Seller Authenticity & Direct Fulfilment Agreement before submitting.',
+        },
+        { status: 400 }
+      );
+    }
 
     // 3. Enforce Indian GSTIN validation + Modulo-36 checksum when provided
     let normalizedGstin: string | null = null;

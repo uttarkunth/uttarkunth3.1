@@ -41,14 +41,13 @@ function getCategoryIcon(id: string) {
 export function GrowingTogetherShowcase() {
   return (
     <div className="space-y-8 sm:space-y-10" data-testid="growing-together-showcase">
-      {/* Pillar Header: Highlighted "Growing Together" */}
+      {/* Pillar Header: Unboxed Uttarkunth Orange "Growing Together" */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-[#D9CCB8]/80 pb-3.5 sm:pb-4">
-        <div className="space-y-2">
-          <span className="inline-flex items-center gap-2 px-3.5 sm:px-4 py-1 sm:py-1.5 rounded-xl bg-gradient-to-r from-[#1F332A] via-[#263D32] to-[#2C4639] text-[#FAF4E8] border-l-4 border-[#C55B23] shadow-[0_6px_18px_rgba(31,51,42,0.14)] font-serif text-[17px] sm:text-xl md:text-2xl font-bold tracking-wide">
-            <span className="w-2 h-2 rounded-full bg-[#FDE2A8] ring-2 ring-[#C55B23]/60 shrink-0" />
+        <div className="space-y-1">
+          <span className="block font-serif font-normal sm:font-medium text-[#C55B23] text-xl sm:text-2xl md:text-[26px] lg:text-[30px] tracking-wide leading-snug">
             Growing Together
           </span>
-          <h2 className="font-serif text-[22px] sm:text-3xl md:text-4xl lg:text-[42px] font-bold text-[#1F332A] tracking-tight leading-[1.15] sm:leading-tight">
+          <h2 className="font-serif text-[22px] sm:text-3xl md:text-4xl lg:text-[42px] font-medium text-[#1F332A] tracking-tight leading-[1.15] sm:leading-tight">
             People, Purpose &amp; Karmayog in the Himalayas
           </h2>
         </div>
@@ -56,14 +55,14 @@ export function GrowingTogetherShowcase() {
         <div className="flex flex-wrap items-center gap-3 shrink-0">
           <Link
             href="/community/join"
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-[#1F332A] hover:bg-[#C55B23] text-[#FFFDF9] text-xs font-semibold transition-colors shadow-2xs no-underline"
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-[#1F332A] hover:bg-[#C55B23] text-[#FFFDF9] font-sans text-xs font-semibold transition-colors shadow-2xs no-underline"
           >
             <Heart className="w-3.5 h-3.5 text-[#FDE2A8]" />
             <span>Join Our Mission</span>
           </Link>
           <Link
             href="/community"
-            className="text-xs sm:text-sm font-semibold text-[#1F332A] hover:text-[#C55B23] transition-colors no-underline"
+            className="font-sans text-xs sm:text-sm font-semibold text-[#1F332A] hover:text-[#C55B23] transition-colors no-underline"
           >
             Explore Community &rarr;
           </Link>
@@ -75,7 +74,7 @@ export function GrowingTogetherShowcase() {
         {/* Left: 4-Paragraph Karmayog & Community Narrative */}
         <div className="lg:col-span-7 rounded-[24px] bg-[#FFFDF9] border border-[#D9CCB8] p-6 sm:p-8 flex flex-col justify-between space-y-5 shadow-[0_8px_22px_rgba(24,36,29,0.05)]">
           <div className="space-y-4">
-            <span className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.14em] text-[#C55B23]">
+            <span className="inline-flex items-center gap-1.5 font-sans text-[11px] font-semibold uppercase tracking-[0.14em] text-[#C55B23]">
               <Sparkles className="w-3.5 h-3.5" />
               Philosophy of Karmayog
             </span>
@@ -88,8 +87,8 @@ export function GrowingTogetherShowcase() {
                     key={index}
                     className={
                       isClosingLine
-                        ? 'font-serif text-lg sm:text-xl font-bold italic text-[#1F332A] pt-1'
-                        : 'text-xs sm:text-[14px] text-[#3F3A32] leading-relaxed'
+                        ? 'font-serif text-lg sm:text-xl font-medium italic text-[#1F332A] pt-1'
+                        : 'font-sans font-normal text-xs sm:text-[14px] text-[#3F3A32] leading-relaxed'
                     }
                   >
                     {paragraph}
@@ -105,14 +104,14 @@ export function GrowingTogetherShowcase() {
             className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-[#FAF6EE] via-[#F5EFE2] to-[#EBF1EA] border border-[#C55B23]/35 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
           >
             <div className="space-y-1">
-              <span className="inline-flex items-center gap-1.5 text-[10.5px] font-bold uppercase tracking-wider text-[#C55B23]">
+              <span className="inline-flex items-center gap-1.5 font-sans text-[10.5px] font-semibold uppercase tracking-wider text-[#C55B23]">
                 <Mountain className="w-3.5 h-3.5" />
                 Village Initiative Spotlight
               </span>
-              <h3 className="font-serif text-lg sm:text-xl font-bold text-[#1F332A]">
+              <h3 className="font-serif text-lg sm:text-xl font-medium text-[#1F332A]">
                 Uttarkunth — Born as a Village Initiative in Jari, Parvati Valley
               </h3>
-              <p className="text-xs text-[#4A443B] leading-relaxed">
+              <p className="font-sans font-normal text-xs text-[#4A443B] leading-relaxed">
                 Uttarkunth itself is a village-born initiative proving how a mountain hamlet can
                 connect authentic homestays, local makers, documentary storytelling, and youth
                 livelihoods.
@@ -120,7 +119,7 @@ export function GrowingTogetherShowcase() {
             </div>
             <Link
               href="/about"
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-[#1F332A] hover:bg-[#C55B23] text-[#FFFDF9] text-xs font-semibold transition-colors shrink-0 no-underline self-start sm:self-center"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-[#1F332A] hover:bg-[#C55B23] text-[#FFFDF9] font-sans text-xs font-semibold transition-colors shrink-0 no-underline self-start sm:self-center"
             >
               <span>Our Story</span>
               <ArrowRight className="w-3.5 h-3.5" />
@@ -140,11 +139,11 @@ export function GrowingTogetherShowcase() {
           <div className="absolute inset-0 bg-gradient-to-t from-[#131F19]/92 via-[#131F19]/35 to-black/20" />
 
           <div className="relative z-10 space-y-2.5">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#1F332A]/85 border border-white/15 text-[10.5px] font-bold uppercase tracking-[0.14em] text-[#FDE2A8]">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#1F332A]/85 border border-white/15 font-sans text-[10.5px] font-semibold uppercase tracking-[0.14em] text-[#FDE2A8]">
               <Trees className="w-3.5 h-3.5 text-[#C55B23]" />
               <span>Jari &middot; Parvati &amp; Kullu Valleys</span>
             </div>
-            <p className="font-serif text-2xl sm:text-3xl font-bold text-[#FFFDF9] leading-snug">
+            <p className="font-serif text-2xl sm:text-3xl font-medium text-[#FFFDF9] leading-snug">
               &ldquo;When mountain youth and village families lead, conservation and livelihood move
               together.&rdquo;
             </p>
@@ -156,14 +155,14 @@ export function GrowingTogetherShowcase() {
       <div className="pt-6 border-t border-[#D5C8B3]/70 space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-2">
           <div>
-            <span className="text-[10.5px] font-bold uppercase tracking-[0.14em] text-[#C55B23] block">
+            <span className="font-sans text-[10.5px] font-semibold uppercase tracking-[0.14em] text-[#C55B23] block">
               Open Collaboration Pathways
             </span>
-            <h3 className="font-serif text-[20px] sm:text-2xl md:text-[28px] font-bold text-[#1F332A] leading-tight">
+            <h3 className="font-serif text-[20px] sm:text-2xl md:text-[28px] font-medium text-[#1F332A] leading-tight">
               Who We Welcome &amp; Collaborate With
             </h3>
           </div>
-          <span className="text-xs text-[#5C5549] font-medium">
+          <span className="font-sans text-xs text-[#5C5549] font-normal">
             6 Pathways for Individuals, Teams, Villages &amp; Emerging Startups
           </span>
         </div>
@@ -191,38 +190,38 @@ export function GrowingTogetherShowcase() {
                       {getCategoryIcon(item.id)}
                     </div>
                     {item.highlightBadge && (
-                      <span className="px-2.5 py-0.5 rounded-full bg-[#1F332A] text-[#FDE2A8] text-[10px] font-bold tracking-wide">
+                      <span className="px-2.5 py-0.5 rounded-full bg-[#1F332A] text-[#FDE2A8] font-sans text-[10px] font-semibold tracking-wide">
                         {item.highlightBadge}
                       </span>
                     )}
                   </div>
 
                   <div>
-                    <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#5C5549] block">
+                    <span className="font-sans text-[10px] font-semibold uppercase tracking-[0.14em] text-[#5C5549] block">
                       Category
                     </span>
-                    <h4 className="font-serif text-lg sm:text-xl font-bold text-[#1F332A] group-hover:text-[#C55B23] transition-colors leading-snug">
+                    <h4 className="font-serif text-lg sm:text-xl font-medium text-[#1F332A] group-hover:text-[#C55B23] transition-colors leading-snug">
                       {item.category}
                     </h4>
                   </div>
 
                   <div className="pt-0.5">
-                    <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#C55B23] block">
+                    <span className="font-sans text-[10px] font-semibold uppercase tracking-[0.14em] text-[#C55B23] block">
                       What it welcomes
                     </span>
-                    <p className="text-xs sm:text-[13.5px] font-semibold text-[#2E2A24] mt-0.5">
+                    <p className="font-sans text-xs sm:text-[13.5px] font-normal text-[#2E2A24] mt-0.5">
                       {item.welcomes}
                     </p>
                   </div>
 
                   {item.highlightNote && (
-                    <p className="text-[11.5px] text-[#3F3A32] bg-[#FFFDF9]/90 border border-[#D9CCB8] rounded-xl p-2.5 leading-relaxed">
+                    <p className="font-sans font-normal text-[11.5px] text-[#3F3A32] bg-[#FFFDF9]/90 border border-[#D9CCB8] rounded-xl p-2.5 leading-relaxed">
                       {item.highlightNote}
                     </p>
                   )}
                 </div>
 
-                <div className="pt-2.5 border-t border-[#E5DEC9] flex items-center justify-between text-xs font-bold text-[#1F332A] group-hover:text-[#C55B23] transition-colors">
+                <div className="pt-2.5 border-t border-[#E5DEC9] flex items-center justify-between font-sans text-xs font-semibold text-[#1F332A] group-hover:text-[#C55B23] transition-colors">
                   <span>Connect &amp; Participate</span>
                   <ArrowRight className="w-3.5 h-3.5" />
                 </div>
@@ -238,10 +237,10 @@ export function GrowingTogetherShowcase() {
         className="rounded-[24px] bg-gradient-to-r from-[#1F332A] via-[#263D32] to-[#1F332A] text-[#FFFDF9] p-6 sm:p-8 border border-[#C55B23]/40 shadow-[0_14px_34px_rgba(24,36,29,0.16)] flex flex-col lg:flex-row lg:items-center justify-between gap-6"
       >
         <div className="space-y-2 max-w-2xl">
-          <h3 className="font-serif text-2xl sm:text-3xl font-bold text-[#FFFDF9] leading-tight">
+          <h3 className="font-serif text-2xl sm:text-3xl font-medium text-[#FFFDF9] leading-tight">
             Want to Be a Part of Uttarkunth Community?
           </h3>
-          <p className="text-xs sm:text-sm text-[#FAF4E8]/85 leading-relaxed">
+          <p className="font-sans text-xs sm:text-sm font-normal text-[#FAF4E8]/85 leading-relaxed">
             Whether you are an entrepreneur, local artisan, village initiative, filmmaker, homestay
             partner, or contributor—collaborate with Uttarkunth to build responsible livelihoods and
             lasting value for Himalayan people and places.
@@ -251,7 +250,7 @@ export function GrowingTogetherShowcase() {
         <div className="flex flex-wrap items-center gap-3 shrink-0">
           <Link
             href="/community/join"
-            className="inline-flex items-center gap-2 px-5 py-3 rounded-full bg-[#C55B23] hover:bg-[#AD4D1B] text-[#FFFDF9] text-xs font-semibold uppercase tracking-wider transition-colors shadow-sm no-underline"
+            className="inline-flex items-center gap-2 px-5 py-3 rounded-full bg-[#C55B23] hover:bg-[#AD4D1B] text-[#FFFDF9] font-sans text-xs font-semibold uppercase tracking-wider transition-colors shadow-sm no-underline"
           >
             <Heart className="w-4 h-4" />
             <span>Join Our Mission</span>
@@ -259,7 +258,7 @@ export function GrowingTogetherShowcase() {
           </Link>
           <Link
             href="/community"
-            className="inline-flex items-center gap-1.5 px-4 py-3 rounded-full bg-white/10 hover:bg-white/20 text-[#FFFDF9] border border-white/20 text-xs font-semibold transition-colors no-underline"
+            className="inline-flex items-center gap-1.5 px-4 py-3 rounded-full bg-white/10 hover:bg-white/20 text-[#FFFDF9] border border-white/20 font-sans text-xs font-semibold transition-colors no-underline"
           >
             <span>Explore Community</span>
           </Link>

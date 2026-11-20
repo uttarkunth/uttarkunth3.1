@@ -109,7 +109,7 @@ export function RecentReviewsCarousel({
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 sm:gap-4">
         <div className="space-y-1.5">
           <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-            <h3 className="font-serif text-[22px] sm:text-2xl lg:text-[28px] font-bold text-[#1F332A] tracking-tight leading-tight">
+            <h3 className="font-serif text-[22px] sm:text-2xl lg:text-[28px] font-medium text-[#1F332A] tracking-tight leading-tight">
               Recent Reviews
             </h3>
 

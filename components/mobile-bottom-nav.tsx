@@ -401,7 +401,7 @@ export function MobileBottomNav() {
                       option.iconName,
                       `w-5 h-5 ${isCurrentPillar ? 'text-[#C55B23]' : 'text-[#29251F]'}`
                     )}
-                    <span className="text-[11px] font-medium tracking-tight leading-none">
+                    <span className="font-sans text-[11px] font-medium tracking-tight leading-none">
                       {option.label}
                     </span>
                   </button>
@@ -682,10 +682,10 @@ export function MobileBottomNav() {
             {/* Header */}
             <div className="flex items-center justify-between gap-2 pb-2 border-b border-[#E5DEC9]/80">
               <div>
-                <h2 className="font-serif text-base font-bold text-[#1F332A]">
+                <h2 className="font-serif text-base font-medium text-[#1F332A]">
                   Saved Favourites
                 </h2>
-                <p className="text-[11px] text-[#6E6559]">
+                <p className="font-sans font-normal text-[11px] text-[#6E6559]">
                   Your saved stays, products, productions &amp; destinations
                 </p>
               </div>
@@ -773,10 +773,10 @@ export function MobileBottomNav() {
                   <div className="w-9 h-9 rounded-full bg-[#C55B23]/10 text-[#C55B23] flex items-center justify-center mx-auto">
                     <Heart strokeWidth={1.75} className="w-4 h-4" />
                   </div>
-                  <p className="font-serif text-sm font-bold text-[#1F332A]">
+                  <p className="font-serif text-sm font-medium text-[#1F332A]">
                     No saved items yet
                   </p>
-                  <p className="text-xs text-[#6E6559] max-w-xs mx-auto leading-relaxed">
+                  <p className="font-sans font-normal text-xs text-[#6E6559] max-w-xs mx-auto leading-relaxed">
                     Tap the heart icon on any homestay, mountain product, original film, or destination to keep it here for quick access.
                   </p>
                 </div>

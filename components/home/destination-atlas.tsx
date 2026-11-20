@@ -402,7 +402,7 @@ export function DestinationAtlas({ destinations }: DestinationAtlasProps) {
       {/* Header Row: "Pick a Uttarkunth Destination" Title (matching Featured Stays font & size) + "Show nearby locations" + Regional Pills & Scroll Arrows */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 sm:gap-4">
         <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1.5">
-          <h2 className="font-serif text-[22px] sm:text-3xl md:text-4xl lg:text-[42px] font-bold text-[#1F332A] tracking-tight leading-[1.15] sm:leading-tight">
+          <h2 className="font-serif text-[22px] sm:text-3xl md:text-4xl lg:text-[42px] font-medium text-[#1F332A] tracking-tight leading-[1.15] sm:leading-tight">
             Pick a Uttarkunth Destination
           </h2>
 
@@ -411,9 +411,9 @@ export function DestinationAtlas({ destinations }: DestinationAtlasProps) {
             suppressHydrationWarning
             onClick={handleToggleNearby}
             className={cn(
-              'inline-flex items-center gap-1.5 text-xs sm:text-[13.5px] font-medium underline underline-offset-4 transition-colors cursor-pointer',
+              'font-sans inline-flex items-center gap-1.5 text-xs sm:text-[13.5px] font-semibold underline underline-offset-4 transition-colors cursor-pointer',
               regionFilter === 'nearby'
-                ? 'text-[#C55B23] decoration-[#C55B23] font-semibold'
+                ? 'text-[#C55B23] decoration-[#C55B23]'
                 : 'text-[#4A554E] hover:text-[#1F332A] decoration-[#4A554E]/60 hover:decoration-[#1F332A]'
             )}
           >

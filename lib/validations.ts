@@ -203,11 +203,30 @@ export type SearchFilterInput = z.infer<typeof SearchFilterSchema>;
 // ============================================================================
 
 export const SellerApplicationSchema = z.object({
-  // Public Brand Profile (backward-compatible with existing Phase 2F fields)
+  // Public Brand Profile & Seller Registration (Part 6 + Phase 2F backward-compatible)
+  seller_type: z
+    .enum([
+      'individual',
+      'business',
+      'brand_owner',
+      'manufacturer',
+      'authorized_reseller',
+    ])
+    .optional()
+    .default('individual'),
+  save_as_draft: z.boolean().optional().default(false),
+  agreement_accepted: z.boolean().optional().default(true),
+  operating_location: z.string().trim().max(200).optional().or(z.literal('')),
   business_name: z.string().trim().min(2, "Business or brand name is required").max(120),
   brand_name: z.string().trim().min(2).max(120).optional(),
   brand_logo_url: z.string().trim().url("Brand logo must be a valid URL").optional().or(z.literal('')),
   primary_category: z.enum([
+    'handcrafted-artisan',
+    'food-pantry',
+    'clothing-textiles',
+    'home-living',
+    'personal-care',
+    'sustainable-living',
     'himalayan',
     'crafts',
     'textiles',
@@ -319,9 +338,26 @@ export const SellerApplicationSchema = z.object({
 
 export type SellerApplicationInput = z.infer<typeof SellerApplicationSchema>;
 
+export const ProductVariantInputSchema = z.object({
+  variant_name: z.string().trim().min(1, "Variant name is required").max(100),
+  sku: z.string().trim().max(80).optional().or(z.literal('')),
+  mrp: z.coerce.number().positive("Variant MRP must be greater than 0").optional(),
+  selling_price: z.coerce.number().positive("Variant selling price must be greater than 0").optional(),
+  available_stock: z.coerce.number().int().min(0, "Variant stock cannot be negative").default(0),
+});
+
 export const ProductSubmissionSchema = z.object({
+  // Step 1: Basic Product Information
   title: z.string().trim().min(3, "Product title must be at least 3 characters").max(150),
+  short_description: z.string().trim().max(300).optional().or(z.literal('')),
+  description: z.string().trim().min(20, "Product description must be at least 20 characters").max(3000),
   category: z.enum([
+    'handcrafted-artisan',
+    'food-pantry',
+    'clothing-textiles',
+    'home-living',
+    'personal-care',
+    'sustainable-living',
     'himalayan',
     'crafts',
     'textiles',
@@ -332,15 +368,77 @@ export const ProductSubmissionSchema = z.object({
     'sustainable',
     'other',
   ]),
-  maker_name: z.string().trim().min(2, "Maker or cooperative name is required").max(100),
-  origin_valley: z.string().trim().min(2, "Origin valley is required").max(100),
+  subcategory: z.string().trim().max(100).optional().or(z.literal('')),
+  sku: z.string().trim().max(80).optional().or(z.literal('')),
+  tags: z.array(z.string().trim().max(40)).optional().default([]),
+
+  // Step 2: Brand Information
+  brand_name: z.string().trim().max(120).optional().or(z.literal('')),
+  maker_name: z.string().trim().min(2, "Maker or brand name is required").max(100),
+  seller_brand_relation: z
+    .enum(['brand_owner', 'manufacturer', 'artisan_maker', 'authorized_reseller'])
+    .optional()
+    .default('artisan_maker'),
+
+  // Step 3: Origin & Specifications (Separate Brand Origin vs Product Origin)
+  country_of_origin: z.string().trim().max(100).optional().default('India'),
+  origin_valley: z.string().trim().min(2, "Origin valley or region is required").max(100),
   origin_state: z.string().trim().min(2, "State is required").max(100).default("Himachal Pradesh"),
-  craft_type: z.string().trim().min(2, "Craft technique or harvest method is required").max(100),
-  materials: z.string().trim().min(2, "Natural materials list is required").max(500),
-  description: z.string().trim().min(20, "Product description must be at least 20 characters").max(3000),
+  manufacturing_location: z.string().trim().max(200).optional().or(z.literal('')),
+  sourcing_location: z.string().trim().max(200).optional().or(z.literal('')),
+  dispatch_location: z.string().trim().max(200).optional().or(z.literal('')),
+  craft_type: z.string().trim().min(2, "Craft technique or product type is required").max(100),
+  materials: z.string().trim().min(2, "Materials or ingredients list is required").max(500),
+  ingredients: z.string().trim().max(1000).optional().or(z.literal('')),
+  dimensions: z.string().trim().max(160).optional().or(z.literal('')),
+  weight: z.string().trim().max(100).optional().or(z.literal('')),
+  specifications: z.string().trim().max(1500).optional().or(z.literal('')),
+  packaging_info: z.string().trim().max(500).optional().or(z.literal('')),
+
+  // Step 4: Product Images
   photos: z.array(z.string().url("Must be valid URL")).min(1, "At least one product photograph is required"),
+
+  // Step 5: Pricing & Automatic Discount Calculation
+  mrp: z.coerce.number().positive("MRP must be greater than ₹0").optional().nullable(),
+  selling_price: z.coerce.number().positive("Selling price must be greater than ₹0").optional().nullable(),
   price_estimate: z.coerce.number().min(0, "Price estimate cannot be negative").optional().nullable(),
-  inventory_status: z.enum(['coming_soon', 'in_stock', 'made_to_order', 'sold_out']).default('coming_soon'),
+  tax_rate: z.coerce.number().min(0).max(28).optional().default(0),
+
+  // Step 6: Stock & Inventory
+  initial_stock: z.coerce.number().int().min(0).optional().default(10),
+  available_stock: z.coerce.number().int().min(0, "Available stock cannot be negative").optional().default(10),
+  low_stock_threshold: z.coerce.number().int().min(0).optional().default(5),
+  inventory_status: z.enum(['coming_soon', 'in_stock', 'made_to_order', 'sold_out']).default('in_stock'),
+  variants: z.array(ProductVariantInputSchema).optional().default([]),
+
+  // Step 7: Delivery & Return Information (Seller-fulfilled)
+  delivery_method: z.string().trim().max(200).optional().default('Direct Seller Courier / India Post'),
+  delivery_partner: z.string().trim().max(200).optional().or(z.literal('')),
+  shipping_charges: z.coerce.number().min(0).optional().default(0),
+  estimated_dispatch_days: z.string().trim().max(100).optional().default('2–4 business days'),
+  tracking_available: z.boolean().optional().default(true),
+  return_policy: z
+    .string()
+    .trim()
+    .max(1000)
+    .optional()
+    .default('7-day replacement for transit damage or verified defect; managed directly by seller.'),
+
+  // Step 8: Submission intent
+  save_as_draft: z.boolean().optional().default(false),
+  accuracy_confirmed: z.boolean().optional().default(true),
+}).superRefine((data, ctx) => {
+  if (
+    typeof data.mrp === 'number' &&
+    typeof data.selling_price === 'number' &&
+    data.selling_price > data.mrp
+  ) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['selling_price'],
+      message: 'Selling price cannot exceed Maximum Retail Price (MRP).',
+    });
+  }
 });
 
 export type ProductSubmissionInput = z.infer<typeof ProductSubmissionSchema>;

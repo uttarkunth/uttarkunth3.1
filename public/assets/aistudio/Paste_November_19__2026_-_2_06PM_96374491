@@ -1,0 +1,1572 @@
+# MASTER IMPLEMENTATION PROMPT — UTTARKUNTH PRODUCTS MARKETPLACE & SELLER DESK
+
+## PROJECT: UTTARKUNTH
+Website: https://uttarkunth.com
+
+You are working on the existing Uttarkunth website and its existing codebase, authentication system, Supabase backend and design system.
+
+Your task is to implement a complete, scalable Products Marketplace, professional Seller Desk, product inventory management system and the necessary role-based team permissions.
+
+This is an extension of the existing Uttarkunth platform. It is NOT a new website or a separate marketplace project.
+
+The implementation must preserve the existing Stays platform, Host Dashboard, user accounts, authentication, header, navigation, original logo, hero video, website identity and all existing working features.
+
+Do not unnecessarily redesign or modify unrelated sections.
+
+---
+
+# PART 1 — FIRST AUDIT THE EXISTING PROJECT
+
+Before changing any code, investigate the complete existing architecture.
+
+Inspect:
+
+1. Existing frontend framework, routing and component architecture.
+2. Existing authentication and user-profile implementation.
+3. Existing Supabase database tables, relationships, constraints and database functions.
+4. Existing Row Level Security (RLS) policies.
+5. Existing Founder/Admin role and authorization mechanism.
+6. Existing Host Dashboard and host-profile relationships.
+7. Existing seller, vendor, product, inventory or marketplace-related tables, if any.
+8. Existing team-member, employee, staff or permission-management architecture, if any.
+9. Existing file and image upload architecture.
+10. Existing notification and activity-log systems.
+
+Pay particular attention to whether the existing codebase already supports:
+
+- One platform owner or super-administrator.
+- Employee/team membership.
+- Permission-based access.
+- Module-specific responsibilities.
+- Seller profiles.
+- Host profiles.
+- Role-based dashboard visibility.
+
+### Mandatory implementation rule
+
+If any of the above functionality already exists and is working, reuse and extend it.
+
+Do not create duplicate tables, duplicate role systems, duplicate authentication logic or parallel permission mechanisms.
+
+If functionality is incomplete, extend the existing implementation.
+
+If functionality does not exist, create the minimum necessary architecture to support it.
+
+Do not assume that the database has a particular structure without inspecting its actual schema.
+
+Do not assume any email address automatically belongs to the Founder or has administrator rights. Reuse the existing authorized Founder account and provisioning mechanism.
+
+Before implementation, provide a short audit summary identifying:
+
+- Existing systems that can be reused.
+- Missing systems that must be created.
+- Existing files and components that will be modified.
+- Any necessary additive Supabase migrations.
+
+Then proceed with implementation. Do not stop at providing a proposal.
+
+---
+
+# PART 2 — CORE UTTARKUNTH MARKETPLACE PRINCIPLES
+
+Uttarkunth is a business and community-development-oriented platform.
+
+The Products marketplace should support:
+
+- Himalayan makers and artisans.
+- Local businesses and producers.
+- Responsible product brands.
+- Independent sellers.
+- Manufacturers.
+- Authorized resellers.
+- Sustainable and thoughtfully produced goods.
+- Businesses that support local livelihoods and regional entrepreneurship.
+
+The marketplace is a commercial platform, not an NGO or donation platform.
+
+Its business vision should support entrepreneurship, responsible enterprise, local livelihoods and community development.
+
+### Current marketplace situation
+
+At present:
+
+- Uttarkunth has no active product listings.
+- Uttarkunth has no confirmed local brand collaborations.
+- There are no approved products to display.
+
+Therefore:
+
+- Do not create fictional products.
+- Do not create sample seller accounts.
+- Do not invent partner brands.
+- Do not generate fake product reviews or ratings.
+- Do not display artificial sales or inventory figures.
+- Do not display fake verification badges.
+- Do not populate the public marketplace with demonstration products.
+
+Build the entire marketplace architecture now, but present the public storefront through a polished Coming Soon experience until genuine products have been approved.
+
+The infrastructure must be ready so that when a seller adds a genuine product and it gets approved, the product automatically becomes visible on the public Products page.
+
+---
+
+# PART 3 — PUBLIC PRODUCTS PAGE
+
+Route: `/products`
+
+Build a professional, premium and modern e-commerce marketplace experience.
+
+The page should be visually complete even when there are zero products.
+
+Use the existing Uttarkunth design system, typography, components, colors, spacing and visual language.
+
+Preserve the established Himalayan Editorial identity.
+
+Do not introduce an unrelated e-commerce template.
+
+## 3.1 Products page header
+
+Create a polished introductory section.
+
+Suggested title:
+
+**Himalayan Products**
+
+Suggested description:
+
+"Discover thoughtful products, regional craftsmanship and responsible brands from the Himalayan community."
+
+Include:
+
+- Product search bar.
+- Search icon.
+- Search suggestions when actual products exist.
+- Search across product names, brands, makers and categories.
+- Responsive search experience.
+- Clear-search functionality.
+- Appropriate mobile layout.
+
+Placeholder text:
+
+"Search products, brands or makers..."
+
+Search must query genuine approved product data. Never show invented search suggestions.
+
+## 3.2 Category architecture
+
+Create a dynamic category system.
+
+Suggested initial category structure:
+
+1. Handcrafted & Artisan
+2. Food & Pantry
+3. Clothing & Textiles
+4. Home & Living
+5. Personal Care
+6. Sustainable Living
+
+Support subcategories.
+
+Examples:
+
+Handcrafted & Artisan:
+- Woodcraft
+- Handmade Decor
+- Traditional Crafts
+- Handwoven Products
+
+Food & Pantry:
+- Traditional Foods
+- Spices & Ingredients
+- Honey & Natural Produce
+- Regional Specialities
+
+Clothing & Textiles:
+- Woollens
+- Handwoven Textiles
+- Clothing
+- Accessories
+
+Home & Living:
+- Home Decor
+- Kitchenware
+- Everyday Essentials
+
+The category structure must be configurable from the Founder Dashboard.
+
+The Founder should be able to:
+
+- Create categories.
+- Edit category names.
+- Create subcategories.
+- Reorder categories.
+- Enable or disable categories.
+- Assign category images or approved visual assets.
+- Manage category descriptions and SEO metadata.
+
+Sellers can only select categories enabled by Uttarkunth.
+
+Do not hardcode category availability into the product-listing logic.
+
+## 3.3 Category presentation
+
+Create elegant category cards or navigation tiles.
+
+Use existing authentic Uttarkunth assets wherever available.
+
+If no genuine category-specific image exists, use a restrained icon-based or typographic treatment instead of fictional product photography.
+
+Category navigation should work even when no products are available.
+
+When a customer opens a category with no listings, display a corresponding empty state, not fabricated products.
+
+## 3.4 Product discovery and filters
+
+Create the complete UI and functional architecture for:
+
+- Search by product.
+- Search by brand.
+- Search by maker.
+- Category filters.
+- Subcategory filters.
+- Brand filters.
+- Price range.
+- Discounted products.
+- In-stock products.
+- Product origin/location.
+- Sorting by newest.
+- Sorting by price low to high.
+- Sorting by price high to low.
+- Recommended products, only when a real recommendation mechanism exists.
+
+The search and filter system must use actual published product records.
+
+When there are no products, keep the search and category experience visible, but do not unnecessarily display empty filter controls that serve no purpose.
+
+## 3.5 Coming Soon state
+
+This is the current public marketplace state.
+
+Build an elegant, intentional Coming Soon section.
+
+Suggested heading:
+
+**Something meaningful is taking shape.**
+
+Suggested description:
+
+"We are bringing together thoughtful products, Himalayan makers and responsible brands. Our product collection is coming soon."
+
+Include an invitation:
+
+**Are you a maker, seller or brand?**
+
+"Bring your products to a growing Himalayan marketplace built around responsible enterprise and community development."
+
+CTA:
+
+**Become a Seller / Partner**
+
+Link this to the seller registration or partner onboarding journey.
+
+Important:
+
+The Coming Soon state must be controlled by actual catalogue availability.
+
+When at least one approved and publishable product exists, render the real product listing section.
+
+When there are no public products, render the Coming Soon state.
+
+Do not manually remove the Coming Soon section every time a seller submits a product.
+
+It should transition automatically according to the published catalogue data.
+
+---
+
+# PART 4 — PRODUCT CARDS
+
+Create reusable, responsive product-card components.
+
+Every product card should support:
+
+1. Genuine product image.
+2. Brand name.
+3. Product title.
+4. Current selling price.
+5. MRP / original price.
+6. Automatic percentage discount.
+7. Verified & Authentic badge, where approved.
+8. Stock availability.
+9. Seller/brand delivery information.
+10. Product detail page navigation.
+
+Example of the desired visual arrangement:
+
+Brand Name
+
+Product Name
+
+₹800  ~~₹1,000~~
+
+20% OFF
+
+Verified & Authentic
+
+Delivered by the respective seller/brand.
+
+This is an illustrative layout, not an actual listing.
+
+## Discount calculation
+
+The seller should enter:
+
+- MRP.
+- Current selling price.
+
+Automatically calculate:
+
+Discount percentage = ((MRP - Selling Price) / MRP) × 100.
+
+Do not allow sellers to manually enter arbitrary discount percentages.
+
+Validation:
+
+- MRP must be greater than zero.
+- Selling price must be greater than zero.
+- Selling price cannot exceed MRP when MRP is being represented as the original price.
+- If selling price equals MRP, hide the discount label.
+- Never display a discount badge when there is no actual discount.
+
+Round the discount for presentation, but retain accurate underlying numeric values.
+
+Only display the original price with a strikethrough when a genuine discount exists.
+
+## Authenticity badges
+
+The product card may display:
+
+**Verified & Authentic**
+
+Only if the relevant verification has been approved by Uttarkunth.
+
+A seller must never be able to grant themselves this badge through a frontend checkbox or editable product field.
+
+---
+
+# PART 5 — PRODUCT DETAIL PAGE
+
+Route: `/products/[product-slug]`
+
+Create reusable product-detail pages populated from actual product records.
+
+Include:
+
+### Product information
+
+- Product image gallery.
+- Product title.
+- Brand name.
+- Full description.
+- Current price.
+- MRP.
+- Discount percentage.
+- Product variants.
+- Stock availability.
+- SKU where useful.
+- Product specifications.
+- Materials or ingredients where applicable.
+
+### Brand and product origin
+
+Show separate fields for:
+
+- Brand/manufacturer.
+- Country of origin.
+- Manufacturing location.
+- Material sourcing location, if provided.
+- Product maker, where relevant.
+- Seller dispatch location.
+
+Do not treat manufacturing location, sourcing location and dispatch location as interchangeable.
+
+### Authenticity and trust
+
+Show the appropriate approved verification labels.
+
+Provide brand information and maker information.
+
+Only display evidence-based claims. Do not imply that every product is locally manufactured simply because its seller is Himalayan-based.
+
+### Delivery information
+
+Clearly explain:
+
+"Every product is delivered directly by its respective seller or brand. The seller/brand manages packaging, dispatch and physical delivery using its own delivery arrangements."
+
+Show actual seller-provided:
+
+- Dispatch location.
+- Delivery method.
+- Delivery charges.
+- Estimated dispatch timeline.
+- Tracking information availability.
+- Return and replacement policy.
+
+Different sellers may have different delivery policies.
+
+Do not display invented delivery dates or guaranteed shipping promises.
+
+---
+
+# PART 6 — SELLER REGISTRATION AND PROFILE
+
+Create the seller onboarding journey.
+
+A seller should be able to register through the existing Uttarkunth account system.
+
+Do not create a separate, disconnected login system.
+
+A seller account should be linked to the authenticated user.
+
+## Seller registration fields
+
+Support:
+
+- Seller type: Individual / Business / Brand Owner / Manufacturer / Authorized Reseller.
+- Seller or business name.
+- Contact information.
+- Business address, as required.
+- Operating location.
+- Business description.
+- Seller profile image or logo.
+- Relevant business identification details, where required.
+- GST and tax information where legally applicable.
+- Supporting verification documents.
+- Acceptance of seller agreement and marketplace policies.
+
+Allow the seller to save an incomplete application as a draft.
+
+Registration status:
+
+- Draft.
+- Submitted.
+- Under Review.
+- Approved.
+- Rejected.
+- Suspended.
+
+Only approved and active sellers should receive the fully functional Seller Desk.
+
+If an application is pending, show its application status and next steps instead of presenting an active seller dashboard.
+
+The Founder or an explicitly authorized Product Team member should be able to review seller applications.
+
+---
+
+# PART 7 — PROFILE INTEGRATION: SELLER DESK AND HOST DASHBOARD
+
+This is a particularly important requirement.
+
+Do not create an entirely separate dashboard navigation experience outside the existing user-profile architecture.
+
+Integrate the Seller Desk into the current Uttarkunth Profile / Account area.
+
+The dashboard links must appear dynamically according to the user's actual approved roles and linked profiles.
+
+## Scenario A — User is a seller only
+
+If the user has an approved and active seller profile but is not a property host:
+
+Display:
+
+**Seller Desk**
+
+Do not display Host Dashboard.
+
+## Scenario B — User is a property host only
+
+If the user has an approved host profile but is not a seller:
+
+Display:
+
+**Host Dashboard**
+
+Do not display Seller Desk.
+
+## Scenario C — User is both seller and property host
+
+If the same user has both approved profiles:
+
+Display both dashboards prominently alongside each other.
+
+Suggested presentation:
+
+My Workspaces
+
+[ Host Dashboard ]    [ Seller Desk ]
+
+On desktop, these should appear as adjacent dashboard cards, navigation entries or tabs.
+
+On mobile, they can be arranged as vertically stacked cards or a compact switcher.
+
+Both workspaces must remain separate.
+
+The Host Dashboard should continue to manage property-related functionality.
+
+The Seller Desk should manage products, inventory, brands and orders.
+
+Do not merge their permissions or data.
+
+The user should be able to move between both dashboards without logging out or changing accounts.
+
+## Scenario D — User is neither a seller nor a host
+
+Show the relevant partner/onboarding options through the existing account experience.
+
+Do not display empty Seller Desk or Host Dashboard panels.
+
+## Scenario E — Seller application is pending
+
+Display a seller application status card.
+
+Do not grant active seller-management capabilities before approval.
+
+## Profile integration rules
+
+- Use the existing profile navigation and account components.
+- Preserve the current profile icon and existing navigation behaviour.
+- Do not create duplicate profile menus.
+- Do not break the My Trips, Host Dashboard or existing account experience.
+- Do not show Seller Desk merely because a user has clicked Become a Seller.
+- Seller Desk visibility must be derived from authorized seller status and authenticated user identity.
+
+---
+
+# PART 8 — PROFESSIONAL SELLER DESK
+
+Route: `/seller/dashboard`
+
+Build a complete professional seller workspace.
+
+It should feel like a real merchant management system rather than a simple product-upload form.
+
+The seller should be able to manage their own product business from one central dashboard.
+
+## 8.1 Seller Desk navigation
+
+Include:
+
+1. Overview.
+2. Products.
+3. Add New Product.
+4. Inventory.
+5. Orders.
+6. Brands & Verification.
+7. Shipping & Returns.
+8. Analytics.
+9. Store Profile.
+10. Settings.
+
+Navigation should be responsive and consistent with Uttarkunth's design system.
+
+## 8.2 Seller overview
+
+Display genuine seller-specific information.
+
+Suggested metrics:
+
+- Total products.
+- Live products.
+- Draft products.
+- Pending approvals.
+- Products requiring changes.
+- Low-stock products.
+- Out-of-stock products.
+- New orders.
+- Processing orders.
+- Completed orders.
+- Sales summary, when genuine order data is available.
+
+Do not fabricate financial statistics, orders or sales.
+
+Use zero states and useful onboarding guidance when the seller has not added products yet.
+
+Example:
+
+"Your store is ready. Add your first product to begin building your Uttarkunth catalogue."
+
+CTA:
+
+**Add Your First Product**
+
+## 8.3 Product management
+
+Build a product-management table with:
+
+- Product image.
+- Product name.
+- SKU.
+- Category.
+- Brand.
+- MRP.
+- Selling price.
+- Discount.
+- Available stock.
+- Listing status.
+- Last updated date.
+- Actions.
+
+Actions:
+
+- Edit.
+- View.
+- Duplicate.
+- Update inventory.
+- Archive.
+- Submit for review.
+
+Include:
+
+- Search.
+- Category filters.
+- Brand filters.
+- Status filters.
+- Sorting.
+
+A seller must only be able to access and modify products belonging to their authorized seller account.
+
+---
+
+# PART 9 — ADD NEW PRODUCT WIZARD
+
+Route: `/seller/products/new`
+
+Build a clean multi-step product listing wizard.
+
+Do not make the listing form unnecessarily overwhelming.
+
+Save progress as a draft so the seller can continue later.
+
+## STEP 1 — Basic product information
+
+Fields:
+
+- Product name.
+- Short description.
+- Detailed description.
+- Category.
+- Subcategory.
+- SKU.
+- Product tags.
+
+Category selection must use categories configured and enabled by Uttarkunth.
+
+## STEP 2 — Brand information
+
+The seller should be able to:
+
+- Select an existing approved brand.
+- Request addition of a new brand.
+- Submit their own brand for verification.
+- Identify themselves as an independent maker or manufacturer, where appropriate.
+- Identify themselves as an authorized reseller of another brand.
+
+The system must distinguish the brand owner from the seller.
+
+One seller may sell products from multiple brands.
+
+One brand may have multiple authorized sellers.
+
+Do not create duplicate brands simply because different sellers submit products belonging to the same brand.
+
+New brand submissions should enter a review process.
+
+## STEP 3 — Origin and product specifications
+
+Fields:
+
+- Country of origin.
+- Manufacturing location.
+- Sourcing location, where relevant.
+- Dispatch location.
+- Material.
+- Ingredients, where applicable.
+- Dimensions.
+- Weight.
+- Product specifications.
+- Packaging information.
+- Other category-specific attributes.
+
+Keep manufacturing, sourcing and dispatch information separate.
+
+## STEP 4 — Product images
+
+Allow:
+
+- Main product image.
+- Additional gallery images.
+- Product variations imagery.
+- Packaging image, where appropriate.
+
+Use the existing Supabase Storage architecture, buckets and upload conventions when suitable.
+
+Validate file types and sizes.
+
+The seller must upload genuine product images.
+
+Do not automatically create AI-generated product photographs.
+
+Do not modify existing Uttarkunth brand images or website hero media.
+
+## STEP 5 — Pricing and discounts
+
+Fields:
+
+- MRP.
+- Selling price.
+- Discounted price, where applicable.
+- Tax-related product information, where applicable.
+- Currency: INR.
+
+Automatically calculate:
+
+- Discount amount.
+- Discount percentage.
+
+Display a live preview of the price card while editing.
+
+Apply server-side validation as well as frontend validation.
+
+## STEP 6 — Stock and inventory
+
+Allow the seller to specify:
+
+- Initial quantity.
+- Available quantity.
+- SKU.
+- Low-stock threshold.
+- Stock management status.
+- Variant-level stock.
+
+For products with different sizes, colours or pack quantities, create independently manageable variants.
+
+Each variant should support its own SKU, pricing where required and stock quantity.
+
+Stock must be protected against overselling when purchasing functionality is enabled.
+
+Maintain an inventory movement history for stock adjustments and order-related changes.
+
+## STEP 7 — Delivery and returns
+
+The seller should enter:
+
+- Dispatch location.
+- Delivery methods used.
+- Delivery partners, if applicable.
+- Shipping charges.
+- Estimated dispatch time.
+- Delivery coverage.
+- Tracking availability.
+- Return and replacement policy.
+- Applicable conditions and exceptions.
+
+The seller is responsible for maintaining accurate delivery information.
+
+## STEP 8 — Preview and submit
+
+Display a complete preview of the public product page and product card.
+
+Include:
+
+- Product information.
+- Brand information.
+- Prices.
+- Discount.
+- Images.
+- Stock.
+- Origin.
+- Delivery details.
+
+Ask the seller to confirm that the supplied information is accurate.
+
+Buttons:
+
+- Save Draft.
+- Submit for Review.
+
+Do not publish products immediately when sellers submit them.
+
+---
+
+# PART 10 — INVENTORY MANAGEMENT
+
+Create a separate inventory section.
+
+The seller should be able to view and update their stock.
+
+Inventory information:
+
+- Product.
+- Variant.
+- SKU.
+- Available stock.
+- Reserved stock, when order functionality exists.
+- Low-stock threshold.
+- Stock status.
+- Last stock update.
+
+Stock states:
+
+- In Stock.
+- Low Stock.
+- Out of Stock.
+
+Automatically show low-stock alerts when available stock falls below the seller-defined threshold.
+
+When stock reaches zero:
+
+- Update availability automatically.
+- Prevent purchases.
+- Display Out of Stock on the public listing, or suppress the listing according to the approved catalogue policy.
+- Never allow negative inventory.
+
+Maintain stock changes in an auditable record.
+
+Seller stock adjustments must not bypass server-side inventory validation.
+
+---
+
+# PART 11 — AUTHENTICITY AND BRAND VERIFICATION
+
+Trust is fundamental to this marketplace.
+
+Build three distinct verification systems.
+
+### A. Verified Seller
+
+Indicates that Uttarkunth has reviewed the seller's submitted identity or business details.
+
+### B. Verified Brand
+
+Indicates that Uttarkunth has reviewed the brand identity and supporting documents.
+
+### C. Verified & Authentic Product
+
+Indicates that the product's brand association or maker authenticity has been reviewed and approved.
+
+Do not automatically award one verification status just because another has been awarded.
+
+A seller may submit verification requests and documents.
+
+The verification status should be controlled by the Founder or appropriately authorized Product Team member.
+
+Possible states:
+
+- Not Submitted.
+- Submitted.
+- Under Review.
+- Additional Information Required.
+- Approved.
+- Rejected.
+- Suspended.
+
+Never allow sellers to edit a verification status or grant themselves an authenticity badge.
+
+Support supporting documents and verification history securely.
+
+---
+
+# PART 12 — DELIVERY AND FULFILMENT MODEL
+
+This is an essential business rule for Uttarkunth Products.
+
+Uttarkunth is the marketplace platform.
+
+The individual seller or brand is responsible for physical product fulfilment.
+
+Uttarkunth does not operate its own product warehouse, package seller products or undertake the physical delivery of products.
+
+The seller/brand is responsible for:
+
+- Packaging.
+- Dispatch.
+- Choosing the delivery service.
+- Physical delivery arrangements.
+- Shipping charges.
+- Tracking information.
+- Dispatch timelines.
+- Delivery coordination.
+- Seller-specific returns and replacements.
+
+The Seller Desk must provide fields to manage these details.
+
+Display clear information on the product detail page and at relevant points in the checkout experience.
+
+Suggested customer-facing wording:
+
+"Every product on Uttarkunth is delivered directly by its respective seller or brand. The seller or brand manages packaging, dispatch and physical delivery using its own delivery arrangements. Uttarkunth provides the marketplace for product discovery and seller connections and does not undertake physical product fulfilment."
+
+If products from different sellers are purchased in one order, represent their fulfilment separately.
+
+Do not create a central Uttarkunth shipping or warehouse workflow.
+
+Do not imply that Uttarkunth has its own delivery fleet.
+
+Keep platform-level customer support, order records and other applicable marketplace responsibilities separate from the seller's physical fulfilment duties.
+
+---
+
+# PART 13 — ORDER MANAGEMENT
+
+Build the seller-side structure for order management.
+
+First inspect whether a working cart, order or payment system already exists.
+
+Reuse it if available.
+
+Do not duplicate or break existing order infrastructure.
+
+Seller order capabilities should support:
+
+- Viewing orders assigned to that seller.
+- Viewing order items.
+- Viewing delivery information needed for fulfilment.
+- Confirming orders.
+- Updating preparation status.
+- Entering shipment information.
+- Entering courier or delivery details.
+- Adding tracking references.
+- Updating delivery status.
+- Handling permitted cancellation and return requests.
+
+Suggested order stages:
+
+1. New Order.
+2. Accepted.
+3. Processing.
+4. Packed.
+5. Shipped.
+6. Out for Delivery.
+7. Delivered.
+8. Cancelled / Return Requested / Returned, where applicable.
+
+Do not let a seller view another seller's customer orders.
+
+Where an order contains products from multiple sellers, separate seller-specific fulfilment records.
+
+If there is no existing payment and checkout architecture, build the necessary interfaces and data architecture without enabling an unverified payment workflow.
+
+Do not invent payment-provider credentials, settlement rules, transaction success states or refund functionality.
+
+---
+
+# PART 14 — FOUNDER AS THE SOLE PLATFORM ADMINISTRATOR
+
+This is a strict organizational rule.
+
+**The Founder is the only platform administrator of Uttarkunth.**
+
+There must never be a second platform administrator created for convenience.
+
+The Founder is responsible for overall platform ownership and control.
+
+The Founder retains ultimate authority over:
+
+- Seller access.
+- Brand verification policies.
+- Product approval governance.
+- Product categories.
+- Marketplace configuration.
+- Staff access.
+- Staff permission assignments.
+- Sensitive business settings.
+- Platform-level decisions.
+- Suspension and reinstatement.
+- Administrative controls.
+
+Reuse the existing Founder/Admin authorization mechanism if it already exists.
+
+Do not create another unrelated administrator role.
+
+Do not automatically promote an employee to administrator.
+
+Do not identify the Founder by an unverified email address.
+
+Use the existing authorized Founder identity and server-side checks.
+
+The Founder must retain access to all marketplace functions regardless of employee permissions.
+
+---
+
+# PART 15 — PRODUCT TEAM AND DELEGATED EMPLOYEE PERMISSIONS
+
+As Uttarkunth grows, the Founder may employ people to manage the Products section.
+
+These employees should be added as Product Team members.
+
+They are NOT platform administrators.
+
+They must only receive the duties explicitly assigned to them by the Founder.
+
+Build or extend an employee permission system for this purpose.
+
+## 15.1 Team management
+
+The Founder should be able to:
+
+- Invite a team member.
+- Add an existing authorized user to the Product Team.
+- Assign or remove duties.
+- Change permissions.
+- Suspend team access.
+- Revoke access.
+- Review employee actions.
+
+The Founder alone controls team membership and permission assignments.
+
+Employees must not be able to grant themselves additional permissions.
+
+Employees must not be able to appoint another administrator.
+
+## 15.2 Granular permissions
+
+Use individual permission capabilities rather than giving every team member unrestricted access.
+
+Suggested permission keys:
+
+**Seller operations**
+- `seller.applications.view`
+- `seller.applications.review`
+- `seller.profiles.view`
+- `seller.profiles.update`
+
+**Product catalogue**
+- `products.view`
+- `products.review`
+- `products.edit`
+- `products.approve`
+- `products.publish`
+- `products.unpublish`
+- `products.archive`
+
+**Brand verification**
+- `brands.view`
+- `brands.review`
+- `brands.verify`
+- `brands.reject`
+
+**Category management**
+- `categories.view`
+- `categories.create`
+- `categories.edit`
+- `categories.reorder`
+
+**Inventory**
+- `inventory.view`
+- `inventory.support`
+
+**Orders and support**
+- `orders.view`
+- `orders.manage`
+- `returns.review`
+- `customer.support`
+
+**Reporting**
+- `marketplace.reports.view`
+
+These are examples of the desired permission granularity. Reuse the project's existing permission naming conventions if already implemented.
+
+The Founder can assign one or more permissions to an employee.
+
+For example:
+
+Employee A:
+- Review product submissions.
+- Request corrections.
+- Review product photographs.
+
+Employee B:
+- Review seller applications.
+- Review brand documents.
+- Handle brand verification duties.
+
+Employee C:
+- Manage product categories.
+- Review product descriptions.
+- Support marketplace order issues.
+
+These are illustrative assignments.
+
+An employee should only be able to perform functions for which the Founder has explicitly granted permission.
+
+## 15.3 No employee administrator rights
+
+Employees must never automatically receive:
+
+- Founder access.
+- Platform-wide administrator privileges.
+- Permission to appoint other employees.
+- Permission to grant themselves permissions.
+- Permission to change Founder ownership.
+- Permission to modify platform security settings.
+- Permission to change protected Supabase configuration.
+- Access to unrelated Stays administration unless separately and explicitly authorized through the existing architecture.
+
+Do not create an employee account with the same privileges as the Founder.
+
+## 15.4 Product Team Workspace
+
+Create a dedicated workspace for employees who have been granted Product Team permissions.
+
+Suggested route:
+
+`/team/products`
+
+This is separate from the Seller Desk.
+
+It should show the functions available to that specific employee based on their assigned permissions.
+
+For example, a product-review employee should see product review tasks but should not automatically see access-management settings.
+
+Possible sections:
+
+- Assigned Tasks.
+- Seller Applications.
+- Product Review Queue.
+- Brand Verification Queue.
+- Category Management, if authorized.
+- Orders Support, if authorized.
+- Activity History.
+
+Hide functions for which the employee has no permission.
+
+Do not rely only on hiding frontend buttons. Enforce every permission on the server and through Supabase policies or approved database functions.
+
+## 15.5 Employee activity log
+
+Record important employee actions:
+
+- Employee identity.
+- Action performed.
+- Affected record.
+- Timestamp.
+- Previous state where appropriate.
+- New state.
+- Relevant reason or review note.
+
+The Founder should be able to audit these actions.
+
+Employees must not be able to erase or modify their audit history.
+
+---
+
+# PART 16 — PRODUCT APPROVAL WORKFLOW
+
+A product submitted by a seller must pass through the review workflow.
+
+Suggested lifecycle:
+
+Draft → Submitted → Under Review → Approved → Published.
+
+Other possible outcomes:
+
+- Changes Required.
+- Rejected.
+- Suspended.
+- Archived.
+
+The Founder can review everything.
+
+An assigned Product Team member may review, request changes, approve or publish products only when the Founder has explicitly assigned the relevant capability.
+
+A product cannot bypass the review process.
+
+When changes are required, the seller should receive a useful explanation through the existing notification system.
+
+When approved, the listing can become publicly visible according to its publication status and stock availability.
+
+The approval process must never be controlled by a seller.
+
+Record reviewer identity and decision history.
+
+---
+
+# PART 17 — SUPABASE DATABASE AND BACKEND ARCHITECTURE
+
+First inspect all existing tables and authorization functions.
+
+Reuse compatible existing tables.
+
+Do not create duplicates.
+
+If functionality is missing, implement the minimum necessary additive schema.
+
+Potential logical entities include:
+
+- `seller_profiles`
+- `brands`
+- `brand_documents`
+- `product_categories`
+- `products`
+- `product_variants`
+- `inventory`
+- `inventory_movements`
+- `seller_shipping_profiles`
+- `orders`
+- `order_items`
+- `shipments`
+- `product_team_members`
+- `product_team_permissions`
+- `marketplace_activity_logs`
+
+These are conceptual names, not instructions to create duplicate tables when equivalent structures already exist.
+
+## Required data relationships
+
+- Every seller profile belongs to an authenticated user or authorized seller organization.
+- Every product belongs to an authorized seller.
+- A product may be associated with an approved brand.
+- A brand may have multiple products.
+- A brand may have multiple authorized sellers.
+- Every product belongs to an enabled category.
+- Product variants belong to their parent product.
+- Inventory is associated with the correct seller product or variant.
+- Orders contain seller-specific order items.
+- Staff permissions belong to authorized Product Team members.
+- Verification decisions have an identifiable authorized reviewer.
+
+## Critical security requirements
+
+1. Implement or preserve RLS.
+2. Sellers can read and modify only their own authorized seller data.
+3. Employees can access only functions granted to them.
+4. Only the Founder has unrestricted platform administration privileges.
+5. Sellers cannot approve their own products.
+6. Sellers cannot modify verification status.
+7. Employees cannot modify their own permissions.
+8. Employees cannot grant Founder privileges.
+9. Sellers cannot access other sellers' orders or private documents.
+10. Sensitive verification documents must not be publicly accessible.
+11. All important privileged actions must be checked server-side.
+12. Never expose Supabase service-role credentials in frontend code.
+13. Protect against direct API requests that bypass the user interface.
+14. Use safe database functions and server-side validation for privileged changes.
+15. Keep the existing Stays authorization model intact.
+
+If the existing `is_platform_admin()` function or equivalent is already present and correctly implemented, reuse it rather than creating a duplicate.
+
+Build employee permission helpers that are secure, centralized and reusable.
+
+Do not trust a role name or permission sent from the frontend without verifying it against authenticated server-side records.
+
+Never use local storage as the authority for a user's role or permissions.
+
+---
+
+# PART 18 — NOTIFICATIONS
+
+Integrate with the existing notification system.
+
+Do not create a parallel notification engine unless the existing one cannot support this workflow.
+
+Relevant notifications:
+
+For sellers:
+- Application submitted.
+- Seller application approved/rejected.
+- Product submitted.
+- Product approved.
+- Product requires changes.
+- Product rejected.
+- Stock running low.
+- New order.
+- Order update.
+- Return request.
+
+For Product Team members:
+- New assigned review.
+- Seller application requiring review.
+- Product requiring review.
+- Brand verification task.
+- Assigned task update.
+
+For the Founder:
+- New seller applications.
+- New brand submissions.
+- Pending product approvals.
+- Staff access changes.
+- Important marketplace activity.
+
+Respect the existing notification design and navigation. Do not unnecessarily alter notification behaviour elsewhere on the website.
+
+---
+
+# PART 19 — DESIGN AND USER EXPERIENCE REQUIREMENTS
+
+The design must look like a premium Himalayan marketplace built for 2026.
+
+Use the existing Uttarkunth brand identity and established design tokens.
+
+Maintain the existing typography, icon style, visual language, brand colours and spacing system.
+
+Avoid generic dashboard templates.
+
+Use a refined combination of:
+
+- Editorial layouts.
+- Minimalist search and filters.
+- Clean product cards.
+- Professional tables.
+- Well-structured forms.
+- Responsive dashboard layouts.
+- Subtle transitions.
+- Useful hover interactions.
+- Clear status indicators.
+- Compact icon-based navigation where appropriate.
+
+Use authentic existing photographs and assets.
+
+Never invent a real Uttarkunth partner, seller, brand or product visually.
+
+### Responsive requirements
+
+Desktop:
+- Well-organized product grids.
+- Professional sidebar/dashboard navigation.
+- Efficient inventory and product tables.
+- Clearly separated seller and host workspaces.
+
+Tablet:
+- Adaptive navigation.
+- Flexible card grids.
+- Responsive product management.
+
+Mobile:
+- Compact and usable Seller Desk.
+- Collapsible navigation.
+- Properly responsive forms.
+- Easy stock updating.
+- Touch-friendly controls.
+- No oversized navigation bars.
+- No unnecessary obstruction of the main content.
+
+Ensure accessible text contrast, focus indicators and useful error messages.
+
+Every button and interaction must have a real working action.
+
+Do not create decorative controls that do nothing.
+
+---
+
+# PART 20 — IMPORTANT BUSINESS AND PRODUCT RULES
+
+Implement these rules throughout the marketplace.
+
+1. No unapproved product appears publicly.
+2. No unverified product receives a verified authenticity badge.
+3. No seller can change their own verification status.
+4. No seller can change another seller's products.
+5. No seller can access another seller's private information.
+6. No fictional products or demonstration sales.
+7. No stock can become negative.
+8. No discount can be manually misrepresented.
+9. No product can be purchased when unavailable.
+10. No employee gets unrestricted administrator access.
+11. Only the Founder controls employee permissions.
+12. Physical product delivery remains the seller/brand's responsibility.
+13. Product data must come from the database, not frontend demonstration arrays.
+14. The public Coming Soon state must be derived from actual published product availability.
+15. Host Dashboard and Seller Desk remain independent modules, even when used by the same account.
+
+---
+
+# PART 21 — FEATURE FLAGS AND FUTURE EXTENSIBILITY
+
+Design the marketplace so it can evolve without requiring a major rebuild.
+
+Keep the following capabilities modular:
+
+- Shopping cart.
+- Multi-seller orders.
+- Checkout.
+- Online payment integration.
+- Refunds and cancellations.
+- Seller commission calculations.
+- Seller settlements.
+- Courier integrations.
+- Product ratings and reviews.
+- Advanced analytics.
+- Promotional campaigns.
+- Coupons.
+- Wishlists.
+
+If any of these already exist, inspect and reuse them.
+
+Otherwise, design for future integration without claiming that incomplete features are operational.
+
+Do not activate a payment or fulfilment process without its complete, verified backend workflow.
+
+Avoid unnecessary third-party paid services or infrastructure.
+
+Prefer the existing Cloudflare, application and Supabase architecture.
+
+---
+
+# PART 22 — TESTING AND ACCEPTANCE CRITERIA
+
+After implementing, test the complete experience.
+
+### Public Products page
+
+- Zero products displays Coming Soon.
+- Categories remain navigable.
+- Search works against real published products.
+- Product cards display correct prices.
+- Discounts calculate correctly.
+- Verification badges appear only when approved.
+- Products appear automatically after approval and publication.
+- Product detail pages load correct database information.
+
+### Seller registration and Seller Desk
+
+- A new user can apply to become a seller.
+- A pending seller cannot access active Seller Desk functions.
+- An approved seller sees Seller Desk in their profile.
+- An unapproved/non-seller cannot access seller functionality by manipulating a URL.
+- A seller can create, edit and save a product draft.
+- A seller can upload genuine product photographs.
+- A seller can manage stock.
+- A seller can manage pricing and discounts.
+- A seller can submit products for review.
+- A seller cannot approve their own product.
+- A seller cannot edit another seller's product.
+
+### Host and Seller dashboard integration
+
+Test these four conditions:
+
+1. Seller only: Seller Desk appears.
+2. Host only: Host Dashboard appears.
+3. Seller and Host: both appear alongside one another.
+4. Neither: neither dashboard appears; relevant onboarding options remain available.
+
+Confirm that existing Host Dashboard functions remain operational.
+
+### Founder and employee permissions
+
+- Founder retains full access.
+- Founder can invite and revoke employees.
+- Founder can assign granular permissions.
+- Employee sees only authorized Product Team functions.
+- Employee cannot promote themselves.
+- Employee cannot create another administrator.
+- Employee cannot modify Founder ownership.
+- Unauthorized backend/API requests are rejected.
+- Privileged actions appear in audit logs.
+
+### Supabase security
+
+Test RLS under different authenticated users.
+
+Test direct requests, not only UI navigation.
+
+Test seller-to-seller data isolation.
+
+Test employee permission enforcement.
+
+Test unauthorized verification changes.
+
+Do not weaken any existing security policy to make the interface work.
+
+### Regression testing
+
+Confirm that:
+
+- Stays homepage remains functional.
+- Search and booking-related functionality remains intact.
+- Host Dashboard remains functional.
+- Authentication remains functional.
+- Existing profiles remain functional.
+- Existing notifications remain functional.
+- Existing navigation remains functional.
+- Website deployment and routing remain compatible with the current Cloudflare setup.
+
+---
+
+# PART 23 — IMPLEMENTATION DISCIPLINE
+
+These instructions are mandatory.
+
+1. Work in the existing Uttarkunth project.
+2. Do not create an independent website or parallel application.
+3. Do not replace the complete website architecture.
+4. Do not rewrite working Stays components.
+5. Do not alter existing hero images, original logo or brand media.
+6. Do not remove existing working functionality.
+7. Do not change unrelated notifications or account behaviour.
+8. Do not create duplicate Supabase structures.
+9. Do not weaken existing authorization or RLS.
+10. Do not invent missing credentials or database records.
+11. Do not insert sample products or fictional sellers.
+12. Do not make destructive database changes.
+13. Use additive and reversible migrations wherever practical.
+14. Keep code modular, typed, maintainable and reusable.
+15. Ensure all forms, buttons, filters and navigation actually work.
+16. Keep the marketplace connected to real Supabase records.
+17. Do not confuse Product Team permissions with Founder administrator access.
+18. Preserve the established Uttarkunth website experience.
+
+If a database operation requires a manual deployment or Founder-side configuration, prepare the exact migration or configuration instructions and identify the dependency. Do not claim that a change has been applied when it has not.
+
+---
+
+# PART 24 — FINAL DELIVERABLES
+
+Complete the implementation and provide a report containing:
+
+1. Existing architecture audited.
+2. Existing authentication and permission systems reused.
+3. New components implemented.
+4. Existing components modified.
+5. New database tables or columns, if genuinely needed.
+6. Existing tables reused.
+7. SQL migrations created.
+8. RLS policies added or modified.
+9. Founder-only administrator protection.
+10. Employee permission architecture.
+11. Public Products page implementation.
+12. Seller registration implementation.
+13. Seller Desk implementation.
+14. Product Team Workspace implementation.
+15. Profile integration with Host Dashboard.
+16. Product review and publishing workflow.
+17. Inventory and discount functionality.
+18. Delivery responsibility implementation.
+19. Tests performed and their results.
+20. Any unfinished integrations or manual steps.
+
+List every changed file and explain why it was changed.
+
+Clearly distinguish between features fully implemented, features requiring a database migration, and future features that are only prepared for integration.
+
+Do not claim that a deployment, migration or security test succeeded unless it actually did.
+
+## FINAL PRODUCT VISION
+
+The finished Uttarkunth Products pillar should work as follows:
+
+A visitor opens `/products` and sees a complete, professionally designed Himalayan marketplace. While no products are available, the site displays an elegant Coming Soon experience.
+
+A genuine seller registers through Uttarkunth, receives approval and gains access to Seller Desk from their profile.
+
+The seller can create products, associate brands, upload photographs, define origin, manage stock, set prices and discounts, and enter their own delivery arrangements.
+
+Submitted products go through Uttarkunth's review process.
+
+The Founder remains the only platform administrator. The Founder may delegate particular responsibilities to Product Team employees, who can only perform their specifically assigned duties.
+
+Once an approved product is published, it automatically appears in the public marketplace.
+
+A user who is both a host and a seller can access Host Dashboard and Seller Desk next to each other from their profile, with their respective business functions remaining independent.
+
+**Build this as a real, secure, scalable marketplace extension of Uttarkunth — not as a static design mockup.**

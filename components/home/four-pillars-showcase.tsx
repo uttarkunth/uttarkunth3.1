@@ -541,13 +541,13 @@ export function FourPillarsShowcase({
                   <div className="my-auto space-y-1 sm:space-y-1.5 py-1 px-1.5 rounded-xl bg-[#1A2B23]/25 backdrop-blur-[1px]">
                     <h3
                       className={cn(
-                        'font-serif font-bold uppercase tracking-[0.12em] sm:tracking-[0.14em] text-[#FFFDF9] drop-shadow-[0_4px_14px_rgba(0,0,0,0.8)] transition-all duration-700 ease-out',
+                        'font-serif font-normal sm:font-medium uppercase tracking-[0.12em] sm:tracking-[0.14em] text-[#FFFDF9] drop-shadow-[0_4px_14px_rgba(0,0,0,0.8)] transition-all duration-700 ease-out',
                         isActive ? 'text-[22px] sm:text-3xl blur-0' : 'text-[19px] sm:text-2xl blur-0'
                       )}
                     >
                       {pillar.word}
                     </h3>
-                    <span className="text-[12px] sm:text-[13px] font-serif italic font-medium text-[#FDE2A8] tracking-wide block drop-shadow-[0_2px_8px_rgba(0,0,0,0.85)]">
+                    <span className="text-[12px] sm:text-[13px] font-serif italic font-normal sm:font-medium text-[#FDE2A8] tracking-wide block drop-shadow-[0_2px_8px_rgba(0,0,0,0.85)]">
                       {pillar.subtitle}
                     </span>
                   </div>
@@ -598,7 +598,7 @@ export function FourPillarsShowcase({
           • Tablet / PC (sm+): Positioned ABOVE the 4-pillar cards (sm:order-1)
       ───────────────────────────────────────────────────────────────────── */}
       <div className="order-3 sm:order-1 relative z-10 text-center space-y-1.5 pt-2.5 pb-1 sm:pt-0 sm:pb-4 lg:pb-5">
-        <h2 className="font-serif text-[22px] sm:text-3xl lg:text-[38px] italic font-semibold text-[#263D32] tracking-tight leading-tight drop-shadow-[0_1px_2px_rgba(255,253,249,0.85)]">
+        <h2 className="font-serif text-[22px] sm:text-3xl lg:text-[38px] italic font-medium text-[#263D32] tracking-tight leading-tight drop-shadow-[0_1px_2px_rgba(255,253,249,0.85)]">
           One Connected Himalayan Ecosystem.
         </h2>
         <div

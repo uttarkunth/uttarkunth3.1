@@ -133,8 +133,8 @@ export default function AboutPage() {
         testId="about-secondary-nav"
         className="bg-ivory/95 backdrop-blur-md border-b border-forest/10 py-3 overflow-x-auto scrollbar-none shadow-2xs"
       >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 flex items-center gap-2 sm:gap-4 text-xs font-semibold whitespace-nowrap">
-          <span className="text-forest/40 uppercase tracking-widest text-[10px]">Navigate:</span>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 flex items-center gap-2 sm:gap-4 font-sans text-xs font-medium whitespace-nowrap">
+          <span className="text-forest/40 uppercase tracking-widest text-[10px] font-semibold">Navigate:</span>
           <a href="#idea" className="px-3 py-1 rounded-full bg-forest/5 hover:bg-forest hover:text-ivory text-forest transition-colors">The Idea</a>
           <a href="#name" className="px-3 py-1 rounded-full bg-forest/5 hover:bg-forest hover:text-ivory text-forest transition-colors">The Name</a>
           <a href="#why" className="px-3 py-1 rounded-full bg-forest/5 hover:bg-forest hover:text-ivory text-forest transition-colors">Why It Began</a>
@@ -152,30 +152,30 @@ export default function AboutPage() {
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-12 sm:py-20 space-y-24 sm:space-y-32">
         {/* HERO SECTION */}
         <section className="text-center space-y-6">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-forest/10 text-forest text-xs font-semibold uppercase tracking-widest">
+          <div className="font-sans inline-flex items-center gap-2 px-3 py-1 rounded-full bg-forest/10 text-forest text-xs font-semibold uppercase tracking-widest">
             <Mountain className="w-3.5 h-3.5 text-ukorange" />
             Ecosystem Manifesto
           </div>
-          <h1 className="font-serif text-4xl sm:text-6xl lg:text-7xl font-bold text-forest leading-[1.15]">
+          <h1 className="font-serif text-4xl sm:text-6xl lg:text-7xl font-medium text-forest leading-[1.15]">
             What is Uttarkunth?
           </h1>
-          <p className="font-serif italic text-2xl sm:text-3xl text-ukorange">
+          <p className="font-serif italic font-normal sm:font-medium text-2xl sm:text-3xl text-ukorange">
             Ideas born in the Himalayas. Built through people.
           </p>
-          <p className="text-base sm:text-xl text-charcoal-muted max-w-3xl mx-auto leading-relaxed">
+          <p className="font-sans font-normal text-base sm:text-xl text-charcoal-muted max-w-3xl mx-auto leading-relaxed">
             Uttarkunth is a Himalayan-born entrepreneurial ecosystem built on one conviction: 
-            <strong className="text-forest"> people working together can become a powerful force for community development.</strong>
+            <strong className="text-forest font-semibold"> people working together can become a powerful force for community development.</strong>
           </p>
         </section>
 
         {/* SECTION 1: THE IDEA IN FIVE LINES */}
         <section id="idea" className="scroll-mt-32 space-y-8">
           <div className="border-l-4 border-ukorange pl-4 sm:pl-6 space-y-2">
-            <span className="text-xs uppercase tracking-widest text-ukorange font-bold">Foundation</span>
-            <h2 className="font-serif text-3xl sm:text-4xl font-bold text-forest">
+            <span className="font-sans text-xs uppercase tracking-widest text-ukorange font-semibold">Foundation</span>
+            <h2 className="font-serif text-3xl sm:text-4xl font-medium text-forest">
               The Idea in Five Lines
             </h2>
-            <p className="text-sm text-charcoal-muted">What we are trying to do.</p>
+            <p className="font-sans font-normal text-sm text-charcoal-muted">What we are trying to do.</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -209,40 +209,40 @@ export default function AboutPage() {
         {/* SECTION 2: THE MEANING OF THE NAME */}
         <section id="name" className="scroll-mt-32 space-y-8">
           <div className="border-l-4 border-ukorange pl-4 sm:pl-6 space-y-2">
-            <span className="text-xs uppercase tracking-widest text-ukorange font-bold">Etymology</span>
-            <h2 className="font-serif text-3xl sm:text-4xl font-bold text-forest">
+            <span className="font-sans text-xs uppercase tracking-widest text-ukorange font-semibold">Etymology</span>
+            <h2 className="font-serif text-3xl sm:text-4xl font-medium text-forest">
               The Meaning of the Name
             </h2>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <div className="bg-forest-dark text-ivory rounded-3xl p-8 space-y-3 relative overflow-hidden">
-              <span className="font-serif text-4xl sm:text-5xl font-bold text-ukorange block">Uttar</span>
+              <span className="font-serif text-4xl sm:text-5xl font-medium text-ukorange block">Uttar</span>
               <p className="text-lg font-serif italic text-ivory/90">The north.</p>
-              <p className="text-xs text-ivory/70 leading-relaxed">
+              <p className="font-sans font-normal text-xs text-ivory/70 leading-relaxed">
                 Representing the northern mountains, the high Himalayas, and the elevated realm of wisdom and resilience.
               </p>
             </div>
 
             <div className="bg-forest-dark text-ivory rounded-3xl p-8 space-y-3 relative overflow-hidden">
-              <span className="font-serif text-4xl sm:text-5xl font-bold text-ukorange block">Kunth</span>
+              <span className="font-serif text-4xl sm:text-5xl font-medium text-ukorange block">Kunth</span>
               <p className="text-lg font-serif italic text-ivory/90">A source. A place from which something begins and gathers.</p>
-              <p className="text-xs text-ivory/70 leading-relaxed">
+              <p className="font-sans font-normal text-xs text-ivory/70 leading-relaxed">
                 A natural reservoir, an origin point, the font from which fresh springs of action flow outward.
               </p>
             </div>
           </div>
 
-          <div className="p-6 bg-white rounded-2xl border border-forest/15 shadow-soft text-sm sm:text-base text-charcoal-muted leading-relaxed">
-            <strong className="text-forest">Together:</strong> ideas from the northern Himalayas, born of lived experience in village life and developed through action. The Himalayas are the starting point, not the boundary.
+          <div className="font-sans font-normal p-6 bg-white rounded-2xl border border-forest/15 shadow-soft text-sm sm:text-base text-charcoal-muted leading-relaxed">
+            <strong className="text-forest font-semibold">Together:</strong> ideas from the northern Himalayas, born of lived experience in village life and developed through action. The Himalayas are the starting point, not the boundary.
           </div>
         </section>
 
         {/* SECTION 3: WHY IT BEGAN */}
         <section id="why" className="scroll-mt-32 space-y-8">
           <div className="border-l-4 border-ukorange pl-4 sm:pl-6 space-y-2">
-            <span className="text-xs uppercase tracking-widest text-ukorange font-bold">Genesis</span>
-            <h2 className="font-serif text-3xl sm:text-4xl font-bold text-forest">
+            <span className="font-sans text-xs uppercase tracking-widest text-ukorange font-semibold">Genesis</span>
+            <h2 className="font-serif text-3xl sm:text-4xl font-medium text-forest">
               Why It Began
             </h2>
             <blockquote className="font-serif italic text-lg sm:text-xl text-forest font-medium">
@@ -313,8 +313,8 @@ export default function AboutPage() {
         {/* SECTION 4: THE PHILOSOPHY */}
         <section id="philosophy" className="scroll-mt-32 space-y-8">
           <div className="border-l-4 border-ukorange pl-4 sm:pl-6 space-y-2">
-            <span className="text-xs uppercase tracking-widest text-ukorange font-bold">Ethos</span>
-            <h2 className="font-serif text-3xl sm:text-4xl font-bold text-forest">
+            <span className="font-sans text-xs uppercase tracking-widest text-ukorange font-semibold">Ethos</span>
+            <h2 className="font-serif text-3xl sm:text-4xl font-medium text-forest">
               The Philosophy
             </h2>
             <p className="font-serif italic text-2xl text-ukorange">
@@ -324,25 +324,25 @@ export default function AboutPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="bg-white rounded-2xl p-6 border border-forest/15 shadow-soft space-y-3">
-              <h3 className="font-serif text-xl font-bold text-forest">Experience as Education</h3>
-              <p className="text-xs sm:text-sm text-charcoal-muted leading-relaxed">
+              <h3 className="font-serif text-xl font-medium text-forest">Experience as Education</h3>
+              <p className="font-sans font-normal text-xs sm:text-sm text-charcoal-muted leading-relaxed">
                 Rather than waiting for perfect theoretical knowledge, Uttarkunth learns by building a café, running hospitality, producing a film, organising a local activity, facing failure, measuring results and trying again.
               </p>
             </div>
 
             <div className="bg-white rounded-2xl p-6 border border-forest/15 shadow-soft space-y-3">
-              <h3 className="font-serif text-xl font-bold text-forest">Service is Tied to Growth</h3>
-              <p className="text-xs sm:text-sm text-charcoal-muted leading-relaxed">
+              <h3 className="font-serif text-xl font-medium text-forest">Service is Tied to Growth</h3>
+              <p className="font-sans font-normal text-xs sm:text-sm text-charcoal-muted leading-relaxed">
                 Service is not separate from growth. Growth creates capability, and capability creates greater capacity to serve.
               </p>
             </div>
           </div>
 
           <div className="bg-forest/5 rounded-3xl p-8 border border-forest/15 space-y-3">
-            <h3 className="font-serif text-2xl font-bold text-forest">Karmayog as an Action Principle</h3>
-            <p className="text-sm sm:text-base text-charcoal-muted leading-relaxed">
+            <h3 className="font-serif text-2xl font-medium text-forest">Karmayog as an Action Principle</h3>
+            <p className="font-sans font-normal text-sm sm:text-base text-charcoal-muted leading-relaxed">
               Focus on doing meaningful work rather than being paralysed by attachment to results. Action should follow thought quickly — 
-              <strong className="text-forest"> 5% think, 95% work</strong> — while still respecting planning, safety, legality and responsibility.
+              <strong className="text-forest font-semibold"> 5% think, 95% work</strong> — while still respecting planning, safety, legality and responsibility.
             </p>
           </div>
         </section>
@@ -350,11 +350,11 @@ export default function AboutPage() {
         {/* SECTION 5: HOW IT WORKS — 9 STEPS */}
         <section id="model" className="scroll-mt-32 space-y-8">
           <div className="border-l-4 border-ukorange pl-4 sm:pl-6 space-y-2">
-            <span className="text-xs uppercase tracking-widest text-ukorange font-bold">Operating Loop</span>
-            <h2 className="font-serif text-3xl sm:text-4xl font-bold text-forest">
+            <span className="font-sans text-xs uppercase tracking-widest text-ukorange font-semibold">Operating Loop</span>
+            <h2 className="font-serif text-3xl sm:text-4xl font-medium text-forest">
               How It Works
             </h2>
-            <p className="text-sm text-charcoal-muted">A cycle, not a line. Enterprise is the engine.</p>
+            <p className="font-sans font-normal text-sm text-charcoal-muted">A cycle, not a line. Enterprise is the engine.</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -363,11 +363,11 @@ export default function AboutPage() {
                 key={step.num}
                 className="bg-white rounded-2xl p-6 border border-forest/15 shadow-soft space-y-2 hover:border-ukorange transition-colors"
               >
-                <span className="text-xs font-mono font-bold text-ukorange tracking-widest">
+                <span className="font-sans text-xs font-semibold text-ukorange tracking-widest">
                   {step.num}
                 </span>
-                <h3 className="font-serif text-xl font-bold text-forest">{step.title}</h3>
-                <p className="text-xs text-charcoal-muted leading-relaxed">{step.desc}</p>
+                <h3 className="font-serif text-xl font-medium text-forest">{step.title}</h3>
+                <p className="font-sans font-normal text-xs text-charcoal-muted leading-relaxed">{step.desc}</p>
               </div>
             ))}
           </div>
@@ -376,11 +376,11 @@ export default function AboutPage() {
         {/* SECTION 6: VENTURES AND PARENT BRAND */}
         <section id="ventures" className="scroll-mt-32 space-y-8">
           <div className="border-l-4 border-ukorange pl-4 sm:pl-6 space-y-2">
-            <span className="text-xs uppercase tracking-widest text-ukorange font-bold">Architecture</span>
-            <h2 className="font-serif text-3xl sm:text-4xl font-bold text-forest">
+            <span className="font-sans text-xs uppercase tracking-widest text-ukorange font-semibold">Architecture</span>
+            <h2 className="font-serif text-3xl sm:text-4xl font-medium text-forest">
               Ventures and the Parent Brand
             </h2>
-            <p className="text-sm text-charcoal-muted">Vehicles, not the destination.</p>
+            <p className="font-sans font-normal text-sm text-charcoal-muted">Vehicles, not the destination.</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -453,31 +453,31 @@ export default function AboutPage() {
         {/* SECTION 7: COMMUNITY DEVELOPMENT */}
         <section id="community" className="scroll-mt-32 space-y-8">
           <div className="border-l-4 border-ukorange pl-4 sm:pl-6 space-y-2">
-            <span className="text-xs uppercase tracking-widest text-ukorange font-bold">Participation</span>
-            <h2 className="font-serif text-3xl sm:text-4xl font-bold text-forest">
+            <span className="font-sans text-xs uppercase tracking-widest text-ukorange font-semibold">Participation</span>
+            <h2 className="font-serif text-3xl sm:text-4xl font-medium text-forest">
               Community Development
             </h2>
-            <p className="text-sm text-charcoal-muted">Participation, not dependency.</p>
+            <p className="font-sans font-normal text-sm text-charcoal-muted">Participation, not dependency.</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="bg-white rounded-2xl p-6 border border-forest/15 shadow-soft space-y-2">
-              <h3 className="font-serif text-lg font-bold text-forest">Participate</h3>
-              <p className="text-xs text-charcoal-muted leading-relaxed">
+              <h3 className="font-serif text-lg font-medium text-forest">Participate</h3>
+              <p className="font-sans font-normal text-xs text-charcoal-muted leading-relaxed">
                 People are contributors and co-creators, not passive recipients.
               </p>
             </div>
 
             <div className="bg-white rounded-2xl p-6 border border-forest/15 shadow-soft space-y-2">
-              <h3 className="font-serif text-lg font-bold text-forest">Start Small</h3>
-              <p className="text-xs text-charcoal-muted leading-relaxed">
+              <h3 className="font-serif text-lg font-medium text-forest">Start Small</h3>
+              <p className="font-sans font-normal text-xs text-charcoal-muted leading-relaxed">
                 Projects small enough to carry out, observe and improve, with results people can see.
               </p>
             </div>
 
             <div className="bg-white rounded-2xl p-6 border border-forest/15 shadow-soft space-y-2">
-              <h3 className="font-serif text-lg font-bold text-forest">Replicate</h3>
-              <p className="text-xs text-charcoal-muted leading-relaxed">
+              <h3 className="font-serif text-lg font-medium text-forest">Replicate</h3>
+              <p className="font-sans font-normal text-xs text-charcoal-muted leading-relaxed">
                 Document models so another village or group can adapt them. Strengthen skills and livelihoods, not permanent donations.
               </p>
             </div>
@@ -485,11 +485,11 @@ export default function AboutPage() {
 
           {/* Living Lab Callout */}
           <div className="bg-white rounded-3xl p-8 border border-forest/15 shadow-soft space-y-4">
-            <h3 className="font-serif text-2xl font-bold text-forest">The Village as a Living Laboratory</h3>
-            <p className="text-xs sm:text-sm text-charcoal-muted leading-relaxed">
+            <h3 className="font-serif text-2xl font-medium text-forest">The Village as a Living Laboratory</h3>
+            <p className="font-sans font-normal text-xs sm:text-sm text-charcoal-muted leading-relaxed">
               The purpose is learning, not claiming perfection. The questions we test every day:
             </p>
-            <ul className="text-xs sm:text-sm text-charcoal space-y-2 font-medium">
+            <ul className="font-sans text-xs sm:text-sm text-charcoal space-y-2 font-normal">
               <li>✓ Can a local cleanliness activity become a recurring habit?</li>
               <li>✓ Can young people learn entrepreneurship through real projects?</li>
               <li>✓ Can local food and hospitality build stronger livelihoods?</li>
@@ -500,22 +500,22 @@ export default function AboutPage() {
 
           {/* Community Fund Principle */}
           <div className="bg-forest-dark text-ivory rounded-3xl p-8 space-y-6 shadow-lifted">
-            <span className="text-xs uppercase tracking-widest text-ukorange font-bold">The Community Fund Principle</span>
-            <h3 className="font-serif text-2xl sm:text-3xl font-bold">A Defined Share, Not an Afterthought</h3>
+            <span className="font-sans text-xs uppercase tracking-widest text-ukorange font-semibold">The Community Fund Principle</span>
+            <h3 className="font-serif text-2xl sm:text-3xl font-medium">A Defined Share, Not an Afterthought</h3>
             
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 text-xs sm:text-sm text-ivory/80 leading-relaxed">
+            <div className="font-sans font-normal grid grid-cols-1 sm:grid-cols-2 gap-6 text-xs sm:text-sm text-ivory/80 leading-relaxed">
               <div className="space-y-2">
-                <strong className="text-ivory block text-base">Why a share?</strong>
+                <strong className="text-ivory block text-base font-semibold">Why a share?</strong>
                 <p>A defined allocation brings discipline, so social impact never becomes occasional or arbitrary.</p>
               </div>
               <div className="space-y-2">
-                <strong className="text-ivory block text-base">Why not all profit?</strong>
+                <strong className="text-ivory block text-base font-semibold">Why not all profit?</strong>
                 <p>Scaling depends on reinvestment: stronger businesses, fair wages, better systems, and growing capacity to serve.</p>
               </div>
             </div>
 
-            <div className="pt-2 text-xs text-ivory/70 border-t border-ivory/10">
-              <strong className="text-ivory">What it supports:</strong> Environmental regeneration, village cleanliness drives, children and youth education, oral cultural archives, and small grassroots experiments.
+            <div className="font-sans font-normal pt-2 text-xs text-ivory/70 border-t border-ivory/10">
+              <strong className="text-ivory font-semibold">What it supports:</strong> Environmental regeneration, village cleanliness drives, children and youth education, oral cultural archives, and small grassroots experiments.
             </div>
           </div>
         </section>
@@ -523,11 +523,11 @@ export default function AboutPage() {
         {/* SECTION 8: ROADMAP */}
         <section id="roadmap" className="scroll-mt-32 space-y-8">
           <div className="border-l-4 border-ukorange pl-4 sm:pl-6 space-y-2">
-            <span className="text-xs uppercase tracking-widest text-ukorange font-bold">Timeline</span>
-            <h2 className="font-serif text-3xl sm:text-4xl font-bold text-forest">
+            <span className="font-sans text-xs uppercase tracking-widest text-ukorange font-semibold">Timeline</span>
+            <h2 className="font-serif text-3xl sm:text-4xl font-medium text-forest">
               Roadmap
             </h2>
-            <p className="text-sm text-charcoal-muted">A long road, started carefully.</p>
+            <p className="font-sans font-normal text-sm text-charcoal-muted">A long road, started carefully.</p>
           </div>
 
           <div className="space-y-4">
@@ -548,25 +548,25 @@ export default function AboutPage() {
               >
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
-                    <span className="font-mono text-xs font-bold text-ukorange">{p.phase}</span>
-                    <h3 className="font-serif text-xl font-bold text-forest">{p.title}</h3>
+                    <span className="font-sans text-xs font-semibold text-ukorange">{p.phase}</span>
+                    <h3 className="font-serif text-xl font-medium text-forest">{p.title}</h3>
                     {p.current && (
-                      <span className="text-[10px] font-bold uppercase tracking-wider bg-ukorange text-ivory px-2 py-0.5 rounded-full">
+                      <span className="font-sans text-[10px] font-semibold uppercase tracking-wider bg-ukorange text-ivory px-2 py-0.5 rounded-full">
                         We are here
                       </span>
                     )}
                   </div>
-                  <p className="text-xs sm:text-sm text-charcoal-muted">{p.desc}</p>
+                  <p className="font-sans font-normal text-xs sm:text-sm text-charcoal-muted">{p.desc}</p>
                 </div>
               </div>
             ))}
           </div>
 
           <div className="p-6 bg-white rounded-2xl border border-forest/15 text-center space-y-2">
-            <p className="font-serif text-lg font-bold text-forest">
+            <p className="font-serif text-lg font-medium text-forest">
               Scale means replicating principles, not opening branches.
             </p>
-            <div className="flex items-center justify-center gap-3 text-xs font-semibold text-charcoal-muted">
+            <div className="font-sans flex items-center justify-center gap-3 text-xs font-semibold text-charcoal-muted">
               <span>Village</span> → <span>Valley / Region</span> → <span>Wider India</span> → <span>Beyond</span>
             </div>
           </div>
@@ -575,11 +575,11 @@ export default function AboutPage() {
         {/* SECTION 9: GUARDRAILS */}
         <section id="guardrails" className="scroll-mt-32 space-y-8">
           <div className="border-l-4 border-ukorange pl-4 sm:pl-6 space-y-2">
-            <span className="text-xs uppercase tracking-widest text-ukorange font-bold">Integrity</span>
-            <h2 className="font-serif text-3xl sm:text-4xl font-bold text-forest">
+            <span className="font-sans text-xs uppercase tracking-widest text-ukorange font-semibold">Integrity</span>
+            <h2 className="font-serif text-3xl sm:text-4xl font-medium text-forest">
               Guardrails
             </h2>
-            <p className="text-sm text-charcoal-muted">Evidence before exaggerated claims.</p>
+            <p className="font-sans font-normal text-sm text-charcoal-muted">Evidence before exaggerated claims.</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -588,10 +588,10 @@ export default function AboutPage() {
                 key={g.title}
                 className="bg-white rounded-2xl p-6 border border-forest/15 shadow-soft space-y-3"
               >
-                <h3 className="font-serif text-lg font-bold text-forest">{g.title}</h3>
-                <div className="text-xs space-y-1">
-                  <p className="text-rose-700"><strong>Risk:</strong> {g.risk}</p>
-                  <p className="text-forest"><strong>Guardrail:</strong> {g.guardrail}</p>
+                <h3 className="font-serif text-lg font-medium text-forest">{g.title}</h3>
+                <div className="font-sans font-normal text-xs space-y-1">
+                  <p className="text-rose-700"><strong className="font-semibold">Risk:</strong> {g.risk}</p>
+                  <p className="text-forest"><strong className="font-semibold">Guardrail:</strong> {g.guardrail}</p>
                 </div>
               </div>
             ))}
@@ -599,8 +599,8 @@ export default function AboutPage() {
 
           {/* Decision Rules */}
           <div className="bg-forest/5 rounded-3xl p-8 border border-forest/15 space-y-4">
-            <h3 className="font-serif text-2xl font-bold text-forest">How We Decide</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs sm:text-sm text-charcoal font-medium">
+            <h3 className="font-serif text-2xl font-medium text-forest">How We Decide</h3>
+            <div className="font-sans font-normal grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs sm:text-sm text-charcoal">
               <div>• Purpose before short-term attention</div>
               <div>• Sustainability before uncontrolled expansion</div>
               <div>• Action before unnecessary perfectionism</div>
@@ -614,8 +614,8 @@ export default function AboutPage() {
         {/* SECTION 10: FAQ */}
         <section id="faq" className="scroll-mt-32 space-y-8">
           <div className="border-l-4 border-ukorange pl-4 sm:pl-6 space-y-2">
-            <span className="text-xs uppercase tracking-widest text-ukorange font-bold">Clarity</span>
-            <h2 className="font-serif text-3xl sm:text-4xl font-bold text-forest">
+            <span className="font-sans text-xs uppercase tracking-widest text-ukorange font-semibold">Clarity</span>
+            <h2 className="font-serif text-3xl sm:text-4xl font-medium text-forest">
               Frequently Asked Questions
             </h2>
           </div>
@@ -623,11 +623,11 @@ export default function AboutPage() {
           <div className="space-y-4">
             {faqs.map((faq, idx) => (
               <div key={idx} className="bg-white rounded-2xl p-6 border border-forest/15 shadow-soft space-y-2">
-                <h3 className="font-serif text-lg font-bold text-forest flex items-start gap-2">
+                <h3 className="font-serif text-lg font-medium text-forest flex items-start gap-2">
                   <HelpCircle className="w-5 h-5 text-ukorange flex-shrink-0 mt-0.5" />
                   {faq.q}
                 </h3>
-                <p className="text-xs sm:text-sm text-charcoal-muted leading-relaxed pl-7">
+                <p className="font-sans font-normal text-xs sm:text-sm text-charcoal-muted leading-relaxed pl-7">
                   {faq.a}
                 </p>
               </div>
@@ -638,8 +638,8 @@ export default function AboutPage() {
         {/* SECTION 11: FOUNDER'S STATEMENT */}
         <section id="founder" className="scroll-mt-36 space-y-8 -mx-4 sm:mx-0">
           <div className="px-4 sm:px-0 space-y-1.5">
-            <span className="text-xs uppercase tracking-widest text-ukorange font-bold">Founder</span>
-            <h2 className="font-serif text-3xl sm:text-4xl font-bold text-forest">
+            <span className="font-sans text-xs uppercase tracking-widest text-ukorange font-semibold">Founder</span>
+            <h2 className="font-serif text-3xl sm:text-4xl font-medium text-forest">
               Founder’s Statement
             </h2>
           </div>
@@ -772,22 +772,22 @@ export default function AboutPage() {
 
           {/* Chapter One Closing Banner */}
           <div className="text-center py-12 space-y-4">
-            <h3 className="font-serif text-3xl sm:text-4xl font-bold text-forest">
+            <h3 className="font-serif text-3xl sm:text-4xl font-medium text-forest">
               Chapter One is Being Written
             </h3>
-            <p className="text-sm sm:text-base text-charcoal-muted max-w-xl mx-auto">
+            <p className="font-sans font-normal text-sm sm:text-base text-charcoal-muted max-w-xl mx-auto">
               The mountains are where it began. Not where it ends. Come and be part of what comes next.
             </p>
             <div className="pt-2 flex flex-wrap justify-center gap-4">
               <Link
                 href="/stays"
-                className="bg-forest text-ivory px-6 py-3 rounded-full text-xs font-semibold hover:bg-forest-dark transition-all shadow-sm"
+                className="font-sans bg-forest text-ivory px-6 py-3 rounded-full text-xs font-semibold hover:bg-forest-dark transition-all shadow-sm"
               >
                 Experience Our Stays
               </Link>
               <Link
                 href="/community"
-                className="bg-ivory-warm text-forest border border-forest/20 px-6 py-3 rounded-full text-xs font-semibold hover:bg-forest/10 transition-all"
+                className="font-sans bg-ivory-warm text-forest border border-forest/20 px-6 py-3 rounded-full text-xs font-semibold hover:bg-forest/10 transition-all"
               >
                 Join the Community
               </Link>

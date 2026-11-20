@@ -162,7 +162,7 @@ export default async function HomePage() {
                 className="pointer-events-none absolute -inset-x-10 sm:-inset-x-16 lg:-inset-x-24 -inset-y-8 sm:-inset-y-14 lg:-inset-y-20 rounded-full bg-[radial-gradient(closest-side_at_42%_50%,rgba(10,18,14,0.48)_0%,rgba(10,18,14,0.24)_54%,rgba(10,18,14,0)_100%)] blur-2xl"
               />
 
-              <h1 className="relative font-serif text-[17px] sm:text-xl lg:text-[42px] xl:text-[48px] font-semibold tracking-[0.01em] text-[#FFFDF9] leading-[1.12] [text-shadow:0_2px_14px_rgba(8,14,10,0.88),0_1px_3px_rgba(8,14,10,0.95)]">
+              <h1 className="relative font-serif font-normal text-[19px] sm:text-2xl md:text-3xl lg:text-[44px] xl:text-[50px] tracking-[0.01em] text-[#FFFDF9] leading-[1.12] [text-shadow:0_2px_14px_rgba(8,14,10,0.88),0_1px_3px_rgba(8,14,10,0.95)]">
                 Born in the Himalayas.
                 <span className="italic font-normal text-[#FDE2A8] block mt-0.5 lg:mt-1.5">
                   Built Around Community.
@@ -174,7 +174,7 @@ export default async function HomePage() {
                 className="relative h-[1px] sm:h-[1.5px] lg:h-[2px] w-16 sm:w-24 lg:w-44 bg-gradient-to-r from-[#FDE2A8]/85 via-[#E59866]/55 to-transparent"
               />
 
-              <p className="relative font-sans text-[11px] sm:text-[12px] lg:text-[16.5px] xl:text-[18px] text-[#FAF4E8]/95 font-normal leading-[1.35] sm:leading-relaxed max-w-[238px] sm:max-w-[280px] lg:max-w-[490px] xl:max-w-[530px] [text-shadow:0_1px_10px_rgba(8,14,10,0.92),0_1px_2px_rgba(8,14,10,0.96)]">
+              <p className="relative font-sans font-normal text-[11px] sm:text-[12.5px] lg:text-[16.5px] xl:text-[18px] text-[#FAF4E8]/95 leading-[1.35] sm:leading-relaxed max-w-[238px] sm:max-w-[280px] lg:max-w-[490px] xl:max-w-[530px] [text-shadow:0_1px_10px_rgba(8,14,10,0.92),0_1px_2px_rgba(8,14,10,0.96)]">
                 Discover meaningful stays, Himalayan products, original stories and opportunities to be
                 part of something bigger.
               </p>
@@ -183,7 +183,7 @@ export default async function HomePage() {
               <div className="hidden sm:block relative pt-1.5 lg:pt-2 pointer-events-auto">
                 <a
                   href="#four-pillars"
-                  className="group inline-flex items-center gap-2.5 pl-4 pr-2 lg:pl-5 lg:pr-2.5 py-1.5 lg:py-2 rounded-full bg-[#FFFDF9] hover:bg-white text-[#1F332A] border border-[#E5DEC9] hover:border-[#C55B23] shadow-[0_4px_14px_rgba(12,20,16,0.22)] text-[11.5px] lg:text-[13.5px] font-semibold tracking-[0.02em] transition-colors duration-200 ease-out"
+                  className="group inline-flex items-center gap-2.5 pl-4 pr-2 lg:pl-5 lg:pr-2.5 py-1.5 lg:py-2 rounded-full bg-[#FFFDF9] hover:bg-white text-[#1F332A] border border-[#E5DEC9] hover:border-[#C55B23] shadow-[0_4px_14px_rgba(12,20,16,0.22)] font-sans text-[11.5px] lg:text-[13.5px] font-semibold tracking-[0.02em] transition-colors duration-200 ease-out"
                 >
                   <span>Explore Uttarkunth</span>
                   <span className="w-5 h-5 lg:w-6 lg:h-6 rounded-full bg-[#F2ECE0] group-hover:bg-[#C55B23] text-[#1F332A] group-hover:text-white flex items-center justify-center transition-colors duration-200">
@@ -436,18 +436,18 @@ export default async function HomePage() {
       <section id="philosophy" className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10">
         <ScrollReveal>
           <div className="text-center space-y-5 sm:space-y-6 px-2 sm:px-8">
-            <span className="text-xs font-serif italic tracking-[0.14em] uppercase text-terracotta block">
+            <span className="font-sans text-xs font-semibold tracking-[0.14em] uppercase text-terracotta block">
               Founder Words
             </span>
 
-            <blockquote className="font-serif text-xl sm:text-3xl lg:text-[2.2rem] font-medium italic text-forest leading-[1.38] tracking-tight max-w-4xl mx-auto text-balance">
+            <blockquote className="font-serif text-xl sm:text-3xl lg:text-[2.2rem] font-normal italic text-forest leading-[1.38] tracking-tight max-w-4xl mx-auto text-balance">
               &ldquo;My aim is not to claim that I already know the answer. My aim is to build,
               experiment, learn, document and improve. If a small village can become a place where
               people create businesses, protect what they value and solve small problems together,
               perhaps that experience can become a model for something larger.&rdquo;
             </blockquote>
 
-            <p className="font-serif text-base sm:text-lg font-bold tracking-wide text-charcoal pt-1">
+            <p className="font-serif text-base sm:text-lg font-medium tracking-wide text-charcoal pt-1">
               &mdash; {BRAND.founder}
             </p>
           </div>
@@ -463,14 +463,14 @@ export default async function HomePage() {
       >
         {/* Final Monumental Editorial Brand Statement */}
         <div className="bg-warm-surface rounded-2xl border border-beige-dark/80 p-6 sm:p-10 lg:p-12 shadow-editorial-lg text-center space-y-4">
-          <h2 className="font-serif text-3xl sm:text-5xl lg:text-6xl font-bold text-forest leading-[1.06] tracking-tight max-w-4xl mx-auto text-balance">
+          <h2 className="font-serif text-3xl sm:text-5xl lg:text-6xl font-medium text-forest leading-[1.06] tracking-tight max-w-4xl mx-auto text-balance">
             Ideas Born in the Mountains.{' '}
             <span className="italic font-normal text-terracotta block sm:inline">
               Built Through People.
             </span>
           </h2>
 
-          <p className="font-serif italic text-lg sm:text-2xl text-charcoal-light">
+          <p className="font-sans font-normal text-base sm:text-xl text-charcoal-light">
             Learn by Doing &bull; Grow by Serving.
           </p>
 

@@ -24,14 +24,22 @@ import {
 export function SellerApplicationForm() {
   const router = useRouter();
   const [formData, setFormData] = useState({
-    // Public Brand Profile
+    // Part 6 Seller Type & Public Brand Profile
+    seller_type: 'individual' as
+      | 'individual'
+      | 'business'
+      | 'brand_owner'
+      | 'manufacturer'
+      | 'authorized_reseller',
     business_name: '',
     brand_name: '',
+    brand_logo_url: '',
     maker_name: '',
     craft_type: '',
     primary_category: 'textiles' as ProductCategoryCode,
     valley: '',
     origin_village: '',
+    operating_location: '',
     state: 'Himachal Pradesh',
     contact_email: '',
     contact_phone: '',
@@ -53,6 +61,7 @@ export function SellerApplicationForm() {
     bis_certificate_number: '',
     trademark_registration_number: '',
     privacy_notice_accepted: true,
+    agreement_accepted: true,
   });
 
   const [selectedCategories, setSelectedCategories] = useState<ProductCategoryCode[]>(['textiles']);
@@ -69,6 +78,7 @@ export function SellerApplicationForm() {
   >({});
 
   const [loading, setLoading] = useState(false);
+  const [savedAsDraft, setSavedAsDraft] = useState(false);
   const [success, setSuccess] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
@@ -104,11 +114,11 @@ export function SellerApplicationForm() {
 
   const requiredDocsForSelection = getRequiredDocumentsForCategories(selectedCategories);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const submitApplication = async (isDraft: boolean) => {
     setErrorMsg('');
 
     if (
+      !isDraft &&
       (formData.tax_registration_status === 'gst_registered' ||
         formData.tax_registration_status === 'composition_scheme') &&
       (!gstinValidation || !gstinValidation.valid)
@@ -120,7 +130,15 @@ export function SellerApplicationForm() {
       return;
     }
 
+    if (!isDraft && !formData.agreement_accepted) {
+      setErrorMsg(
+        'Please accept the Uttarkunth Seller Authenticity & Direct Fulfilment Agreement before submitting.'
+      );
+      return;
+    }
+
     setLoading(true);
+    setSavedAsDraft(isDraft);
 
     try {
       const verificationDocumentsPayload: Array<{
@@ -204,8 +222,14 @@ export function SellerApplicationForm() {
 
       const payload = {
         ...formData,
+        save_as_draft: isDraft,
         brand_name: formData.brand_name || formData.business_name,
         legal_business_name: formData.legal_business_name || formData.business_name,
+        dispatch_address:
+          formData.operating_location ||
+          formData.workshop_address ||
+          formData.registered_address ||
+          `${formData.valley}, ${formData.state}`,
         selected_categories: selectedCategories,
         verification_documents: verificationDocumentsPayload,
         submitted_documents: verificationDocumentsPayload,
@@ -230,6 +254,11 @@ export function SellerApplicationForm() {
     }
   };
 
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await submitApplication(false);
+  };
+
   if (success) {
     return (
       <div className="bg-white rounded-3xl p-8 sm:p-12 border border-forest/15 shadow-soft text-center space-y-4">
@@ -237,24 +266,39 @@ export function SellerApplicationForm() {
           <CheckCircle2 className="w-8 h-8" />
         </div>
         <h2 className="font-serif text-2xl sm:text-3xl font-bold text-forest">
-          Brand &amp; Provenance Dossier Received
+          {savedAsDraft
+            ? 'Seller Application Draft Saved'
+            : 'Seller & Brand Application Submitted'}
         </h2>
         <p className="text-xs sm:text-sm text-charcoal-muted max-w-lg mx-auto leading-relaxed">
-          Thank you for applying to partner with Uttarkunth. Our Marketplace &amp; Compliance team will verify your workshop provenance, tax registration, and category licences, and respond to{' '}
-          <strong>{formData.contact_email}</strong> within 48 hours.
+          {savedAsDraft ? (
+            <>
+              Your seller application draft has been saved to your account. You
+              can return anytime to complete verification and submit for review.
+            </>
+          ) : (
+            <>
+              Thank you for applying to partner with Uttarkunth. Your seller
+              status is now <strong>Pending Review</strong>. Our Products &amp;
+              Compliance team will verify your workshop provenance, tax
+              registration, and category licences, and respond to{' '}
+              <strong>{formData.contact_email}</strong>. Once approved, full
+              Seller Desk management will unlock automatically.
+            </>
+          )}
         </p>
         <div className="pt-4 flex flex-wrap items-center justify-center gap-3">
           <button suppressHydrationWarning
-            onClick={() => router.push('/account/products/seller')}
+            onClick={() => router.push('/seller/dashboard')}
             className="px-6 py-2.5 bg-forest text-white text-xs font-semibold rounded-xl hover:bg-forest-hover transition-colors"
           >
-            Open Seller Desk
+            View Application Status in Seller Desk
           </button>
           <button suppressHydrationWarning
             onClick={() => router.push('/products')}
             className="px-6 py-2.5 bg-ivory-warm border border-forest/20 text-forest text-xs font-semibold rounded-xl hover:bg-forest/10 transition-colors"
           >
-            Browse Marketplace
+            Back to Himalayan Products
           </button>
         </div>
       </div>
@@ -276,7 +320,7 @@ export function SellerApplicationForm() {
           </span>
         </div>
         <h2 className="font-serif text-2xl font-bold text-forest">
-          Artisan, Brand &amp; Cooperative Registration
+          Artisan, Brand &amp; Seller Registration
         </h2>
         <p className="text-xs text-charcoal-muted">
           Uttarkunth separates your public storefront brand narrative from private legal, GSTIN, and category licence records.
@@ -295,11 +339,29 @@ export function SellerApplicationForm() {
         <div className="flex items-center gap-2">
           <Store className="w-4 h-4 text-ukorange" />
           <h3 className="font-serif text-lg font-bold text-forest">
-            1. Public Seller Brand Profile (Displayed on Storefront)
+            1. Seller Type &amp; Public Brand Profile (Displayed on Storefront)
           </h3>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-xs font-semibold text-charcoal mb-1">
+              Seller Type *
+            </label>
+            <select suppressHydrationWarning
+              name="seller_type"
+              value={formData.seller_type}
+              onChange={handleChange}
+              className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-forest/20 bg-white"
+            >
+              <option value="individual">Individual Maker / Artisan</option>
+              <option value="business">Registered Business / Cooperative</option>
+              <option value="brand_owner">Brand Owner</option>
+              <option value="manufacturer">Manufacturer / Producer</option>
+              <option value="authorized_reseller">Authorized Reseller</option>
+            </select>
+          </div>
+
           <div>
             <label className="block text-xs font-semibold text-charcoal mb-1">
               Business / Cooperative / Brand Name *
@@ -327,6 +389,20 @@ export function SellerApplicationForm() {
               onChange={handleChange}
               placeholder="e.g. Tenzing Norbu"
               className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-forest/20 focus:outline-hidden focus:ring-2 focus:ring-forest/30"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-charcoal mb-1">
+              Store / Brand Logo URL (Optional)
+            </label>
+            <input suppressHydrationWarning
+              type="url"
+              name="brand_logo_url"
+              value={formData.brand_logo_url}
+              onChange={handleChange}
+              placeholder="https://..."
+              className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-forest/20"
             />
           </div>
 

@@ -22,11 +22,11 @@ export default function ContactPage() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 pb-24 space-y-12">
       <div className="text-center max-w-2xl mx-auto space-y-3">
-        <span className="text-xs font-bold uppercase tracking-widest text-ukorange">Always Here To Help</span>
-        <h1 className="font-serif text-3xl sm:text-5xl font-bold text-forest">
+        <span className="font-sans text-xs font-semibold uppercase tracking-widest text-ukorange">Always Here To Help</span>
+        <h1 className="font-serif text-3xl sm:text-5xl font-medium text-forest">
           Connect With Uttarkunth
         </h1>
-        <p className="text-sm text-charcoal-muted leading-relaxed">
+        <p className="font-sans font-normal text-sm text-charcoal-muted leading-relaxed">
           Questions about stays in Jari or Parvati Valley? Want to become a host partner? Our team and founder are based right here in Kullu.
         </p>
       </div>
@@ -35,7 +35,7 @@ export default function ContactPage() {
         {/* Contact Information & Channels */}
         <div className="space-y-8 bg-ivory-warm p-8 rounded-3xl border border-forest/15">
           <div className="space-y-4">
-            <h2 className="font-serif text-2xl font-bold text-forest">Himalayan Headquarters</h2>
+            <h2 className="font-serif text-2xl font-medium text-forest">Himalayan Headquarters</h2>
             <div className="space-y-4 text-sm text-charcoal">
               <div className="flex items-start gap-3">
                 <MapPin className="w-5 h-5 text-ukorange flex-shrink-0 mt-0.5" />
@@ -74,13 +74,13 @@ export default function ContactPage() {
           </div>
 
           <div className="pt-6 border-t border-forest/15">
-            <h3 className="font-serif text-lg font-bold text-forest mb-2">Host & Partner Onboarding</h3>
-            <p className="text-xs text-charcoal-muted leading-relaxed mb-4">
+            <h3 className="font-serif text-lg font-medium text-forest mb-2">Host & Partner Onboarding</h3>
+            <p className="font-sans font-normal text-xs text-charcoal-muted leading-relaxed mb-4">
               If you operate a homestay, guesthouse, or mountain cottage in Himachal Pradesh and want to join Uttarkunth Stays with direct guest relationships and transparent hosting tools:
             </p>
             <Link
               href="/account/stays/host"
-              className="inline-block px-4 py-2 bg-forest text-white text-xs font-semibold rounded-lg hover:bg-forest-hover transition-colors"
+              className="font-sans inline-block px-4 py-2 bg-forest text-white text-xs font-semibold rounded-lg hover:bg-forest-hover transition-colors"
             >
               Open Host Workspace
             </Link>
@@ -94,20 +94,20 @@ export default function ContactPage() {
               <div className="w-14 h-14 bg-forest/10 text-forest rounded-full flex items-center justify-center mx-auto">
                 <CheckCircle2 className="w-8 h-8 text-forest" />
               </div>
-              <h3 className="font-serif text-2xl font-bold text-forest">Message Received!</h3>
-              <p className="text-xs sm:text-sm text-charcoal-muted max-w-md mx-auto leading-relaxed">
+              <h3 className="font-serif text-2xl font-medium text-forest">Message Received!</h3>
+              <p className="font-sans font-normal text-xs sm:text-sm text-charcoal-muted max-w-md mx-auto leading-relaxed">
                 Thank you, <strong>{name}</strong>. Gaurav Negi and our mountain hospitality team have received your enquiry and will respond within 24 hours.
               </p>
               <button suppressHydrationWarning
                 onClick={() => setSubmitted(false)}
-                className="mt-4 px-4 py-2 text-xs font-semibold text-forest border border-forest/20 rounded-lg hover:bg-forest/5"
+                className="font-sans mt-4 px-4 py-2 text-xs font-semibold text-forest border border-forest/20 rounded-lg hover:bg-forest/5"
               >
                 Send Another Message
               </button>
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
-              <h2 className="font-serif text-2xl font-bold text-forest mb-4">Send Us a Message</h2>
+              <h2 className="font-serif text-2xl font-medium text-forest mb-4">Send Us a Message</h2>
 
               <div>
                 <label className="block text-xs font-semibold text-charcoal-muted mb-1">Your Name</label>

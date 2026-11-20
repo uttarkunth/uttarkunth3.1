@@ -75,6 +75,13 @@ const ARROW_NAV_ITEMS = [
     iconColor: 'text-terracotta',
     match: (p: string) => p === '/about',
   },
+  {
+    label: 'Seller Dashboard',
+    href: '/seller/dashboard',
+    icon: ShoppingBag,
+    iconColor: 'text-terracotta',
+    match: (p: string) => p.startsWith('/seller'),
+  },
 ];
 
 function renderProfileMenuIcon(iconName: ProfileMenuIconName) {
@@ -422,9 +429,9 @@ export function Header() {
                       role="menuitem"
                       aria-current={active ? 'page' : undefined}
                       onClick={() => setNavExpanded(false)}
-                      className={`flex items-center gap-3 px-4 py-2.5 text-xs sm:text-sm font-medium transition-colors ${
+                      className={`font-sans flex items-center gap-3 px-4 py-2.5 text-xs sm:text-sm font-medium transition-colors ${
                         active
-                          ? 'bg-forest/10 text-forest font-semibold'
+                          ? 'bg-forest/10 text-forest'
                           : 'text-charcoal hover:bg-forest/5 hover:text-forest'
                       }`}
                     >
@@ -443,8 +450,8 @@ export function Header() {
           <Logo centerMark />
         </div>
 
-        {/* RIGHT — Profile Icon / Avatar / Initial with Subtle Terracotta Notification Dot */}
-        <div className="flex items-center shrink-0">
+        {/* RIGHT — Profile Icon / Avatar / Initial */}
+        <div className="flex items-center gap-2.5 shrink-0">
           <div className="relative">
             <button
               type="button"

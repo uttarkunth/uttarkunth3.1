@@ -109,11 +109,11 @@ export default async function AccountProductsPage() {
 
         {isSeller ? (
           <Link
-            href="/account/products/seller"
+            href="/seller/dashboard"
             className="px-5 py-2.5 bg-ukorange hover:bg-terracotta-dark text-white text-xs font-semibold rounded-xl shadow-xs transition-colors flex items-center gap-1.5 flex-shrink-0"
           >
             <Store className="w-4 h-4" />
-            <span>Open Seller Workspace</span>
+            <span>Open Seller Desk</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </Link>
         ) : (
@@ -121,7 +121,7 @@ export default async function AccountProductsPage() {
             href="/products/sell"
             className="px-5 py-2.5 bg-ukorange hover:bg-terracotta-dark text-white text-xs font-semibold rounded-xl shadow-xs transition-colors flex items-center gap-1.5 flex-shrink-0"
           >
-            <span>Apply as Maker</span>
+            <span>Become a Seller / Partner</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </Link>
         )}

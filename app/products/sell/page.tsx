@@ -13,16 +13,27 @@ export default function SellProductsPage() {
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-12 pb-24 space-y-12">
       <div className="text-center space-y-4">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-ukorange/10 text-ukorange text-xs font-semibold uppercase tracking-wider">
+        <div className="font-sans inline-flex items-center gap-2 px-3 py-1 rounded-full bg-ukorange/10 text-ukorange text-xs font-semibold uppercase tracking-wider">
           <Store className="w-3.5 h-3.5" />
           Maker Partnership
         </div>
-        <h1 className="font-serif text-4xl sm:text-5xl font-bold text-forest">
+        <h1 className="font-serif text-4xl sm:text-5xl font-medium text-forest">
           Sell Your Himalayan Products
         </h1>
-        <p className="text-sm sm:text-base text-charcoal-muted max-w-xl mx-auto">
+        <p className="font-sans font-normal text-sm sm:text-base text-charcoal-muted max-w-xl mx-auto">
           We invite mountain weavers, beekeepers, herbalists, and local food makers to connect with conscious customers across India.
         </p>
+        <div className="pt-2 flex flex-wrap items-center justify-center gap-3">
+          <Link
+            href="/seller/dashboard"
+            data-testid="sell-page-open-seller-dashboard"
+            className="font-sans inline-flex items-center gap-2 rounded-xl bg-forest px-5 py-3 text-xs sm:text-sm font-semibold text-ivory shadow-sm hover:bg-ukorange transition-colors"
+          >
+            <Store className="w-4 h-4 text-ukorange" />
+            <span>Open Seller Dashboard (Manage Inventory &amp; Active Sales)</span>
+            <ArrowRight className="w-4 h-4" />
+          </Link>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

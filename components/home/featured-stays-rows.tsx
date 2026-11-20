@@ -232,7 +232,7 @@ function LocationStaysRow({ group }: { group: StayLocationGroup }) {
           href={group.href}
           className="group/header inline-flex items-center gap-2 sm:gap-2.5 text-inherit no-underline"
         >
-          <h3 className="font-serif text-[22px] sm:text-2xl lg:text-[28px] font-bold text-[#1F332A] group-hover/header:text-[#C55B23] tracking-tight transition-colors">
+          <h3 className="font-serif text-[22px] sm:text-2xl lg:text-[28px] font-medium text-[#1F332A] group-hover/header:text-[#C55B23] tracking-tight transition-colors">
             {group.title}
           </h3>
           <span className="hidden sm:inline-flex w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[#EAE2D3]/90 group-hover/header:bg-[#C55B23] text-[#1F332A] group-hover/header:text-white items-center justify-center transition-colors shadow-2xs">
@@ -253,7 +253,7 @@ function LocationStaysRow({ group }: { group: StayLocationGroup }) {
         <div className="hidden sm:flex items-center gap-2">
           <Link
             href="/stays/partner"
-            className="mr-2 text-xs font-semibold text-[#5C5549] hover:text-[#1F332A] transition-colors"
+            className="mr-2 font-sans text-xs font-semibold text-[#5C5549] hover:text-[#1F332A] transition-colors"
           >
             Partner as a Host &rarr;
           </Link>
@@ -299,20 +299,19 @@ export function FeaturedStaysRows({ properties }: { properties: any[] }) {
 
   return (
     <div className="space-y-6 sm:space-y-8">
-      {/* Section Heading: Highlighted Pillar Heading "Himalayan Hospitality" + Featured Stays */}
+      {/* Section Heading: Unboxed Uttarkunth Orange Pillar Heading "Himalayan Hospitality" + Featured Stays */}
       <div className="flex items-end justify-between gap-4 border-b border-[#D9CCB8]/80 pb-3.5 sm:pb-4">
-        <div className="space-y-2">
-          <span className="inline-flex items-center gap-2 px-3.5 sm:px-4 py-1 sm:py-1.5 rounded-xl bg-gradient-to-r from-[#1F332A] via-[#263D32] to-[#2C4639] text-[#FAF4E8] border-l-4 border-[#C55B23] shadow-[0_6px_18px_rgba(31,51,42,0.14)] font-serif text-[17px] sm:text-xl md:text-2xl font-bold tracking-wide">
-            <span className="w-2 h-2 rounded-full bg-[#FDE2A8] ring-2 ring-[#C55B23]/60 shrink-0" />
+        <div className="space-y-1">
+          <span className="block font-serif font-normal sm:font-medium text-[#C55B23] text-xl sm:text-2xl md:text-[26px] lg:text-[30px] tracking-wide leading-snug">
             Himalayan Hospitality
           </span>
-          <h2 className="font-serif text-[22px] sm:text-3xl md:text-4xl lg:text-[42px] font-bold text-[#1F332A] tracking-tight leading-[1.15] sm:leading-tight block">
+          <h2 className="font-serif text-[22px] sm:text-3xl md:text-4xl lg:text-[42px] font-medium text-[#1F332A] tracking-tight leading-[1.15] sm:leading-tight block">
             Featured Stays
           </h2>
         </div>
         <Link
           href="/stays"
-          className="text-xs sm:text-sm font-semibold text-[#1F332A] hover:text-[#C55B23] transition-colors shrink-0"
+          className="font-sans text-xs sm:text-sm font-semibold text-[#1F332A] hover:text-[#C55B23] transition-colors shrink-0"
         >
           View all stays &rarr;
         </Link>

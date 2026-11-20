@@ -6,6 +6,7 @@ export interface Destination {
   tagline: string;
   description: string;
   matchTerms: string[];
+  image?: string;
   featured?: boolean;
   propertyCount?: number;
   nearbyDestinations?: string[];
@@ -22,6 +23,7 @@ export const CURATED_DESTINATIONS: Destination[] = [
     tagline: 'Home of Uttarkunth, vernacular architecture and mountain hospitality',
     description: 'The historic heart of Parvati Valley where timber traditions meet deep community bonds. Jari sits quietly beneath the snow-crested Malana peaks, offering genuine Himalayan warmth.',
     matchTerms: ['jari', 'parvati valley', 'malana road', 'mateura'],
+    image: '/assets/destinations/jari-card.webp',
     featured: true,
   },
   {
@@ -32,6 +34,7 @@ export const CURATED_DESTINATIONS: Destination[] = [
     tagline: 'Cedar forests, apple orchards and gateway to high passes',
     description: 'Surrounded by pine-clad peaks and alpine streams at 6,700 feet, Manali has long welcomed travelers seeking authentic mountain air, deodar walks, and high-altitude trails.',
     matchTerms: ['manali', 'old manali', 'vashisht', 'prini', 'sethan'],
+    image: '/assets/destinations/manali-card.webp',
     featured: true,
   },
   {
@@ -42,6 +45,7 @@ export const CURATED_DESTINATIONS: Destination[] = [
     tagline: 'Riverside timber hamlets, ancient trails and pine solitude',
     description: 'Carved by the crystal waters of the Parvati River, the valley is home to indigenous Kathkuni timber homes, ancient deodar groves, and welcoming village homestays.',
     matchTerms: ['kasol', 'chalal', 'katagla', 'choj', 'tosh', 'pulga', 'kalga', 'grahan'],
+    image: '/assets/destinations/kasol-card.webp',
     featured: true,
     nearbyDestinations: ['kullu-jari'],
     nearbyLabel: 'Nearby in Jari (Parvati Valley, ~10 km away)',
@@ -61,11 +65,12 @@ export const CURATED_DESTINATIONS: Destination[] = [
   {
     id: 'jibhi',
     slug: 'jibhi',
-    name: 'Jibhi & Tirthan Valley',
+    name: 'Jibhi',
     region: 'Himachal Pradesh',
     tagline: 'Trout streams, stone-and-wood cottages and quiet cedar paths',
     description: 'Nestled beside the Great Himalayan National Park, Tirthan and Jibhi offer tranquil river trails, waterfall paths, and community-led eco-tourism.',
     matchTerms: ['jibhi', 'tirthan', 'tirthan valley', 'shoji', 'banjar', 'gushaini'],
+    image: '/assets/destinations/jibhi-card.webp',
     featured: true,
   },
   {
@@ -76,6 +81,7 @@ export const CURATED_DESTINATIONS: Destination[] = [
     tagline: 'High cold desert, 1,000-year-old monasteries and star-filled skies',
     description: 'A remote trans-Himalayan plateau characterized by mud-brick hamlets, wind-swept fossil beds, and millennia-old spiritual heritage.',
     matchTerms: ['spiti', 'spiti valley', 'kaza', 'tabo', 'kibber', 'langza', 'mudh'],
+    image: '/assets/destinations/spiti-valley-card.webp',
     featured: true,
   },
   {
@@ -126,16 +132,18 @@ export const CURATED_DESTINATIONS: Destination[] = [
     tagline: 'Heritage ridge trails, colonial architecture and pine ridges',
     description: 'Perched along seven forested hills with expansive southern Himalayan views, historic walking trails, and pine-scented orchards.',
     matchTerms: ['shimla', 'kufri', 'mashobra', 'narkanda'],
+    image: '/assets/destinations/shimla-card.webp',
     featured: false,
   },
   {
     id: 'dharamshala',
     slug: 'dharamshala',
-    name: 'Dharamshala and McLeod Ganj',
+    name: 'Dharamshala',
     region: 'Himachal Pradesh',
     tagline: 'Under the Dhauladhar crags: Buddhist sanctuaries and mountain cafes',
     description: 'Sheltered beneath the sheer granite walls of the Dhauladhar range, where Tibetan cultural heritage and peaceful cedar trails coexist.',
     matchTerms: ['dharamshala', 'mcleod ganj', 'mcleodganj', 'dharamsala', 'bhagsunag', 'dharamkot'],
+    image: '/assets/destinations/dharamshala-card.webp',
     featured: false,
   },
   {
@@ -146,12 +154,13 @@ export const CURATED_DESTINATIONS: Destination[] = [
     tagline: 'Glider thermals, Tibetan monasteries and tea garden serenity',
     description: 'World-renowned for quiet village living, eco-communities, organic tea estates, and panoramic launches facing the Kangra Valley.',
     matchTerms: ['bir', 'billing', 'bir billing', 'baijnath'],
+    image: '/assets/destinations/bir-billing-card.webp',
     featured: false,
   },
   {
     id: 'dalhousie',
     slug: 'dalhousie',
-    name: 'Dalhousie and Khajjiar',
+    name: 'Dalhousie',
     region: 'Himachal Pradesh',
     tagline: 'Rolling alpine meadows, deodar forests and colonial quietude',
     description: 'Surrounded by ancient deodar canopy and emerald meadows that open onto panoramic views of the Pir Panjal mountain range.',

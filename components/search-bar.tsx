@@ -173,18 +173,21 @@ export function SearchBar({
   return (
     <form
       onSubmit={handleSearch}
-      className={`bg-warm-surface rounded-2xl shadow-editorial-lg border border-beige-dark/60 p-2 sm:p-3 transition-all duration-300 ease-editorial ${
+      data-testid="stays-hero-search-bar"
+      className={`relative z-30 bg-[#FFFDF9] rounded-[24px] lg:rounded-full shadow-[0_18px_44px_-10px_rgba(18,28,22,0.32),0_4px_14px_-2px_rgba(18,28,22,0.16)] border border-[#D9CCB8] hover:border-[#C55B23]/60 focus-within:border-[#C55B23] focus-within:ring-4 focus-within:ring-[#C55B23]/15 p-2 sm:p-2.5 transition-all duration-300 ${
         compact ? 'max-w-4xl' : 'max-w-5xl'
-      } mx-auto`}
+      } mx-auto text-left`}
     >
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[1.45fr_0.95fr_0.95fr_1.35fr] gap-2 divide-y sm:divide-y-0 sm:divide-x divide-beige/90">
-        {/* Destination Picker + Voice-to-Text Trigger */}
-        <div className="flex items-center gap-2.5 px-3.5 py-2 min-w-0">
-          <MapPin className="w-5 h-5 text-terracotta flex-shrink-0" />
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[1.35fr_0.95fr_0.95fr_1.45fr] items-center gap-1.5 sm:gap-0 divide-y sm:divide-y-0 sm:divide-x divide-[#E5DEC9]/90">
+        {/* 1. Destination Picker + Voice-to-Text Trigger */}
+        <div className="flex items-center gap-2.5 px-3.5 sm:px-4 py-2 min-w-0">
+          <div className="w-8 h-8 rounded-full bg-[#F5F0E6] border border-[#E5DEC9] flex items-center justify-center shrink-0">
+            <MapPin className="w-4 h-4 text-[#C55B23]" />
+          </div>
           <div className="flex-1 min-w-0">
             <label
               htmlFor="stays-search-destination"
-              className="block text-[10px] font-bold uppercase tracking-[0.14em] text-charcoal-muted mb-0.5"
+              className="font-sans block text-[10px] font-semibold uppercase tracking-[0.14em] text-[#6E6559] mb-0.5"
             >
               Destination
             </label>
@@ -196,7 +199,7 @@ export function SearchBar({
                 setDestination(e.target.value);
                 setVoiceQuery('');
               }}
-              className="w-full bg-transparent font-semibold text-charcoal text-sm focus:outline-none truncate cursor-pointer"
+              className="font-sans w-full bg-transparent font-semibold text-[#1F332A] text-[13.5px] sm:text-sm focus:outline-none truncate cursor-pointer"
             >
               <option value="">
                 {voiceQuery ? `Stay: ${voiceQuery}` : 'All Mountain Destinations'}
@@ -243,15 +246,15 @@ export function SearchBar({
             }
             className={`relative w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 transition-all duration-200 cursor-pointer ${
               isListening
-                ? 'bg-terracotta text-warm-surface ring-4 ring-terracotta/25'
-                : 'bg-warm-canvas hover:bg-beige/70 text-forest hover:text-terracotta border border-beige-dark/60'
+                ? 'bg-[#C55B23] text-[#FFFDF9] ring-4 ring-[#C55B23]/25'
+                : 'bg-[#F5F0E6] hover:bg-[#EAE2D3] text-[#1F332A] hover:text-[#C55B23] border border-[#D9CCB8]'
             }`}
           >
             {isListening ? (
               <>
                 <span
                   aria-hidden="true"
-                  className="absolute inset-0 rounded-full bg-terracotta/35 animate-ping"
+                  className="absolute inset-0 rounded-full bg-[#C55B23]/35 animate-ping"
                 />
                 <MicOff className="relative z-10 w-3.5 h-3.5" />
               </>
@@ -261,13 +264,15 @@ export function SearchBar({
           </button>
         </div>
 
-        {/* Check-in Date */}
-        <div className="flex items-center gap-2.5 px-3 py-2 min-w-0">
-          <Calendar className="w-5 h-5 text-forest flex-shrink-0" />
+        {/* 2. Check-in Date */}
+        <div className="flex items-center gap-2.5 px-3.5 sm:px-4 py-2 min-w-0">
+          <div className="w-8 h-8 rounded-full bg-[#F5F0E6] border border-[#E5DEC9] flex items-center justify-center shrink-0">
+            <Calendar className="w-4 h-4 text-[#1F332A]" />
+          </div>
           <div className="flex-1 min-w-0">
             <label
               htmlFor="stays-search-checkin"
-              className="block text-[10px] font-bold uppercase tracking-[0.14em] text-charcoal-muted mb-0.5"
+              className="font-sans block text-[10px] font-semibold uppercase tracking-[0.14em] text-[#6E6559] mb-0.5"
             >
               Check-in
             </label>
@@ -283,18 +288,20 @@ export function SearchBar({
                   setCheckOut('');
                 }
               }}
-              className="w-full bg-transparent font-semibold text-charcoal text-sm tabular-nums focus:outline-none cursor-pointer"
+              className="font-sans w-full bg-transparent font-semibold text-[#1F332A] text-[13.5px] sm:text-sm tabular-nums focus:outline-none cursor-pointer"
             />
           </div>
         </div>
 
-        {/* Check-out Date */}
-        <div className="flex items-center gap-2.5 px-3 py-2 min-w-0">
-          <Calendar className="w-5 h-5 text-forest flex-shrink-0" />
+        {/* 3. Check-out Date */}
+        <div className="flex items-center gap-2.5 px-3.5 sm:px-4 py-2 min-w-0 border-t sm:border-t lg:border-t-0 border-[#E5DEC9]/90">
+          <div className="w-8 h-8 rounded-full bg-[#F5F0E6] border border-[#E5DEC9] flex items-center justify-center shrink-0">
+            <Calendar className="w-4 h-4 text-[#1F332A]" />
+          </div>
           <div className="flex-1 min-w-0">
             <label
               htmlFor="stays-search-checkout"
-              className="block text-[10px] font-bold uppercase tracking-[0.14em] text-charcoal-muted mb-0.5"
+              className="font-sans block text-[10px] font-semibold uppercase tracking-[0.14em] text-[#6E6559] mb-0.5"
             >
               Check-out
             </label>
@@ -305,19 +312,21 @@ export function SearchBar({
               min={checkIn || todayStr}
               value={checkOut}
               onChange={(e) => setCheckOut(e.target.value)}
-              className="w-full bg-transparent font-semibold text-charcoal text-sm tabular-nums focus:outline-none cursor-pointer"
+              className="font-sans w-full bg-transparent font-semibold text-[#1F332A] text-[13.5px] sm:text-sm tabular-nums focus:outline-none cursor-pointer"
             />
           </div>
         </div>
 
-        {/* Guests & Submit Button */}
-        <div className="flex items-center justify-between gap-2.5 px-3.5 py-2 min-w-0">
+        {/* 4. Guests & Submit Button */}
+        <div className="flex items-center justify-between gap-2.5 pl-3.5 sm:pl-4 pr-1.5 py-2 sm:py-1.5 min-w-0 border-t sm:border-t lg:border-t-0 border-[#E5DEC9]/90">
           <div className="flex items-center gap-2.5 min-w-[92px] flex-1">
-            <Users className="w-5 h-5 text-forest flex-shrink-0" />
+            <div className="w-8 h-8 rounded-full bg-[#F5F0E6] border border-[#E5DEC9] flex items-center justify-center shrink-0">
+              <Users className="w-4 h-4 text-[#1F332A]" />
+            </div>
             <div className="flex-1 min-w-0">
               <label
                 htmlFor="stays-search-guests"
-                className="block text-[10px] font-bold uppercase tracking-[0.14em] text-charcoal-muted mb-0.5"
+                className="font-sans block text-[10px] font-semibold uppercase tracking-[0.14em] text-[#6E6559] mb-0.5"
               >
                 Guests
               </label>
@@ -326,7 +335,7 @@ export function SearchBar({
                 suppressHydrationWarning
                 value={guests}
                 onChange={(e) => setGuests(parseInt(e.target.value, 10))}
-                className="w-full bg-transparent font-semibold text-charcoal text-sm tabular-nums focus:outline-none cursor-pointer"
+                className="font-sans w-full bg-transparent font-semibold text-[#1F332A] text-[13.5px] sm:text-sm tabular-nums focus:outline-none cursor-pointer"
               >
                 {[1, 2, 3, 4, 5, 6, 8, 10].map((num) => (
                   <option key={num} value={num}>
@@ -340,10 +349,10 @@ export function SearchBar({
           <button
             type="submit"
             suppressHydrationWarning
-            className="flex-shrink-0 bg-forest hover:bg-forest-dark text-warm-surface py-3 px-4 rounded-xl transition-all duration-200 ease-editorial hover:-translate-y-0.5 active:translate-y-0 shadow-editorial-sm flex items-center justify-center gap-1.5 font-semibold text-xs uppercase tracking-[0.1em]"
+            className="font-sans flex-shrink-0 bg-[#1F332A] hover:bg-[#C55B23] text-[#FFFDF9] h-11 px-5 sm:px-6 rounded-full transition-colors duration-200 shadow-sm flex items-center justify-center gap-2 font-semibold text-xs tracking-[0.06em] cursor-pointer"
           >
-            <Search className="w-4 h-4 text-terracotta-light" />
-            <span className="hidden sm:inline">Search</span>
+            <Search className="w-3.5 h-3.5 text-[#FDE2A8]" />
+            <span>Search</span>
           </button>
         </div>
       </div>
@@ -352,12 +361,12 @@ export function SearchBar({
         <div
           role="status"
           aria-live="polite"
-          className="mt-2 pt-2 border-t border-beige/70 flex items-center justify-between px-3 text-xs text-forest font-medium"
+          className="mt-2 pt-2 border-t border-[#E5DEC9]/80 flex items-center justify-between px-4 text-xs text-[#1F332A] font-sans font-medium"
         >
           <span className="inline-flex items-center gap-2">
             <span
               className={`w-2 h-2 rounded-full ${
-                isListening ? 'bg-terracotta animate-pulse' : 'bg-forest'
+                isListening ? 'bg-[#C55B23] animate-pulse' : 'bg-[#1F332A]'
               }`}
             />
             <span>

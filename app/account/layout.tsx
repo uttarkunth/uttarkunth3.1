@@ -21,8 +21,9 @@ export default async function AccountLayout({
 
   const isAdmin = await checkIsPlatformAdmin(user.id);
 
-  // Authoritative host access check: user must be assigned to at least one property
+  // Authoritative host and seller access check
   let isHost = false;
+  let sellerStatus: string | null = null;
   let tripsCount = 0;
 
   try {
@@ -45,7 +46,15 @@ export default async function AccountLayout({
       isHost = (assignedCount || 0) > 0;
     }
 
-    // 3. Query trips count for this user
+    // 3. Check seller application / approval status
+    const { data: sellerRecord } = await adminClient
+      .from('sellers')
+      .select('status')
+      .eq('user_id', user.id)
+      .maybeSingle();
+    sellerStatus = (sellerRecord as any)?.status || null;
+
+    // 4. Query trips count for this user
     const { count } = await adminClient
       .from('stay_bookings')
       .select('id', { count: 'exact', head: true })
@@ -53,12 +62,18 @@ export default async function AccountLayout({
     tripsCount = count || 0;
   } catch (err) {
     isHost = false;
+    sellerStatus = null;
     tripsCount = 0;
   }
 
   return (
     <div className="min-h-screen bg-warm-canvas/60">
-      <AccountNav isAdmin={isAdmin} isHost={isHost} tripsCount={tripsCount} />
+      <AccountNav
+        isAdmin={isAdmin}
+        isHost={isHost}
+        sellerStatus={sellerStatus}
+        tripsCount={tripsCount}
+      />
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
         {children}
       </main>
