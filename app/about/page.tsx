@@ -170,7 +170,7 @@ export default function AboutPage() {
 
         {/* SECTION 1: THE IDEA IN FIVE LINES */}
         <section id="idea" className="scroll-mt-32 space-y-8">
-          <div className="border-l-4 border-ukorange pl-4 sm:pl-6 space-y-2">
+          <div className="border-b border-[#D9CCB8] pb-4 space-y-2">
             <span className="font-sans text-xs uppercase tracking-widest text-ukorange font-semibold">Foundation</span>
             <h2 className="font-serif text-3xl sm:text-4xl font-medium text-forest">
               The Idea in Five Lines
@@ -208,7 +208,7 @@ export default function AboutPage() {
 
         {/* SECTION 2: THE MEANING OF THE NAME */}
         <section id="name" className="scroll-mt-32 space-y-8">
-          <div className="border-l-4 border-ukorange pl-4 sm:pl-6 space-y-2">
+          <div className="border-b border-[#D9CCB8] pb-4 space-y-2">
             <span className="font-sans text-xs uppercase tracking-widest text-ukorange font-semibold">Etymology</span>
             <h2 className="font-serif text-3xl sm:text-4xl font-medium text-forest">
               The Meaning of the Name
@@ -240,7 +240,7 @@ export default function AboutPage() {
 
         {/* SECTION 3: WHY IT BEGAN */}
         <section id="why" className="scroll-mt-32 space-y-8">
-          <div className="border-l-4 border-ukorange pl-4 sm:pl-6 space-y-2">
+          <div className="border-b border-[#D9CCB8] pb-4 space-y-2">
             <span className="font-sans text-xs uppercase tracking-widest text-ukorange font-semibold">Genesis</span>
             <h2 className="font-serif text-3xl sm:text-4xl font-medium text-forest">
               Why It Began
@@ -312,7 +312,7 @@ export default function AboutPage() {
 
         {/* SECTION 4: THE PHILOSOPHY */}
         <section id="philosophy" className="scroll-mt-32 space-y-8">
-          <div className="border-l-4 border-ukorange pl-4 sm:pl-6 space-y-2">
+          <div className="border-b border-[#D9CCB8] pb-4 space-y-2">
             <span className="font-sans text-xs uppercase tracking-widest text-ukorange font-semibold">Ethos</span>
             <h2 className="font-serif text-3xl sm:text-4xl font-medium text-forest">
               The Philosophy
@@ -349,7 +349,7 @@ export default function AboutPage() {
 
         {/* SECTION 5: HOW IT WORKS — 9 STEPS */}
         <section id="model" className="scroll-mt-32 space-y-8">
-          <div className="border-l-4 border-ukorange pl-4 sm:pl-6 space-y-2">
+          <div className="border-b border-[#D9CCB8] pb-4 space-y-2">
             <span className="font-sans text-xs uppercase tracking-widest text-ukorange font-semibold">Operating Loop</span>
             <h2 className="font-serif text-3xl sm:text-4xl font-medium text-forest">
               How It Works
@@ -375,7 +375,7 @@ export default function AboutPage() {
 
         {/* SECTION 6: VENTURES AND PARENT BRAND */}
         <section id="ventures" className="scroll-mt-32 space-y-8">
-          <div className="border-l-4 border-ukorange pl-4 sm:pl-6 space-y-2">
+          <div className="border-b border-[#D9CCB8] pb-4 space-y-2">
             <span className="font-sans text-xs uppercase tracking-widest text-ukorange font-semibold">Architecture</span>
             <h2 className="font-serif text-3xl sm:text-4xl font-medium text-forest">
               Ventures and the Parent Brand
@@ -384,9 +384,9 @@ export default function AboutPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="bg-white rounded-3xl p-8 border border-emerald-500/30 shadow-soft space-y-4">
-              <h3 className="font-serif text-2xl font-bold text-emerald-900 flex items-center gap-2">
-                <CheckCircle2 className="w-5 h-5 text-emerald-600" /> Uttarkunth is
+            <div className="bg-[#FFFDF9] rounded-3xl p-8 border border-[#D9CCB8] shadow-soft space-y-4">
+              <h3 className="font-serif text-2xl font-bold text-forest flex items-center gap-2">
+                <CheckCircle2 className="w-5 h-5 text-forest" /> Uttarkunth is
               </h3>
               <ul className="text-xs sm:text-sm text-charcoal-muted space-y-2.5">
                 <li>• A parent entrepreneurial ecosystem</li>
@@ -397,9 +397,9 @@ export default function AboutPage() {
               </ul>
             </div>
 
-            <div className="bg-white rounded-3xl p-8 border border-red-500/20 shadow-soft space-y-4">
-              <h3 className="font-serif text-2xl font-bold text-rose-950 flex items-center gap-2">
-                <AlertTriangle className="w-5 h-5 text-rose-600" /> Uttarkunth is not
+            <div className="bg-[#FFFDF9] rounded-3xl p-8 border border-[#D9CCB8] shadow-soft space-y-4">
+              <h3 className="font-serif text-2xl font-bold text-[#29251F] flex items-center gap-2">
+                <AlertTriangle className="w-5 h-5 text-[#C55B23]" /> Uttarkunth is not
               </h3>
               <ul className="text-xs sm:text-sm text-charcoal-muted space-y-2.5">
                 <li>• Only a homestay, only a café, or only a tourism company</li>
@@ -452,7 +452,7 @@ export default function AboutPage() {
 
         {/* SECTION 7: COMMUNITY DEVELOPMENT */}
         <section id="community" className="scroll-mt-32 space-y-8">
-          <div className="border-l-4 border-ukorange pl-4 sm:pl-6 space-y-2">
+          <div className="border-b border-[#D9CCB8] pb-4 space-y-2">
             <span className="font-sans text-xs uppercase tracking-widest text-ukorange font-semibold">Participation</span>
             <h2 className="font-serif text-3xl sm:text-4xl font-medium text-forest">
               Community Development
@@ -522,7 +522,7 @@ export default function AboutPage() {
 
         {/* SECTION 8: ROADMAP */}
         <section id="roadmap" className="scroll-mt-32 space-y-8">
-          <div className="border-l-4 border-ukorange pl-4 sm:pl-6 space-y-2">
+          <div className="border-b border-[#D9CCB8] pb-4 space-y-2">
             <span className="font-sans text-xs uppercase tracking-widest text-ukorange font-semibold">Timeline</span>
             <h2 className="font-serif text-3xl sm:text-4xl font-medium text-forest">
               Roadmap
@@ -574,7 +574,7 @@ export default function AboutPage() {
 
         {/* SECTION 9: GUARDRAILS */}
         <section id="guardrails" className="scroll-mt-32 space-y-8">
-          <div className="border-l-4 border-ukorange pl-4 sm:pl-6 space-y-2">
+          <div className="border-b border-[#D9CCB8] pb-4 space-y-2">
             <span className="font-sans text-xs uppercase tracking-widest text-ukorange font-semibold">Integrity</span>
             <h2 className="font-serif text-3xl sm:text-4xl font-medium text-forest">
               Guardrails
@@ -590,7 +590,7 @@ export default function AboutPage() {
               >
                 <h3 className="font-serif text-lg font-medium text-forest">{g.title}</h3>
                 <div className="font-sans font-normal text-xs space-y-1">
-                  <p className="text-rose-700"><strong className="font-semibold">Risk:</strong> {g.risk}</p>
+                  <p className="text-[#C55B23]"><strong className="font-semibold">Risk:</strong> {g.risk}</p>
                   <p className="text-forest"><strong className="font-semibold">Guardrail:</strong> {g.guardrail}</p>
                 </div>
               </div>
@@ -613,7 +613,7 @@ export default function AboutPage() {
 
         {/* SECTION 10: FAQ */}
         <section id="faq" className="scroll-mt-32 space-y-8">
-          <div className="border-l-4 border-ukorange pl-4 sm:pl-6 space-y-2">
+          <div className="border-b border-[#D9CCB8] pb-4 space-y-2">
             <span className="font-sans text-xs uppercase tracking-widest text-ukorange font-semibold">Clarity</span>
             <h2 className="font-serif text-3xl sm:text-4xl font-medium text-forest">
               Frequently Asked Questions

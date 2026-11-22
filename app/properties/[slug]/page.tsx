@@ -237,6 +237,8 @@ export default async function PropertyDetailPage({ params, searchParams }: Prope
             propertyId={property.id}
             propertyName={property.name}
             rooms={rooms as any}
+            initialCheckIn={searchParams.checkIn}
+            initialCheckOut={searchParams.checkOut}
           />
 
           {/* Amenities */}

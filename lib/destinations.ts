@@ -18,11 +18,11 @@ export const CURATED_DESTINATIONS: Destination[] = [
   {
     id: 'kullu-jari',
     slug: 'kullu-jari',
-    name: 'Jari',
+    name: 'Kullu Jari',
     region: 'Himachal Pradesh',
     tagline: 'Home of Uttarkunth, vernacular architecture and mountain hospitality',
     description: 'The historic heart of Parvati Valley where timber traditions meet deep community bonds. Jari sits quietly beneath the snow-crested Malana peaks, offering genuine Himalayan warmth.',
-    matchTerms: ['jari', 'parvati valley', 'malana road', 'mateura'],
+    matchTerms: ['jari', 'kullu', 'kullu valley', 'parvati valley', 'malana road', 'mateura', 'bhuntar', 'naggar'],
     image: '/assets/destinations/jari-card.webp',
     featured: true,
   },
@@ -48,19 +48,7 @@ export const CURATED_DESTINATIONS: Destination[] = [
     image: '/assets/destinations/kasol-card.webp',
     featured: true,
     nearbyDestinations: ['kullu-jari'],
-    nearbyLabel: 'Nearby in Jari (Parvati Valley, ~10 km away)',
-  },
-  {
-    id: 'kullu',
-    slug: 'kullu',
-    name: 'Kullu',
-    region: 'Himachal Pradesh',
-    tagline: 'Valley of the Gods, Beas river trails and handloom heritage',
-    description: 'Cradled between Pir Panjal and Lower Himalayan ridges along the Beas River, Kullu blends ancient deodar temples, traditional shawl weavers, and warm valley homestays.',
-    matchTerms: ['kullu', 'kullu valley', 'bhuntar', 'naggar', 'lug valley'],
-    featured: true,
-    nearbyDestinations: ['kullu-jari'],
-    nearbyLabel: 'Nearby in Jari (Parvati Valley)',
+    nearbyLabel: 'Nearby in Kullu Jari (Parvati Valley, ~10 km away)',
   },
   {
     id: 'jibhi',
@@ -92,6 +80,7 @@ export const CURATED_DESTINATIONS: Destination[] = [
     tagline: 'High-altitude apple orchards, Kinner Kailash views and Baspa valley',
     description: 'Where the Sutlej and Baspa rivers carve dramatic gorges beneath the sacred Kinner Kailash range, celebrated for crisp mountain apples and wooden fort-temples.',
     matchTerms: ['kinnaur', 'kalpa', 'sangla', 'chitkul', 'reckong peo', 'rakchham'],
+    image: '/assets/destinations/kinnaur-card.webp',
     featured: true,
   },
   {
@@ -102,6 +91,7 @@ export const CURATED_DESTINATIONS: Destination[] = [
     tagline: 'Alpine ski slopes, glacial meadows and snow-capped ridges',
     description: 'Set in a high side-valley above Manali, Solang opens onto sweeping winter ski slopes, deodar forests, and views of Hanuman Tibba and the Beas Kund peaks.',
     matchTerms: ['solang', 'solang valley', 'palchan', 'kothi', 'dhundi'],
+    image: '/assets/destinations/solang-card.webp',
     featured: true,
   },
   {
@@ -112,6 +102,7 @@ export const CURATED_DESTINATIONS: Destination[] = [
     tagline: 'Kashi of the Hills: ancient carved stone temples on the Beas',
     description: 'Known for over eighty historic stone Shikhar temples along the Beas River, tranquil Prashar Lake ridges, and timeless Mandi valley traditions.',
     matchTerms: ['mandi', 'prashar', 'barot', 'janjehli', 'rewalsar'],
+    image: '/assets/destinations/mandi-card.webp',
     featured: true,
   },
   {
@@ -122,6 +113,7 @@ export const CURATED_DESTINATIONS: Destination[] = [
     tagline: 'Chandra-Bhaga valleys, high mountain passes and Buddhist stupas',
     description: 'Across the Rohtang and Atal corridor, Lahaul reveals glacial valleys, ancient gompas at Keylong and Kardang, and quiet stone villages under crystalline skies.',
     matchTerms: ['lahaul', 'sissu', 'keylong', 'jispa', 'udaipur lahaul', 'koksar'],
+    image: '/assets/destinations/lahaul-card.webp',
     featured: true,
   },
   {
@@ -165,6 +157,7 @@ export const CURATED_DESTINATIONS: Destination[] = [
     tagline: 'Rolling alpine meadows, deodar forests and colonial quietude',
     description: 'Surrounded by ancient deodar canopy and emerald meadows that open onto panoramic views of the Pir Panjal mountain range.',
     matchTerms: ['dalhousie', 'khajjiar', 'bakrota'],
+    image: '/assets/destinations/dalhousie-card.webp',
     featured: false,
   },
   {
@@ -175,6 +168,7 @@ export const CURATED_DESTINATIONS: Destination[] = [
     tagline: 'Ravi river banks, stone-shingle craft and ancient temple lore',
     description: 'A historic valley celebrated for hand-painted rumals, wood-carved temples, and warm village hospitality on the banks of the Ravi.',
     matchTerms: ['chamba', 'bharmour', 'pangi'],
+    image: '/assets/destinations/chamba-card.webp',
     featured: false,
   },
 
@@ -187,6 +181,7 @@ export const CURATED_DESTINATIONS: Destination[] = [
     tagline: 'Dal Lake reflections, pinewood houseboats and walnut woodcraft',
     description: 'The timeless heart of the Kashmir Valley, famous for its hand-carved cedar houseboats, historic Mughal gardens, and traditional artisans.',
     matchTerms: ['srinagar', 'dal lake', 'nigeen'],
+    image: '/assets/destinations/srinagar-card.webp',
     featured: true,
   },
   {
@@ -197,6 +192,7 @@ export const CURATED_DESTINATIONS: Destination[] = [
     tagline: 'Apharwat peaks, pristine powder and alpine meadow paths',
     description: 'The Meadow of Flowers, flanked by snowbound peaks, towering fir forests, and expansive high-altitude alpine views.',
     matchTerms: ['gulmarg', 'apharwat', 'tangmarg'],
+    image: '/assets/destinations/gulmarg-card.webp',
     featured: false,
   },
   {
@@ -207,6 +203,7 @@ export const CURATED_DESTINATIONS: Destination[] = [
     tagline: 'Lidder river murmurs, pine valleys and shepherd trails',
     description: 'Sheltered in the Lidder Valley, surrounded by dense pine woodlands, alpine pastures, and historic trekking routes into high glacial lakes.',
     matchTerms: ['pahalgam', 'aru', 'aru valley', 'betaab'],
+    image: '/assets/destinations/pahalgam-card.webp',
     featured: false,
   },
   {
@@ -217,6 +214,7 @@ export const CURATED_DESTINATIONS: Destination[] = [
     tagline: 'Meadow of Gold, Thajiwas glacier and gateway to Ladakh',
     description: 'Cradled between glaciers and high passes, where the Sindh River flows through flower-strewn mountain terraces.',
     matchTerms: ['sonamarg', 'thajiwas', 'baltal'],
+    image: '/assets/destinations/sonamarg-card.webp',
     featured: false,
   },
   {
@@ -227,6 +225,7 @@ export const CURATED_DESTINATIONS: Destination[] = [
     tagline: 'City of Temples, Tawi river bluffs and foothills gateway',
     description: 'The historic gateway to Jammu & Kashmir, situated on the slopes of the Shivalik hills overlooking the Tawi river basin.',
     matchTerms: ['jammu', 'katra', 'patnitop'],
+    image: '/assets/destinations/jammu-card.webp',
     featured: false,
   },
 
@@ -239,6 +238,7 @@ export const CURATED_DESTINATIONS: Destination[] = [
     tagline: 'Ganges river banks, yoga sanctuaries and foothills forest trails',
     description: 'Where the sacred Ganges emerges from the Himalayan gorges into emerald foothills, long celebrated for mindful living and yoga.',
     matchTerms: ['rishikesh', 'tapovan', 'shivpuri'],
+    image: '/assets/destinations/rishikesh-card.webp',
     featured: true,
   },
   {
@@ -249,6 +249,7 @@ export const CURATED_DESTINATIONS: Destination[] = [
     tagline: 'Queen of the Hills, Doon Valley panoramas and mist-clad ridges',
     description: 'Perched atop horseshoe ridges offering sweeping views of the snowbound Garhwal peaks and the glittering Doon valley below.',
     matchTerms: ['mussoorie', 'landour', 'dhanaulti'],
+    image: '/assets/destinations/mussoorie-card.webp',
     featured: false,
   },
   {
@@ -259,6 +260,7 @@ export const CURATED_DESTINATIONS: Destination[] = [
     tagline: 'Pear-shaped emerald lake, oak forests and Kumaon mountain lore',
     description: 'Nestled in a tranquil valley around the eye-shaped Naini Lake, enveloped by ancient oaks, rhododendrons, and Kumaoni heritage.',
     matchTerms: ['nainital', 'bhimtal', 'naukuchiatal', 'pangot'],
+    image: '/assets/destinations/nainital-card.webp',
     featured: false,
   },
   {
@@ -269,6 +271,7 @@ export const CURATED_DESTINATIONS: Destination[] = [
     tagline: 'Nanda Devi vistas, high bugyals and oak-shaded winter slopes',
     description: 'Surrounded by majestic 23,000+ foot Himalayan peaks including Nanda Devi, Kamet, and Dunagiri across expansive meadows.',
     matchTerms: ['auli', 'joshimath'],
+    image: '/assets/destinations/auli-card.webp',
     featured: false,
   },
   {
@@ -279,6 +282,7 @@ export const CURATED_DESTINATIONS: Destination[] = [
     tagline: 'The mini-Switzerland of Uttarakhand: rhododendron woods and Tungnath trail',
     description: 'An unspoiled alpine clearing flanked by thick rhododendron and pine forests, basecamp for the historic Tungnath and Chandrashila peaks.',
     matchTerms: ['chopta', 'tungnath', 'deoriatal'],
+    image: '/assets/destinations/chopta-card.webp',
     featured: false,
   },
   {
@@ -289,16 +293,7 @@ export const CURATED_DESTINATIONS: Destination[] = [
     tagline: 'Fruit orchards, panoramic 180° Himalayan horizons and cliff walks',
     description: 'A serene ridge village in Kumaon known for stone cottages, apple and apricot orchards, and unhindered Himalayan panoramas.',
     matchTerms: ['mukteshwar', 'ramgarh', 'peora'],
-    featured: false,
-  },
-  {
-    id: 'jim-corbett',
-    slug: 'jim-corbett',
-    name: 'Jim Corbett',
-    region: 'Uttarakhand',
-    tagline: 'Kosi river wilderness, Sal forests and wild Himalayan foothills',
-    description: 'The oldest national park in India, nestled in the sub-Himalayan belt with riverine vegetation, dense sal woodlands, and wildlife biodiversity.',
-    matchTerms: ['corbett', 'jim corbett', 'ramnagar', 'dhikala'],
+    image: '/assets/destinations/mukteshwar-card.webp',
     featured: false,
   },
 ];

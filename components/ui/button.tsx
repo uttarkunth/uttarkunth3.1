@@ -48,12 +48,12 @@ export const buttonVariants = cva('lantern-btn-inner', {
         'bg-[#FFFDF9] text-[#29251F] group-hover:bg-[#0E1713] group-hover:text-white p-0',
     },
     size: {
-      sm: 'h-9 px-4 text-xs',
-      md: 'h-11 px-6 text-xs sm:text-sm',
-      lg: 'h-12 px-7 text-sm sm:text-base',
-      editorial: 'h-11 px-6 text-xs uppercase tracking-[0.12em]',
-      icon: 'h-10 w-10',
-      'icon-sm': 'h-9 w-9',
+      sm: 'min-h-[44px] h-11 px-4 text-xs',
+      md: 'min-h-[44px] h-11 px-6 text-xs sm:text-sm',
+      lg: 'min-h-[48px] h-12 px-7 text-sm sm:text-base',
+      editorial: 'min-h-[44px] h-11 px-6 text-xs uppercase tracking-[0.12em]',
+      icon: 'min-h-[44px] min-w-[44px] h-11 w-11',
+      'icon-sm': 'min-h-[44px] min-w-[44px] h-11 w-11',
     },
   },
   defaultVariants: {

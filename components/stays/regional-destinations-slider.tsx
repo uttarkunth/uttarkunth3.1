@@ -16,8 +16,15 @@ function getSingleDestinationName(dest: Destination): string {
   const name = (dest.name || '').trim();
   const lowerName = name.toLowerCase();
 
-  if (slug === 'kullu-jari' || slug === 'kullu-and-jari' || lowerName === 'kullu and jari') {
-    return 'Jari';
+  if (
+    slug === 'kullu-jari' ||
+    slug === 'kullu-and-jari' ||
+    slug === 'jari' ||
+    lowerName === 'kullu and jari' ||
+    lowerName === 'kullu jari' ||
+    lowerName === 'jari'
+  ) {
+    return 'Kullu Jari';
   }
   if (slug === 'kasol' || slug === 'kasol-and-parvati-valley' || lowerName.startsWith('kasol')) {
     return 'Kasol';
@@ -67,6 +74,57 @@ function getDestinationCardImage(dest: Destination): string | undefined {
   if (slug === 'spiti-valley' || slug === 'spiti') {
     return '/assets/destinations/spiti-valley-card.webp';
   }
+  if (slug === 'dalhousie' || slug === 'dalhousie-and-khajjiar') {
+    return '/assets/destinations/dalhousie-card.webp';
+  }
+  if (slug === 'kinnaur') {
+    return '/assets/destinations/kinnaur-card.webp';
+  }
+  if (slug === 'lahaul') {
+    return '/assets/destinations/lahaul-card.webp';
+  }
+  if (slug === 'solang' || slug === 'solang-valley') {
+    return '/assets/destinations/solang-card.webp';
+  }
+  if (slug === 'chamba') {
+    return '/assets/destinations/chamba-card.webp';
+  }
+  if (slug === 'mandi') {
+    return '/assets/destinations/mandi-card.webp';
+  }
+  if (slug === 'srinagar') {
+    return '/assets/destinations/srinagar-card.webp';
+  }
+  if (slug === 'gulmarg') {
+    return '/assets/destinations/gulmarg-card.webp';
+  }
+  if (slug === 'pahalgam') {
+    return '/assets/destinations/pahalgam-card.webp';
+  }
+  if (slug === 'sonamarg' || slug === 'sonmarg') {
+    return '/assets/destinations/sonamarg-card.webp';
+  }
+  if (slug === 'jammu') {
+    return '/assets/destinations/jammu-card.webp';
+  }
+  if (slug === 'rishikesh') {
+    return '/assets/destinations/rishikesh-card.webp';
+  }
+  if (slug === 'mussoorie' || slug === 'musoorie') {
+    return '/assets/destinations/mussoorie-card.webp';
+  }
+  if (slug === 'nainital') {
+    return '/assets/destinations/nainital-card.webp';
+  }
+  if (slug === 'auli') {
+    return '/assets/destinations/auli-card.webp';
+  }
+  if (slug === 'chopta') {
+    return '/assets/destinations/chopta-card.webp';
+  }
+  if (slug === 'mukteshwar') {
+    return '/assets/destinations/mukteshwar-card.webp';
+  }
   return undefined;
 }
 
@@ -76,13 +134,25 @@ export function RegionalDestinationsSlider({
 }: RegionalDestinationsSliderProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  const visibleDestinations = (destinations || []).filter((d) => {
+    const slug = (d.slug || '').toLowerCase().trim();
+    const name = (d.name || '').toLowerCase().trim();
+    return (
+      slug !== 'kullu' &&
+      name !== 'kullu' &&
+      slug !== 'jim-corbett' &&
+      slug !== 'corbett' &&
+      name !== 'jim corbett'
+    );
+  });
+
   const handleScroll = (direction: 'left' | 'right') => {
     if (!scrollRef.current) return;
     const offset = direction === 'left' ? -360 : 360;
     scrollRef.current.scrollBy({ left: offset, behavior: 'smooth' });
   };
 
-  if (!destinations || destinations.length === 0) {
+  if (visibleDestinations.length === 0) {
     return null;
   }
 
@@ -119,7 +189,7 @@ export function RegionalDestinationsSlider({
         ref={scrollRef}
         className="flex items-stretch gap-3 sm:gap-4 overflow-x-auto snap-x snap-mandatory scroll-smooth no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden py-1"
       >
-        {destinations.map((d) => {
+        {visibleDestinations.map((d) => {
           const displayName = getSingleDestinationName(d);
           const cardImage = getDestinationCardImage(d);
 
@@ -165,13 +235,13 @@ export function RegionalDestinationsSlider({
                 </div>
               )}
 
-              {/* Bottom Gradient Scrim for Destination Name Legibility */}
+              {/* Bottom Dark Fade Scrim for Clear Destination Name Legibility Over Bright / White Photos */}
               <div
                 aria-hidden="true"
                 className={
                   cardImage
-                    ? 'pointer-events-none absolute inset-x-0 bottom-0 h-22 bg-gradient-to-t from-[#121E18]/92 via-[#121E18]/50 to-transparent'
-                    : 'pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-[#FFFDF9]/95 via-[#FFFDF9]/82 to-transparent'
+                    ? 'pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-[linear-gradient(to_top,rgba(10,18,14,0.92)_0%,rgba(10,18,14,0.72)_38%,rgba(10,18,14,0.32)_70%,rgba(10,18,14,0)_100%)]'
+                    : 'pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-[#FFFDF9]/95 via-[#FFFDF9]/80 to-transparent'
                 }
               />
 
@@ -180,7 +250,7 @@ export function RegionalDestinationsSlider({
                 <h4
                   className={`font-serif text-[18px] sm:text-[20px] lg:text-[21px] font-medium leading-tight tracking-tight transition-colors duration-200 line-clamp-1 ${
                     cardImage
-                      ? 'text-[#FFFDF9] group-hover:text-[#FDE2A8] drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]'
+                      ? 'text-[#FFFDF9] group-hover:text-[#FDE2A8] drop-shadow-[0_2px_6px_rgba(0,0,0,0.95)]'
                       : 'text-[#1F332A] group-hover:text-[#C55B23]'
                   }`}
                 >

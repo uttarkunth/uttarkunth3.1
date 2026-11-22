@@ -26,7 +26,15 @@ function resolveCanonicalCuratedSlug(rawSlug: string, rawName?: string): string 
   if (s === 'kasol-and-parvati-valley' || s === 'parvati-valley' || n.startsWith('kasol')) {
     return 'kasol';
   }
-  if (s === 'kullu-and-jari' || s === 'kullu-jari' || s === 'jari' || n === 'kullu and jari') {
+  if (
+    s === 'kullu-and-jari' ||
+    s === 'kullu-jari' ||
+    s === 'jari' ||
+    s === 'kullu' ||
+    n === 'kullu and jari' ||
+    n === 'kullu jari' ||
+    n === 'kullu'
+  ) {
     return 'kullu-jari';
   }
   if (s === 'jibhi-and-tirthan-valley' || s === 'tirthan' || n.startsWith('jibhi')) {
@@ -74,6 +82,7 @@ export async function getActiveDestinations(): Promise<Destination[]> {
 
     for (const d of data) {
       const canonicalSlug = resolveCanonicalCuratedSlug(d.slug, d.name);
+      if (canonicalSlug === 'jim-corbett' || canonicalSlug === 'corbett') continue;
       if (seenCanonicalSlugs.has(canonicalSlug)) continue;
       seenCanonicalSlugs.add(canonicalSlug);
 

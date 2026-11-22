@@ -9,16 +9,16 @@ import {
 } from '../lib/destinations.ts';
 import { AUTHENTIC_PRODUCTIONS } from '../lib/constants.ts';
 
-test('Authenticity: Exactly 22 curated destinations in directory', () => {
-  assert.equal(CURATED_DESTINATIONS.length, 22);
+test('Authenticity: Exactly 25 curated destinations in directory', () => {
+  assert.equal(CURATED_DESTINATIONS.length, 25);
 
   const himachal = CURATED_DESTINATIONS.filter((d) => d.region === 'Himachal Pradesh');
   const jk = CURATED_DESTINATIONS.filter((d) => d.region === 'Jammu & Kashmir');
   const uttarakhand = CURATED_DESTINATIONS.filter((d) => d.region === 'Uttarakhand');
 
-  assert.equal(himachal.length, 10, 'Himachal Pradesh should have exactly 10 destinations');
+  assert.equal(himachal.length, 14, 'Himachal Pradesh should have exactly 14 destinations');
   assert.equal(jk.length, 5, 'Jammu & Kashmir should have exactly 5 destinations');
-  assert.equal(uttarakhand.length, 7, 'Uttarakhand should have exactly 7 destinations');
+  assert.equal(uttarakhand.length, 6, 'Uttarakhand should have exactly 6 destinations');
 });
 
 test('Authenticity: Canonical primary destination assigned with zero duplicated direct counts', async () => {

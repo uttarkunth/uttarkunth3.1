@@ -129,9 +129,9 @@ test('Phase 2I: Four Pillars Ecosystem Integrity', () => {
   assert.equal(AUTHENTIC_PRODUCTIONS[1].slug, 'ruk-gayi-gupt-bali');
 
   // Pillar 4: Community
-  assert.equal(COMMUNITY_INITIATIVES.length, 9, 'Exactly 9 proposed grassroots initiatives');
+  assert.equal(COMMUNITY_INITIATIVES.length, 1, 'Exactly 1 active grassroots initiative');
   for (const init of COMMUNITY_INITIATIVES) {
-    assert.equal(init.outcomes.length, 0, 'No fabricated field outcomes in proposed initiatives');
+    assert.equal(init.outcomes.length, 5, 'Verified field outcomes in active Jari initiative');
   }
   assert.equal(COMMUNITY_STORIES.length, 0, 'No fabricated field stories in static archive');
 });

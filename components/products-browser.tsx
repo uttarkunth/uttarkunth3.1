@@ -7,7 +7,6 @@ import {
   X,
   SlidersHorizontal,
   ArrowUpRight,
-  Store,
   Layers,
   Tag,
   CheckCircle2,
@@ -179,23 +178,6 @@ export function ProductsBrowser({
               Discover thoughtful products, regional craftsmanship and responsible
               brands from the Himalayan community.
             </p>
-            <div className="pt-1 flex flex-wrap items-center justify-center gap-3">
-              <Link
-                href="/seller/dashboard"
-                data-testid="hero-seller-dashboard-cta"
-                className="font-sans inline-flex items-center gap-2 rounded-xl bg-[#1F332A] px-4 py-2.5 text-xs font-semibold text-[#FFFDF9] shadow-xs hover:bg-[#C55B23] transition-colors"
-              >
-                <Store className="h-3.5 w-3.5 text-[#FDE2A8]" />
-                <span>Seller Dashboard — Manage Inventory &amp; Sales</span>
-                <ArrowUpRight className="h-3.5 w-3.5" />
-              </Link>
-              <Link
-                href="/products/sell"
-                className="font-sans inline-flex items-center gap-1.5 rounded-xl border border-[#D5C8B3] bg-[#FFFDF9] px-4 py-2.5 text-xs font-semibold text-[#1F332A] hover:border-[#C55B23] transition-colors"
-              >
-                <span>Become a Seller / Partner</span>
-              </Link>
-            </div>
           </div>
 
           {/* Search Bar (Part 3.1) */}
@@ -588,10 +570,6 @@ export function ProductsBrowser({
           <div className="relative overflow-hidden rounded-[26px] sm:rounded-[32px] border border-[#2B4438] bg-[linear-gradient(145deg,#1D3027_0%,#263E33_54%,#2D463A_100%)] p-6 sm:p-10 text-[#F8F3E8] shadow-[0_24px_60px_-20px_rgba(31,51,42,0.3)]">
             <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-center">
               <div className="lg:col-span-7 space-y-3">
-                <span className="font-sans inline-flex items-center gap-2 text-[11px] font-semibold tracking-[0.2em] text-[#FDE2A8] uppercase">
-                  <Store className="h-3.5 w-3.5 text-[#FDE2A8]" />
-                  <span>Uttarkunth Seller &amp; Brand Onboarding</span>
-                </span>
                 <h2 className="font-serif text-2xl sm:text-3xl font-medium text-[#FFFDF9] leading-snug">
                   Are you a maker, seller or brand?
                 </h2>

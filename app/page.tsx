@@ -39,100 +39,108 @@ import {
 
 export const dynamic = 'force-dynamic';
 
-async function getHomePageData() {
-  let destinations = CURATED_DESTINATIONS;
-  try {
-    destinations = await getActiveDestinations();
-  } catch {
-    destinations = CURATED_DESTINATIONS;
+function buildFallbackHomePageData(destinations = CURATED_DESTINATIONS) {
+  const cleanFallback = EXISTING_PROPERTIES.filter((p: any) => p.slug !== 'wonderway-retreat');
+  const destinationsWithCounts = destinations.map((d) => ({
+    ...d,
+    propertyCount: filterPropertiesForDestination(cleanFallback, d).length,
+  }));
+  return {
+    properties: cleanFallback,
+    destinations: destinationsWithCounts,
+    products: INITIAL_CURATED_PRODUCTS,
+    reviews: normalizeAndSortRecentReviews(EXISTING_REVIEWS, cleanFallback, 12),
+  };
+}
+
+async function fetchLiveHomePageData() {
+  const supabase = createPublicServerSupabaseClient();
+  const [
+    destinations,
+    { data: properties, error },
+    { data: approvedProducts },
+    { data: approvedReviews },
+  ] = await Promise.all([
+    getActiveDestinations().catch(() => CURATED_DESTINATIONS),
+    supabase
+      .from('properties')
+      .select('*')
+      .eq('published', true)
+      .eq('moderation_status', 'approved')
+      .neq('slug', 'wonderway-retreat')
+      .limit(24),
+    supabase
+      .from('products')
+      .select('*')
+      .eq('moderation_status', 'approved')
+      .limit(12),
+    supabase
+      .from('reviews')
+      .select(
+        'id, property_id, booking_id, reviewer_user_id, reviewer_name, rating, comment, moderation_status, moderated_at, moderated_by, created_at, properties(name, slug, village, district)'
+      )
+      .eq('moderation_status', 'approved')
+      .order('created_at', { ascending: false })
+      .limit(12),
+  ]);
+
+  const rawSource =
+    !error && properties && properties.length > 0 ? properties : EXISTING_PROPERTIES;
+  const source = rawSource.filter((p: any) => p && p.slug !== 'wonderway-retreat');
+
+  let propertiesWithRooms: any[] = [];
+  if (source.length > 0) {
+    const propertyIds = source.map((p: any) => p.id);
+    const { data: rooms } = await supabase
+      .from('room_units')
+      .select('*')
+      .in('property_id', propertyIds)
+      .eq('active', true)
+      .order('sort_order', { ascending: true });
+
+    propertiesWithRooms = source.map((p: any) => ({
+      ...p,
+      rooms:
+        rooms && rooms.length > 0
+          ? rooms.filter((r) => r.property_id === p.id)
+          : p.rooms || [],
+    }));
   }
 
+  const destinationsWithCounts = destinations.map((d) => ({
+    ...d,
+    propertyCount: filterPropertiesForDestination(propertiesWithRooms, d).length,
+  }));
+
+  const liveReviews = normalizeAndSortRecentReviews(approvedReviews, propertiesWithRooms, 12);
+  const reviews =
+    liveReviews.length > 0
+      ? liveReviews
+      : normalizeAndSortRecentReviews(EXISTING_REVIEWS, propertiesWithRooms, 12);
+
+  const curatedProducts =
+    approvedProducts && approvedProducts.length > 0
+      ? approvedProducts
+      : INITIAL_CURATED_PRODUCTS;
+
+  return {
+    properties: propertiesWithRooms,
+    destinations: destinationsWithCounts,
+    products: curatedProducts,
+    reviews,
+  };
+}
+
+async function getHomePageData() {
   try {
-    const supabase = createPublicServerSupabaseClient();
-    const [
-      { data: properties, error },
-      { data: approvedProducts },
-      { data: approvedReviews },
-    ] = await Promise.all([
-      supabase
-        .from('properties')
-        .select('*')
-        .eq('published', true)
-        .eq('moderation_status', 'approved')
-        .neq('slug', 'wonderway-retreat')
-        .limit(24),
-      supabase
-        .from('products')
-        .select('*')
-        .eq('moderation_status', 'approved')
-        .limit(12),
-      supabase
-        .from('reviews')
-        .select(
-          'id, property_id, booking_id, reviewer_user_id, reviewer_name, rating, comment, moderation_status, moderated_at, moderated_by, created_at, properties(name, slug, village, district)'
-        )
-        .eq('moderation_status', 'approved')
-        .order('created_at', { ascending: false })
-        .limit(12),
+    return await Promise.race([
+      fetchLiveHomePageData(),
+      new Promise<ReturnType<typeof buildFallbackHomePageData>>((resolve) =>
+        setTimeout(() => resolve(buildFallbackHomePageData()), 2500)
+      ),
     ]);
-
-    const rawSource =
-      !error && properties && properties.length > 0 ? properties : EXISTING_PROPERTIES;
-    const source = rawSource.filter((p: any) => p && p.slug !== 'wonderway-retreat');
-
-    let propertiesWithRooms: any[] = [];
-    if (source.length > 0) {
-      const propertyIds = source.map((p: any) => p.id);
-      const { data: rooms } = await supabase
-        .from('room_units')
-        .select('*')
-        .in('property_id', propertyIds)
-        .eq('active', true)
-        .order('sort_order', { ascending: true });
-
-      propertiesWithRooms = source.map((p: any) => ({
-        ...p,
-        rooms:
-          rooms && rooms.length > 0
-            ? rooms.filter((r) => r.property_id === p.id)
-            : p.rooms || [],
-      }));
-    }
-
-    const destinationsWithCounts = destinations.map((d) => ({
-      ...d,
-      propertyCount: filterPropertiesForDestination(propertiesWithRooms, d).length,
-    }));
-
-    const liveReviews = normalizeAndSortRecentReviews(approvedReviews, propertiesWithRooms, 12);
-    const reviews =
-      liveReviews.length > 0
-        ? liveReviews
-        : normalizeAndSortRecentReviews(EXISTING_REVIEWS, propertiesWithRooms, 12);
-
-    const curatedProducts =
-      approvedProducts && approvedProducts.length > 0
-        ? approvedProducts
-        : INITIAL_CURATED_PRODUCTS;
-
-    return {
-      properties: propertiesWithRooms,
-      destinations: destinationsWithCounts,
-      products: curatedProducts,
-      reviews,
-    };
   } catch {
-    const cleanFallback = EXISTING_PROPERTIES.filter((p: any) => p.slug !== 'wonderway-retreat');
-    const destinationsWithCounts = destinations.map((d) => ({
-      ...d,
-      propertyCount: filterPropertiesForDestination(cleanFallback, d).length,
-    }));
-    return {
-      properties: cleanFallback,
-      destinations: destinationsWithCounts,
-      products: INITIAL_CURATED_PRODUCTS,
-      reviews: normalizeAndSortRecentReviews(EXISTING_REVIEWS, cleanFallback, 12),
-    };
+    return buildFallbackHomePageData();
   }
 }
 

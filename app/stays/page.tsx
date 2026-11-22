@@ -10,6 +10,7 @@ import {
   filterPropertiesForDestination,
   CURATED_DESTINATIONS,
 } from '@/lib/destinations.server';
+import { filterStaysProperties } from '@/lib/stays-search';
 import { createPublicServerSupabaseClient } from '@/lib/supabase/server';
 import {
   Home,
@@ -24,67 +25,76 @@ export const metadata = {
     'Explore welcoming timber homestays, riverside retreats, and comfortable bases in the Himalayas. 100% direct host payment.',
 };
 
-async function getStaysData() {
-  let destinations = CURATED_DESTINATIONS;
-  try {
-    destinations = await getActiveDestinations();
-  } catch {
-    destinations = CURATED_DESTINATIONS;
-  }
+function buildFallbackStaysData(destinations = CURATED_DESTINATIONS) {
+  const cleanFallback = EXISTING_PROPERTIES.filter(
+    (p: any) => p.slug !== 'wonderway-retreat'
+  );
+  const destinationsWithCounts = destinations.map((d) => ({
+    ...d,
+    propertyCount: filterPropertiesForDestination(cleanFallback, d).length,
+  }));
 
-  try {
-    const supabase = createPublicServerSupabaseClient();
-    const { data: properties, error } = await supabase
+  return {
+    properties: cleanFallback,
+    destinations: destinationsWithCounts,
+  };
+}
+
+async function fetchLiveStaysData() {
+  const supabase = createPublicServerSupabaseClient();
+  const [destinations, { data: properties, error }] = await Promise.all([
+    getActiveDestinations().catch(() => CURATED_DESTINATIONS),
+    supabase
       .from('properties')
       .select('*')
       .eq('published', true)
       .eq('moderation_status', 'approved')
-      .neq('slug', 'wonderway-retreat');
+      .neq('slug', 'wonderway-retreat'),
+  ]);
 
-    const rawSource =
-      !error && properties && properties.length > 0 ? properties : EXISTING_PROPERTIES;
-    const source = rawSource.filter((p: any) => p && p.slug !== 'wonderway-retreat');
+  const rawSource =
+    !error && properties && properties.length > 0 ? properties : EXISTING_PROPERTIES;
+  const source = rawSource.filter((p: any) => p && p.slug !== 'wonderway-retreat');
 
-    let propertiesWithRooms: any[] = [];
-    if (source.length > 0) {
-      const propertyIds = source.map((p: any) => p.id);
-      const { data: rooms } = await supabase
-        .from('room_units')
-        .select('id, property_id, room_name, description, max_guests, base_price, active')
-        .in('property_id', propertyIds)
-        .eq('active', true);
+  let propertiesWithRooms: any[] = [];
+  if (source.length > 0) {
+    const propertyIds = source.map((p: any) => p.id);
+    const { data: rooms } = await supabase
+      .from('room_units')
+      .select('id, property_id, room_name, description, max_guests, base_price, active')
+      .in('property_id', propertyIds)
+      .eq('active', true);
 
-      propertiesWithRooms = source.map((p: any) => ({
-        ...p,
-        rooms:
-          rooms && rooms.length > 0
-            ? rooms.filter((r) => r.property_id === p.id)
-            : p.rooms || [],
-      }));
-    }
-
-    const destinationsWithCounts = destinations.map((d) => ({
-      ...d,
-      propertyCount: filterPropertiesForDestination(propertiesWithRooms, d).length,
+    propertiesWithRooms = source.map((p: any) => ({
+      ...p,
+      rooms:
+        rooms && rooms.length > 0
+          ? rooms.filter((r) => r.property_id === p.id)
+          : p.rooms || [],
     }));
+  }
 
-    return {
-      properties: propertiesWithRooms,
-      destinations: destinationsWithCounts,
-    };
+  const destinationsWithCounts = destinations.map((d) => ({
+    ...d,
+    propertyCount: filterPropertiesForDestination(propertiesWithRooms, d).length,
+  }));
+
+  return {
+    properties: propertiesWithRooms,
+    destinations: destinationsWithCounts,
+  };
+}
+
+async function getStaysData() {
+  try {
+    return await Promise.race([
+      fetchLiveStaysData(),
+      new Promise<ReturnType<typeof buildFallbackStaysData>>((resolve) =>
+        setTimeout(() => resolve(buildFallbackStaysData()), 2500)
+      ),
+    ]);
   } catch {
-    const cleanFallback = EXISTING_PROPERTIES.filter(
-      (p: any) => p.slug !== 'wonderway-retreat'
-    );
-    const destinationsWithCounts = destinations.map((d) => ({
-      ...d,
-      propertyCount: filterPropertiesForDestination(cleanFallback, d).length,
-    }));
-
-    return {
-      properties: cleanFallback,
-      destinations: destinationsWithCounts,
-    };
+    return buildFallbackStaysData();
   }
 }
 
@@ -96,6 +106,11 @@ interface StaysPageProps {
         checkIn?: string;
         checkOut?: string;
         guests?: string;
+        adults?: string;
+        children?: string;
+        childAges?: string;
+        infants?: string;
+        amenities?: string;
         type?: string;
       }>
     | {
@@ -104,6 +119,11 @@ interface StaysPageProps {
         checkIn?: string;
         checkOut?: string;
         guests?: string;
+        adults?: string;
+        children?: string;
+        childAges?: string;
+        infants?: string;
+        amenities?: string;
         type?: string;
       };
 }
@@ -114,54 +134,54 @@ export default async function StaysPage({ searchParams }: StaysPageProps) {
     Promise.resolve(searchParams || {}),
   ]);
 
-  let filteredProperties = properties;
-  const destinationQuery = (resolvedParams?.destination || '').toLowerCase().trim();
-  const textQuery = (resolvedParams?.q || '').toLowerCase().trim();
+  const parsedAdults = resolvedParams?.adults
+    ? Math.max(1, Number(resolvedParams.adults) || 2)
+    : resolvedParams?.guests
+    ? Math.max(1, Number(resolvedParams.guests) || 2)
+    : 2;
 
-  if (destinationQuery) {
-    const matchedDest = destinations.find(
-      (d) =>
-        d.slug === destinationQuery ||
-        d.name.toLowerCase() === destinationQuery ||
-        d.matchTerms?.some((t) => t.toLowerCase() === destinationQuery)
-    );
-    if (matchedDest) {
-      filteredProperties = filterPropertiesForDestination(properties, matchedDest);
-    }
-  } else if (textQuery) {
-    const matchedDest = destinations.find(
-      (d) =>
-        d.slug === textQuery ||
-        d.name.toLowerCase().includes(textQuery) ||
-        d.matchTerms?.some((t) => t.toLowerCase().includes(textQuery))
-    );
-    filteredProperties = properties.filter((p: any) => {
-      const inProp =
-        p.name?.toLowerCase().includes(textQuery) ||
-        p.village?.toLowerCase().includes(textQuery) ||
-        p.district?.toLowerCase().includes(textQuery) ||
-        p.description?.toLowerCase().includes(textQuery);
-      if (inProp) return true;
-      if (matchedDest) {
-        return filterPropertiesForDestination([p], matchedDest).length > 0;
-      }
-      return false;
-    });
-  }
+  const parsedChildren = resolvedParams?.children
+    ? Math.max(0, Number(resolvedParams.children) || 0)
+    : 0;
 
-  const typeParam = (resolvedParams?.type || '').toLowerCase().trim();
-  if (typeParam) {
-    const selectedTypes = typeParam
-      .split(',')
-      .map((t) => t.trim().replace(/s$/, ''))
-      .filter(Boolean);
-    if (selectedTypes.length > 0) {
-      filteredProperties = filteredProperties.filter((p: any) => {
-        const pt = (p.property_type || 'homestay').toLowerCase().replace(/s$/, '');
-        return selectedTypes.some((st) => pt.includes(st) || st.includes(pt));
-      });
-    }
-  }
+  const parsedChildAges = resolvedParams?.childAges
+    ? resolvedParams.childAges
+        .split(',')
+        .map((n) => Number(n.trim()))
+        .filter((n) => Number.isFinite(n) && n >= 2 && n <= 17)
+    : [];
+
+  const parsedInfants = resolvedParams?.infants
+    ? Math.max(0, Number(resolvedParams.infants) || 0)
+    : 0;
+
+  const parsedAmenities = resolvedParams?.amenities
+    ? resolvedParams.amenities
+        .split(',')
+        .map((a) => a.trim())
+        .filter(Boolean)
+    : [];
+
+  const hasExplicitGuestFilter = Boolean(
+    resolvedParams?.adults || resolvedParams?.children || resolvedParams?.guests
+  );
+
+  const filteredProperties = filterStaysProperties(
+    properties,
+    {
+      destinationSlug: resolvedParams?.destination || '',
+      query: resolvedParams?.q || '',
+      checkIn: resolvedParams?.checkIn || '',
+      checkOut: resolvedParams?.checkOut || '',
+      adults: hasExplicitGuestFilter ? parsedAdults : 0,
+      children: hasExplicitGuestFilter ? parsedChildren : 0,
+      childAges: parsedChildAges,
+      infants: parsedInfants,
+      selectedAmenityIds: parsedAmenities,
+      propertyType: resolvedParams?.type || '',
+    },
+    destinations
+  );
 
   const himachalDestinations = destinations.filter(
     (d) => d.region === 'Himachal Pradesh'
@@ -178,7 +198,7 @@ export default async function StaysPage({ searchParams }: StaysPageProps) {
           • Starts at -mt-16 behind the header
           • Covers header -> "Find Your Place in the Mountains." -> description -> exact 50% midpoint of the search bar
       ───────────────────────────────────────────────────────────────────── */}
-      <section data-testid="stays-hero-section" className="relative -mt-16 w-full">
+      <section data-testid="stays-hero-section" className="relative z-30 -mt-16 w-full">
         {/* Natural Stone Roofing Backdrop Layer */}
         <div className="pointer-events-none absolute inset-0 overflow-hidden bg-[#18221D]">
           <Image
@@ -222,16 +242,23 @@ export default async function StaysPage({ searchParams }: StaysPageProps) {
         <div data-testid="stays-hero-search-overlap" className="relative w-full">
           <div
             aria-hidden="true"
-            className="pointer-events-none absolute inset-x-0 bottom-0 h-1/2 bg-[#F5F0E6] border-t border-[#D5C8B3]/80 z-10"
+            className="pointer-events-none absolute inset-x-0 bottom-0 h-3/5 bg-[#F5F0E6] border-t border-[#D5C8B3]/80 z-10"
           />
           <div className="relative z-20 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
             <SearchBar
               initialDestination={resolvedParams?.destination || ''}
+              initialQuery={resolvedParams?.q || ''}
               initialCheckIn={resolvedParams?.checkIn || ''}
               initialCheckOut={resolvedParams?.checkOut || ''}
-              initialGuests={
-                resolvedParams?.guests ? Number(resolvedParams.guests) || 2 : 2
-              }
+              initialGuests={parsedAdults + parsedChildren}
+              initialAdults={parsedAdults}
+              initialChildren={parsedChildren}
+              initialChildAges={parsedChildAges}
+              initialInfants={parsedInfants}
+              initialAmenities={parsedAmenities}
+              properties={properties}
+              destinations={destinations}
+              showAmenityChips={true}
             />
           </div>
         </div>
@@ -241,7 +268,7 @@ export default async function StaysPage({ searchParams }: StaysPageProps) {
           2 & 3. HOMEPAGE SANCTUARY CONTAINER — VERIFIED MOUNTAIN STAYS & SLIDABLE REGIONAL DESTINATIONS
           • Full Homepage Golden-Hour Valley, Alpine Sage Mist & Feathered Ridge Background Design
       ───────────────────────────────────────────────────────────────────── */}
-      <section className="relative z-20 w-full overflow-x-clip">
+      <section className="relative z-10 w-full overflow-x-clip">
         {/* Homepage Atmospheric Golden-Hour & Alpine Sage Background Layers */}
         <div
           aria-hidden="true"
@@ -366,9 +393,6 @@ export default async function StaysPage({ searchParams }: StaysPageProps) {
               className="relative z-10 pt-8 sm:pt-10 border-t border-[#D5C8B3]/75 space-y-7 sm:space-y-9"
             >
               <div className="space-y-1">
-                <span className="block font-serif font-normal sm:font-medium text-[#C55B23] text-xl sm:text-2xl md:text-[26px] lg:text-[30px] tracking-wide leading-snug">
-                  Mountain Corridors
-                </span>
                 <h2 className="font-serif text-[22px] sm:text-3xl md:text-4xl lg:text-[42px] font-medium text-[#1F332A] tracking-tight leading-[1.15] sm:leading-tight">
                   Explore Popular Destinations
                 </h2>
