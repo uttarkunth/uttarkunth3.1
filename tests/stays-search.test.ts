@@ -350,6 +350,23 @@ describe('Stays Search Redesign — WHERE, WHEN, WHO & Direct Amenity Chips', ()
         roomUnitId: 'room-1',
       });
       assert.equal(availableRange, null);
+
+      // Booked or blocked dates on room-1 must NEVER block room-2's calendar
+      const otherRoomAvailableOnBookedDate = findRoomOccupancyConflict({
+        checkIn: '2026-12-14',
+        checkOut: '2026-12-16',
+        occupancy,
+        roomUnitId: 'room-2',
+      });
+      assert.equal(otherRoomAvailableOnBookedDate, null);
+
+      const otherRoomAvailableOnBlockedDate = findRoomOccupancyConflict({
+        checkIn: '2026-12-19',
+        checkOut: '2026-12-23',
+        occupancy,
+        roomUnitId: 'room-2',
+      });
+      assert.equal(otherRoomAvailableOnBlockedDate, null);
     });
   });
 });

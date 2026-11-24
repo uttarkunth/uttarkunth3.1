@@ -478,7 +478,7 @@ export function resolveUserWorkspaces(input: {
   if (isApprovedSeller) {
     workspaces.push({
       id: 'seller_desk',
-      label: 'Seller Desk',
+      label: 'Seller Dashboard',
       href: '/seller/dashboard',
       description: 'Manage your product catalogue, pricing, inventory, verification, and orders.',
       badge: 'Verified Seller',

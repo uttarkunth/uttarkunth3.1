@@ -547,13 +547,13 @@ export function FourPillarsShowcase({
             const positionTransformClass =
               state === 'active'
                 ? isCardPeak
-                  ? 'z-20 opacity-100 blur-0 brightness-[1.18] [transform:translate3d(0,0,0)_scale(1.06)] sm:[transform:translate3d(0,0,0)_scale(1.045)]'
-                  : 'z-20 opacity-100 blur-0 brightness-100 [transform:translate3d(0,0,0)_scale(1)]'
+                  ? 'z-20 opacity-100 brightness-[1.18] [transform:translate3d(0,0,0)_scale(1.06)] sm:[transform:translate3d(0,0,0)_scale(1.045)]'
+                  : 'z-20 opacity-100 brightness-100 [transform:translate3d(0,0,0)_scale(1)]'
                 : state === 'prev'
-                  ? `${sideZIndexClass} opacity-65 sm:opacity-75 blur-[1px] sm:blur-[1.2px] [transform:translate3d(-144px,0,-110px)_scale(0.82)] sm:[transform:translate3d(-336px,0,-120px)_scale(0.82)] cursor-pointer`
+                  ? `${sideZIndexClass} opacity-65 sm:opacity-75 [transform:translate3d(-144px,0,-110px)_scale(0.82)] sm:[transform:translate3d(-336px,0,-120px)_scale(0.82)] cursor-pointer`
                   : state === 'next'
-                    ? `${sideZIndexClass} opacity-65 sm:opacity-75 blur-[1px] sm:blur-[1.2px] [transform:translate3d(144px,0,-110px)_scale(0.82)] sm:[transform:translate3d(336px,0,-120px)_scale(0.82)] cursor-pointer`
-                    : 'z-0 opacity-0 blur-[6px] pointer-events-none [transform:translate3d(0,0,-220px)_scale(0.7)]';
+                    ? `${sideZIndexClass} opacity-65 sm:opacity-75 [transform:translate3d(144px,0,-110px)_scale(0.82)] sm:[transform:translate3d(336px,0,-120px)_scale(0.82)] cursor-pointer`
+                    : 'z-0 opacity-0 pointer-events-none [transform:translate3d(0,0,-220px)_scale(0.7)]';
 
             return (
               <article
@@ -575,7 +575,7 @@ export function FourPillarsShowcase({
                 data-spotlight={isActive ? spotlightPhase : 'idle'}
                 className={cn(
                   'portrait-card absolute w-[212px] sm:w-[292px] h-[270px] sm:h-[352px] rounded-[20px] sm:rounded-[24px] overflow-hidden',
-                  'transition-[transform,opacity,filter,border-color,box-shadow] will-change-[transform,opacity]',
+                  'transition-[transform,opacity,border-color,box-shadow] will-change-[transform,opacity]',
                   isCardPeak
                     ? 'duration-500 [transition-timing-function:cubic-bezier(0.22,1,0.36,1)] border border-[#FFFDF9]/90 shadow-[0_0_46px_rgba(255,253,249,0.52),0_0_24px_rgba(253,226,168,0.45),0_22px_46px_-8px_rgba(16,26,21,0.52)]'
                     : isCardSettling
@@ -617,17 +617,15 @@ export function FourPillarsShowcase({
 
                 {/* Portrait Card Interior Content — Clean, Simple & Aesthetic */}
                 <div className="relative z-20 h-full w-full p-3 sm:p-5 flex flex-col justify-between text-center">
-                  {/* Center Editorial Word & Subtitle */}
-                  <div className="my-auto space-y-1 sm:space-y-1.5 py-1 px-1.5 rounded-xl bg-[#1A2B23]/25 backdrop-blur-[1px]">
-                    <h3
-                      className={cn(
-                        'font-serif font-normal sm:font-medium uppercase tracking-[0.12em] sm:tracking-[0.14em] text-[#FFFDF9] drop-shadow-[0_4px_14px_rgba(0,0,0,0.8)] transition-all duration-700 ease-out',
-                        isActive ? 'text-[22px] sm:text-3xl blur-0' : 'text-[19px] sm:text-2xl blur-0'
-                      )}
-                    >
+                  {/* Center Editorial Word & Subtitle — Fixed dimensions so the dark faded backdrop never resizes during slides */}
+                  <div
+                    data-testid={`pillar-card-caption-box-${pillar.id}`}
+                    className="my-auto w-full space-y-1 sm:space-y-1.5 py-1.5 px-2 rounded-xl bg-[#1A2B23]/30"
+                  >
+                    <h3 className="font-serif font-normal sm:font-medium uppercase tracking-[0.11em] sm:tracking-[0.14em] text-[20px] sm:text-3xl leading-tight text-[#FFFDF9] drop-shadow-[0_4px_14px_rgba(0,0,0,0.8)]">
                       {pillar.word}
                     </h3>
-                    <span className="text-[12px] sm:text-[13px] font-serif italic font-normal sm:font-medium text-[#FDE2A8] tracking-wide block drop-shadow-[0_2px_8px_rgba(0,0,0,0.85)]">
+                    <span className="text-[12px] sm:text-[13px] leading-snug font-serif italic font-normal sm:font-medium text-[#FDE2A8] tracking-wide block drop-shadow-[0_2px_8px_rgba(0,0,0,0.85)]">
                       {pillar.subtitle}
                     </span>
                   </div>
@@ -642,6 +640,7 @@ export function FourPillarsShowcase({
                     <div className="pt-1 sm:pt-2 flex items-center justify-center gap-2">
                       <Link
                         href={pillar.href}
+                        data-testid={`pillar-card-primary-cta-${pillar.id}`}
                         tabIndex={isActive ? 0 : -1}
                         draggable={false}
                         onClick={(e) => {
@@ -651,16 +650,20 @@ export function FourPillarsShowcase({
                           }
                         }}
                         onMouseMove={handleLanternMouseMove}
-                        className="lantern-btn group flex-1 max-w-[96px] sm:max-w-[116px] bg-[#C85A23]/45 shadow-sm whitespace-nowrap"
+                        className="lantern-btn lantern-btn--pillar-primary group flex-1 max-w-[96px] sm:max-w-[116px] bg-[#C85A23]/45 shadow-sm whitespace-nowrap no-underline"
                       >
-                        <span className="lantern-btn-inner !gap-1 px-2.5 sm:px-4 py-1.5 sm:py-2 bg-[#C55B23] text-[#FFFDF9] text-[11.5px] sm:text-xs font-semibold tracking-wide whitespace-nowrap">
+                        <span
+                          data-testid={`pillar-card-primary-cta-inner-${pillar.id}`}
+                          className="lantern-btn-inner !gap-1 px-2.5 sm:px-4 py-1.5 sm:py-2 bg-[#C55B23] text-[#FFFDF9] text-[11.5px] sm:text-xs font-semibold tracking-wide whitespace-nowrap"
+                        >
                           <span>{pillar.ctaLabel}</span>
-                          <ArrowRight className="w-3 h-3 shrink-0" />
+                          <ArrowRight className="w-3 h-3 text-[#FFFDF9] shrink-0 transition-transform duration-200 group-hover:translate-x-0.5" />
                         </span>
                       </Link>
 
                       <Link
                         href={pillar.secondaryHref}
+                        data-testid={`pillar-card-secondary-cta-${pillar.id}`}
                         tabIndex={isActive ? 0 : -1}
                         draggable={false}
                         onClick={(e) => {
@@ -670,11 +673,14 @@ export function FourPillarsShowcase({
                           }
                         }}
                         onMouseMove={handleLanternMouseMove}
-                        className="lantern-btn group flex-1 max-w-[96px] sm:max-w-[116px] bg-[#C85A23]/30 whitespace-nowrap"
+                        className="lantern-btn lantern-btn--pillar-secondary group flex-1 max-w-[96px] sm:max-w-[116px] bg-[#C85A23]/45 shadow-sm whitespace-nowrap no-underline"
                       >
-                        <span className="lantern-btn-inner !gap-1 px-2.5 sm:px-4 py-1.5 sm:py-2 bg-[#FFFDF9] text-[#263D32] text-[11.5px] sm:text-xs font-semibold tracking-wide whitespace-nowrap">
+                        <span
+                          data-testid={`pillar-card-secondary-cta-inner-${pillar.id}`}
+                          className="lantern-btn-inner !gap-1 px-2.5 sm:px-4 py-1.5 sm:py-2 bg-[#FFFDF9] text-[#C55B23] text-[11.5px] sm:text-xs font-semibold tracking-wide whitespace-nowrap"
+                        >
                           <span>{pillar.secondaryLabel}</span>
-                          <ArrowUpRight className="w-3 h-3 text-terracotta shrink-0" />
+                          <ArrowUpRight className="w-3 h-3 text-[#C55B23] shrink-0 transition-transform duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
                         </span>
                       </Link>
                     </div>

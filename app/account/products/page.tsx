@@ -26,7 +26,7 @@ export default async function AccountProductsPage() {
     .eq('user_id', user.id)
     .maybeSingle();
 
-  const isSeller = Boolean(seller);
+  const isSeller = seller?.status === 'approved';
 
   return (
     <div className="max-w-4xl mx-auto space-y-8">

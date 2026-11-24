@@ -125,6 +125,17 @@ function StayRowCard({ property }: { property: any }) {
           />
         </button>
 
+        {/* Bottom-Left Review Rating Pill Badge (★ 5.0) — Clearly visible on photo across all devices */}
+        <div
+          data-testid={`featured-stay-rating-${property.slug}`}
+          className="absolute bottom-2.5 left-2.5 z-20 pointer-events-none"
+        >
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#FFFDF9]/95 backdrop-blur-md border border-[#E5DEC9]/90 text-[#1F332A] text-[11px] sm:text-[11.5px] font-bold tabular-nums leading-none shadow-[0_2px_10px_rgba(0,0,0,0.22)]">
+            <Star className="w-3 h-3 fill-[#C55B23] text-[#C55B23] shrink-0" />
+            <span>5.0</span>
+          </span>
+        </div>
+
         {/* Bottom-Right Quick View Pill Trigger */}
         <div className="absolute bottom-2.5 right-2.5 z-30">
           <PropertyQuickViewButton property={property} variant="overlay" />
@@ -132,19 +143,14 @@ function StayRowCard({ property }: { property: any }) {
       </div>
 
       {/* Clean Rounded Footer Metadata Inside Card */}
-      <div className="px-3.5 pt-2.5 pb-3 space-y-0.5 bg-[#FFFDF9]/95">
-        <h3 className="font-sans text-[14.5px] sm:text-[15px] font-semibold text-[#1F332A] group-hover:text-[#C55B23] transition-colors leading-snug line-clamp-1">
+      <div className="px-3 sm:px-3.5 pt-2.5 pb-3 space-y-0.5 bg-[#FFFDF9]/95">
+        <h3 className="font-sans text-[13.5px] sm:text-[15px] font-semibold text-[#1F332A] group-hover:text-[#C55B23] transition-colors leading-snug line-clamp-1">
           <Link href={`/stays/${property.slug}`} className="no-underline text-inherit">
             {property.name} in {locality}
           </Link>
         </h3>
-        <p className="text-[12px] sm:text-[13px] text-[#5C5549] font-normal flex items-center gap-1 tabular-nums whitespace-nowrap">
-          <span className="whitespace-nowrap">{formatINR(twoNightPrice)} for 2 nights</span>
-          <span aria-hidden="true">&middot;</span>
-          <span className="inline-flex items-center gap-0.5 text-[#1F332A] font-medium shrink-0">
-            <Star className="w-3 h-3 fill-current text-[#1F332A]" />
-            <span>5.0</span>
-          </span>
+        <p className="text-[12px] sm:text-[13px] text-[#5C5549] font-medium tabular-nums whitespace-nowrap">
+          {formatINR(twoNightPrice)} for 2 nights
         </p>
       </div>
     </article>

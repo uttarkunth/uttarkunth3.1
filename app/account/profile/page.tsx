@@ -1,10 +1,12 @@
 import React from 'react';
+import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { ProfileForm } from '@/components/profile-form';
 import { resolveMemberCapabilities } from '@/lib/roles';
-import { Mail, CheckCircle2, Calendar, Award } from 'lucide-react';
+import { resolveUserWorkspaces } from '@/lib/marketplace';
+import { Mail, CheckCircle2, Calendar, Award, Home, Store, ArrowUpRight } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 
@@ -42,6 +44,10 @@ export default async function AccountProfilePage() {
     : (meta.mountain_interests as string[]) || [];
 
   const capabilities = await resolveMemberCapabilities(user.id);
+  const workspaceState = resolveUserWorkspaces({
+    isHost: capabilities.isHost,
+    sellerStatus: capabilities.sellerStatus,
+  });
 
   const createdAt = user.created_at
     ? new Date(user.created_at).toLocaleDateString('en-US', {
@@ -125,6 +131,64 @@ export default async function AccountProfilePage() {
           </div>
         </div>
       </div>
+
+      {/* Host Dashboard & Seller Dashboard Workspaces (visible only to verified hosts and registered & approved sellers) */}
+      {workspaceState.workspaces.length > 0 && (
+        <section
+          aria-label="Partner Dashboards"
+          data-testid="profile-workspaces-section"
+          className="rounded-3xl border border-[#D5C8B3]/80 bg-[linear-gradient(135deg,rgba(255,253,249,0.95)_0%,rgba(244,236,220,0.92)_50%,rgba(229,236,227,0.88)_100%)] p-6 sm:p-8 shadow-soft space-y-4"
+        >
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#C55B23]">
+                Verified Partner Access
+              </span>
+              <h2 className="font-serif text-xl sm:text-2xl font-bold text-[#1F332A]">
+                Partner Dashboards
+              </h2>
+            </div>
+            <span className="text-xs text-[#5C5549]">
+              {workspaceState.scenario === 'C_BOTH_HOST_AND_SELLER'
+                ? 'Active Host & Seller Dashboards'
+                : workspaceState.scenario === 'A_SELLER_ONLY'
+                ? 'Approved Seller Dashboard'
+                : 'Verified Host Dashboard'}
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {workspaceState.workspaces.map((ws) => (
+              <Link
+                key={ws.id}
+                href={ws.href}
+                data-testid={`profile-workspace-card-${ws.id}`}
+                className="group flex items-start justify-between gap-4 rounded-2xl border border-[#2B4438] bg-[linear-gradient(145deg,#1D3027_0%,#263E33_54%,#2D463A_100%)] p-5 sm:p-6 text-[#F8F3E8] shadow-md transition-all hover:-translate-y-0.5"
+              >
+                <div className="space-y-2">
+                  <div className="inline-flex items-center gap-2 rounded-lg bg-white/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-[#FDE2A8]">
+                    {ws.id === 'host_dashboard' ? (
+                      <Home className="h-3.5 w-3.5 text-[#FDE2A8]" />
+                    ) : (
+                      <Store className="h-3.5 w-3.5 text-[#FDE2A8]" />
+                    )}
+                    <span>{ws.badge}</span>
+                  </div>
+                  <h3 className="font-serif text-xl font-bold text-[#FFFDF9] group-hover:text-[#FDE2A8] transition-colors">
+                    {ws.label}
+                  </h3>
+                  <p className="text-xs leading-relaxed text-[#E7DFC8]/90">
+                    {ws.description}
+                  </p>
+                </div>
+                <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#C55B23] text-white transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5">
+                  <ArrowUpRight className="h-4 w-4" />
+                </span>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Profile Edit Form */}
       <div className="bg-white rounded-3xl p-6 sm:p-8 border border-forest/15 shadow-soft space-y-6">

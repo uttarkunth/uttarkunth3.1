@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useId, useState } from 'react';
+import React, { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -16,6 +16,10 @@ import {
   isEcosystemItemSaved,
   toggleSavedEcosystemItem,
 } from '@/lib/favourites';
+import {
+  computeSharedElementTransform,
+  type BoundingBoxRect,
+} from '@/lib/stays-card-transition';
 import {
   ArrowLeft,
   ArrowRight,
@@ -44,6 +48,14 @@ import {
   Utensils,
   Wifi,
 } from 'lucide-react';
+
+const useIsomorphicLayoutEffect =
+  typeof window !== 'undefined' ? useLayoutEffect : useEffect;
+
+function prefersReducedMotion(): boolean {
+  if (typeof window === 'undefined' || !window.matchMedia) return false;
+  return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
 
 function AmenityIcon({ category }: { category: AmenityIconCategory }) {
   const iconProps = { className: 'w-4 h-4 text-[#C55B23] shrink-0' };
@@ -81,19 +93,34 @@ export interface PropertyQuickViewModalProps {
   property: Record<string, any>;
   isOpen: boolean;
   onClose: () => void;
+  originRect?: BoundingBoxRect | null;
+  getOriginRect?: () => BoundingBoxRect | null;
 }
 
 export function PropertyQuickViewModal({
   property,
   isOpen,
   onClose,
+  originRect = null,
+  getOriginRect,
 }: PropertyQuickViewModalProps) {
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
+  const [isClosing, setIsClosing] = useState(false);
+  const [transitionPhase, setTransitionPhase] = useState<'opening' | 'open' | 'closing'>('open');
   const [photoIndex, setPhotoIndex] = useState(0);
   const [isSaved, setIsSaved] = useState(false);
   const [heartPopKey, setHeartPopKey] = useState(0);
   const [reserveConfirmed, setReserveConfirmed] = useState(false);
+
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const closingRef = useRef(false);
+  const originRectRef = useRef<BoundingBoxRect | null>(originRect);
+  const getOriginRectRef = useRef<(() => BoundingBoxRect | null) | undefined>(getOriginRect);
+
+  originRectRef.current = originRect;
+  getOriginRectRef.current = getOriginRect;
+
   const titleId = useId();
   const descId = useId();
 
@@ -102,6 +129,100 @@ export function PropertyQuickViewModal({
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  const handleAnimatedClose = React.useCallback(() => {
+    if (closingRef.current) return;
+    const liveOrigin = getOriginRectRef.current?.() || originRectRef.current;
+
+    if (prefersReducedMotion() || !liveOrigin || !dialogRef.current) {
+      onClose();
+      return;
+    }
+
+    closingRef.current = true;
+    setIsClosing(true);
+    setTransitionPhase('closing');
+
+    const dialog = dialogRef.current;
+    const rect = dialog.getBoundingClientRect();
+    const flip = computeSharedElementTransform(liveOrigin, {
+      top: rect.top,
+      left: rect.left,
+      width: rect.width || 720,
+      height: rect.height || 480,
+    });
+
+    dialog.style.transformOrigin = '0 0';
+    dialog.style.willChange = 'transform, opacity, border-radius';
+    dialog.style.transition =
+      'transform 320ms cubic-bezier(0.32, 0, 0.24, 1), opacity 270ms cubic-bezier(0.32, 0, 0.24, 1), border-radius 320ms cubic-bezier(0.32, 0, 0.24, 1)';
+    dialog.style.transform = flip.initialTransform;
+    dialog.style.opacity = '0.14';
+    dialog.style.borderRadius = '32px';
+
+    window.setTimeout(() => {
+      closingRef.current = false;
+      setIsClosing(false);
+      onClose();
+    }, 300);
+  }, [onClose]);
+
+  // Pre-paint FLIP opening animation strictly when isOpen transitions to true
+  useIsomorphicLayoutEffect(() => {
+    if (!isOpen || !mounted) {
+      closingRef.current = false;
+      setIsClosing(false);
+      return;
+    }
+
+    const dialog = dialogRef.current;
+    const liveOrigin = getOriginRectRef.current?.() || originRectRef.current;
+
+    if (!dialog || !liveOrigin || prefersReducedMotion()) {
+      setTransitionPhase('open');
+      return;
+    }
+
+    setTransitionPhase('opening');
+
+    // 1. Measure true untransformed target bounding box
+    dialog.style.transition = 'none';
+    dialog.style.transform = 'none';
+    const rect = dialog.getBoundingClientRect();
+    const flip = computeSharedElementTransform(liveOrigin, {
+      top: rect.top,
+      left: rect.left,
+      width: rect.width || 720,
+      height: rect.height || 480,
+    });
+
+    // 2. Position dialog at exact Quick View button coordinates (before-change style)
+    dialog.style.transformOrigin = '0 0';
+    dialog.style.transform = flip.initialTransform;
+    dialog.style.opacity = '0.22';
+    dialog.style.borderRadius = '32px';
+    dialog.style.willChange = 'transform, opacity, border-radius';
+
+    // 3. Force synchronous style & layout flush so browser commits before-change style
+    void dialog.getBoundingClientRect();
+
+    // 4. Apply target state with smooth spring-like cubic-bezier transition
+    dialog.style.transition =
+      'transform 340ms cubic-bezier(0.22, 1, 0.36, 1), opacity 230ms cubic-bezier(0.22, 1, 0.36, 1), border-radius 340ms cubic-bezier(0.22, 1, 0.36, 1)';
+    dialog.style.transform = flip.settledTransform;
+    dialog.style.opacity = '1';
+    dialog.style.borderRadius = '';
+
+    const settleTimer = window.setTimeout(() => {
+      if (!dialogRef.current || closingRef.current) return;
+      dialogRef.current.style.willChange = '';
+      setTransitionPhase('open');
+    }, 355);
+
+    return () => {
+      window.clearTimeout(settleTimer);
+    };
+  }, [isOpen, mounted]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -117,7 +238,7 @@ export function PropertyQuickViewModal({
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         e.preventDefault();
-        onClose();
+        handleAnimatedClose();
       } else if (e.key === 'ArrowRight' && details.photos.length > 1) {
         setPhotoIndex((prev) => (prev + 1) % details.photos.length);
       } else if (e.key === 'ArrowLeft' && details.photos.length > 1) {
@@ -134,13 +255,14 @@ export function PropertyQuickViewModal({
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener(FAVOURITES_UPDATED_EVENT, syncSaved);
     };
-  }, [isOpen, details.id, details.slug, details.photos.length, onClose]);
+  }, [isOpen, details.id, details.slug, details.photos.length, handleAnimatedClose]);
 
   if (!mounted || !isOpen) {
     return null;
   }
 
   const activePhoto = details.photos[photoIndex] || details.photos[0] || null;
+  const hasOrigin = Boolean(getOriginRect?.() || originRect);
 
   const handleReserveClick = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -148,29 +270,35 @@ export function PropertyQuickViewModal({
     setTimeout(() => {
       onClose();
       router.push(details.href);
-    }, 340);
+    }, 280);
   };
 
   const modalContent = (
     <div
-      className="fixed inset-0 z-[120] flex items-end sm:items-center justify-center p-0 sm:p-6 bg-[#131F19]/70 backdrop-blur-xs animate-in fade-in duration-200"
+      className={`fixed inset-0 z-[120] flex items-end sm:items-center justify-center p-0 sm:p-6 bg-[#131F19]/65 backdrop-blur-xs transition-opacity duration-300 ${
+        isClosing ? 'opacity-0' : 'opacity-100'
+      }`}
       onClick={(e) => {
         e.stopPropagation();
         if (e.target === e.currentTarget) {
-          onClose();
+          handleAnimatedClose();
         }
       }}
     >
       <div
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
         aria-describedby={descId}
         data-testid={`quick-view-modal-${details.slug}`}
+        data-transition-state={transitionPhase}
         onClick={(e) => e.stopPropagation()}
-        className="animate-uk-sheet-unfold relative w-full max-w-4xl max-h-[92vh] sm:max-h-[90vh] bg-[#FFFDF9] rounded-t-[28px] sm:rounded-[28px] border-t sm:border border-[#D9CCB8] shadow-[0_24px_64px_rgba(15,25,20,0.42)] overflow-hidden flex flex-col lg:grid lg:grid-cols-[1.05fr_1.15fr]"
+        className={`${
+          hasOrigin ? '' : 'animate-uk-sheet-unfold '
+        }relative w-full max-w-4xl max-h-[92vh] sm:max-h-[90vh] bg-[#FFFDF9] rounded-t-[28px] sm:rounded-[28px] border-t sm:border border-[#D9CCB8] shadow-[0_24px_64px_rgba(15,25,20,0.42)] overflow-hidden flex flex-col lg:grid lg:grid-cols-[1.05fr_1.15fr]`}
       >
-        {/* Left / Top Column: Full-Bleed Photo Showcase with Floating Back & Heart Buttons (Video 00:08–00:11) */}
+        {/* Left / Top Column: Full-Bleed Photo Showcase with Floating Back & Heart Buttons */}
         <div className="relative bg-[#1F332A] flex flex-col justify-between min-h-[245px] sm:min-h-[290px] lg:min-h-[500px]">
           <div className="relative flex-1 w-full min-h-[245px] sm:min-h-[290px] lg:min-h-full overflow-hidden">
             {activePhoto ? (
@@ -198,14 +326,14 @@ export function PropertyQuickViewModal({
               className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/75 via-black/15 to-black/35"
             />
 
-            {/* Floating Circular Back/Close Button (Top Left) + Heart Favourite Button (Top Right) (Video 00:08) */}
+            {/* Floating Circular Back/Close Button (Top Left) + Heart Favourite Button (Top Right) */}
             <div className="absolute top-3.5 inset-x-3.5 flex items-center justify-between gap-2 z-30">
               <button
                 type="button"
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  onClose();
+                  handleAnimatedClose();
                 }}
                 aria-label={`Close quick view for ${details.name}`}
                 data-testid="quick-view-close-button"
@@ -289,11 +417,11 @@ export function PropertyQuickViewModal({
               </>
             )}
 
-            {/* Bottom Photo Counter & Thumbnail Dots */}
+            {/* Bottom Rate Badge in Forest Green + Thumbnail Dots */}
             <div className="absolute bottom-6 lg:bottom-3.5 inset-x-4 flex items-center justify-between gap-2 z-20">
-              <div className="bg-black/65 backdrop-blur-md text-[#FFFDF9] px-3 py-1 rounded-full text-xs font-bold tabular-nums">
+              <div className="bg-[#263D32] border border-[#FFFDF9]/25 text-[#FFFDF9] px-3 py-1 rounded-full text-xs font-bold tabular-nums shadow-md">
                 {formatINR(details.startingPrice)}{' '}
-                <span className="font-normal text-[11px] text-[#FAF4E8]/85">/ night</span>
+                <span className="font-normal text-[11px] text-[#FAF4E8]/90">/ night</span>
               </div>
 
               {details.photos.length > 1 && (
@@ -319,10 +447,10 @@ export function PropertyQuickViewModal({
           </div>
         </div>
 
-        {/* Right / Bottom Sheet Column: Rounded-Top Ivory Sheet (Video 00:08–00:11) */}
+        {/* Right / Bottom Sheet Column: Rounded-Top Ivory Sheet */}
         <div className="relative z-20 -mt-4 lg:mt-0 rounded-t-[26px] lg:rounded-none flex flex-col justify-between max-h-[64vh] lg:max-h-[88vh] overflow-hidden bg-[#FFFDF9]">
           <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-4">
-            {/* Location, Title & Verified Top-Rated Line (Video 00:08) */}
+            {/* Location, Title & Verified Top-Rated Line */}
             <div className="space-y-1.5">
               <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-[0.12em] text-[#C55B23]">
                 <MapPin className="w-3.5 h-3.5 shrink-0" />
@@ -340,13 +468,13 @@ export function PropertyQuickViewModal({
                   5.0
                 </span>
                 <span>&bull;</span>
-                <span>Verified guest review</span>
+                <span>Guest favourite</span>
                 <span>&bull;</span>
-                <span className="font-semibold text-[#C55B23]">Top rated</span>
+                <span className="font-semibold text-[#263D32]">{details.propertyTypeLabel}</span>
               </div>
             </div>
 
-            {/* 3-Column Rounded Stat Cards (Guests / Bedrooms / Private Bath — Video 00:08–00:09) */}
+            {/* 3-Column Rounded Stat Cards (Guests / Rooms / Private Bath) */}
             <div className="grid grid-cols-3 gap-2.5">
               <div className="p-3 rounded-2xl bg-[#F5F0E6] border border-[#D9CCB8] flex flex-col items-center justify-center text-center gap-1">
                 <Users className="w-4 h-4 text-[#263D32]" />
@@ -368,7 +496,7 @@ export function PropertyQuickViewModal({
               </div>
             </div>
 
-            {/* Hosted By Card (Video 00:09) */}
+            {/* Hosted By Card */}
             <div className="p-3.5 rounded-2xl bg-[#F5F0E6]/85 border border-[#D9CCB8] flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-[#263D32] text-[#FFFDF9] flex items-center justify-center shrink-0 font-serif text-base font-semibold">
                 <ShieldCheck className="w-5 h-5 text-[#FDE2A8]" />
@@ -383,7 +511,7 @@ export function PropertyQuickViewModal({
               </div>
             </div>
 
-            {/* What This Place Offers — 2x2 Amenity Grid (Video 00:09–00:10) */}
+            {/* What This Place Offers — 2x2 Amenity Grid */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <h3 className="font-serif text-lg font-semibold text-[#1F332A]">
@@ -428,26 +556,28 @@ export function PropertyQuickViewModal({
             </div>
           </div>
 
-          {/* Sticky Bottom Price & Interactive Reserve Footer (Video 00:10–00:11) */}
+          {/* Sticky Bottom Price & Interactive Reserve Footer */}
           <div className="shrink-0 px-5 sm:px-6 py-3.5 border-t border-[#D9CCB8] bg-[#FFFDF9] flex items-center justify-between gap-3">
             <div>
-              <div className="flex items-baseline gap-1">
-                <span className="font-sans text-lg sm:text-xl font-bold text-[#29251F] tabular-nums">
+              <div className="inline-flex items-baseline gap-1 px-2.5 py-0.5 rounded-lg bg-[#263D32] text-[#FFFDF9]">
+                <span className="font-sans text-base sm:text-lg font-bold tabular-nums">
                   {formatINR(details.startingPrice)}
                 </span>
-                <span className="font-sans text-xs text-[#5C5549]">/ night</span>
+                <span className="font-sans text-[11px] text-[#FAF4E8]/90">/ night</span>
               </div>
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  onClose();
-                }}
-                className="font-sans text-[11px] font-semibold text-[#5C5549] hover:text-[#29251F] underline underline-offset-2 cursor-pointer"
-              >
-                Keep Browsing Results
-              </button>
+              <div className="mt-1">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleAnimatedClose();
+                  }}
+                  className="font-sans text-[11px] font-semibold text-[#5C5549] hover:text-[#29251F] underline underline-offset-2 cursor-pointer"
+                >
+                  Keep Browsing Results
+                </button>
+              </div>
             </div>
 
             <Link
@@ -493,26 +623,53 @@ export function PropertyQuickViewButton({
   className = '',
 }: PropertyQuickViewButtonProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [originRect, setOriginRect] = useState<BoundingBoxRect | null>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
   const name = String(property?.name || 'Property').trim();
   const slug = String(property?.slug || property?.id || 'stay');
 
+  const measureTriggerRect = React.useCallback((): BoundingBoxRect | null => {
+    if (!triggerRef.current) return originRect;
+    const r = triggerRef.current.getBoundingClientRect();
+    if (r.width === 0 && r.height === 0) return originRect;
+    return {
+      top: r.top,
+      left: r.left,
+      width: r.width,
+      height: r.height,
+    };
+  }, [originRect]);
+
   const baseStyles =
     variant === 'overlay'
-      ? 'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#FFFDF9]/95 hover:bg-[#1F332A] text-[#1F332A] hover:text-[#FFFDF9] border border-[#E5DEC9]/80 text-[11px] font-semibold tracking-wide shadow-md backdrop-blur-md transition-colors cursor-pointer'
+      ? 'inline-flex items-center justify-center gap-1.5 w-8 h-8 sm:w-auto sm:h-auto sm:px-3 sm:py-1.5 rounded-full bg-[#FFFDF9]/95 hover:bg-[#1F332A] text-[#1F332A] hover:text-[#FFFDF9] border border-[#E5DEC9]/80 text-[11px] font-semibold tracking-wide shadow-md backdrop-blur-md transition-colors cursor-pointer focus:outline-none'
       : variant === 'compact'
-        ? 'inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#FAF6EE] hover:bg-[#1F332A] text-[#1F332A] hover:text-[#FFFDF9] border border-[#D9CCB8] text-[11px] font-semibold transition-colors cursor-pointer'
-        : 'inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#FAF6EE] hover:bg-[#1F332A] text-[#1F332A] hover:text-[#FFFDF9] border border-[#D9CCB8] text-xs font-semibold transition-colors cursor-pointer';
+        ? 'inline-flex items-center justify-center gap-1 w-8 h-8 sm:w-auto sm:h-auto sm:px-2.5 sm:py-1 rounded-full bg-[#FAF6EE] hover:bg-[#1F332A] text-[#1F332A] hover:text-[#FFFDF9] border border-[#D9CCB8] text-[11px] font-semibold transition-colors cursor-pointer focus:outline-none'
+        : 'inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#FAF6EE] hover:bg-[#1F332A] text-[#1F332A] hover:text-[#FFFDF9] border border-[#D9CCB8] text-xs font-semibold transition-colors cursor-pointer focus:outline-none';
+
+  const handleClose = () => {
+    setIsOpen(false);
+  };
 
   return (
     <>
       <button
+        ref={triggerRef}
         type="button"
         suppressHydrationWarning
         onClick={(e) => {
           e.preventDefault();
           e.stopPropagation();
+          const r = e.currentTarget.getBoundingClientRect();
+          setOriginRect({
+            top: r.top,
+            left: r.left,
+            width: r.width,
+            height: r.height,
+          });
           setIsOpen(true);
         }}
+        title={`Quick view ${name}`}
         aria-label={`Quick view ${name}`}
         aria-haspopup="dialog"
         aria-expanded={isOpen}
@@ -520,14 +677,19 @@ export function PropertyQuickViewButton({
         className={`${baseStyles} ${className}`}
       >
         <Eye className="w-3.5 h-3.5 text-[#C55B23] shrink-0" />
-        <span>Quick View</span>
+        <span className={variant === 'overlay' || variant === 'compact' ? 'hidden sm:inline' : ''}>
+          Quick View
+        </span>
       </button>
 
       <PropertyQuickViewModal
         property={property}
         isOpen={isOpen}
-        onClose={() => setIsOpen(false)}
+        originRect={originRect}
+        getOriginRect={measureTriggerRect}
+        onClose={handleClose}
       />
     </>
   );
 }
+

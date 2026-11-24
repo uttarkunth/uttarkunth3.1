@@ -38,6 +38,7 @@ test('normalizePropertyQuickView transforms EXISTING_PROPERTIES with accurate de
 
   assert.equal(details.slug, 'yash-home-stay');
   assert.equal(details.name, 'Yash Home Stay');
+  assert.equal(details.propertyTypeLabel, 'Homestay');
   assert.equal(details.href, '/stays/yash-home-stay');
   assert.equal(details.locationLabel, 'Jari, Kullu');
   assert.equal(details.fullLocationLabel, 'Jari, Kullu, Himachal Pradesh');

@@ -261,17 +261,53 @@
   }
 
   /* Universal Hover Rule: Solid fill disappears into dark obsidian-forest (#0E1713) & words glow white */
-  .lantern-btn:hover .lantern-btn-inner,
-  .lantern-btn:focus-visible .lantern-btn-inner {
+  .lantern-btn:not(.lantern-btn--pillar-primary):not(.lantern-btn--pillar-secondary):hover .lantern-btn-inner,
+  .lantern-btn:not(.lantern-btn--pillar-primary):not(.lantern-btn--pillar-secondary):focus-visible .lantern-btn-inner {
     background-color: #0E1713 !important;
     color: #FFFFFF !important;
     text-shadow: 0 0 14px rgba(255, 255, 255, 0.65), 0 0 4px rgba(255, 255, 255, 0.35);
   }
 
-  .lantern-btn:hover .lantern-btn-inner svg,
-  .lantern-btn:focus-visible .lantern-btn-inner svg {
+  .lantern-btn:not(.lantern-btn--pillar-primary):not(.lantern-btn--pillar-secondary):hover .lantern-btn-inner svg,
+  .lantern-btn:not(.lantern-btn--pillar-primary):not(.lantern-btn--pillar-secondary):focus-visible .lantern-btn-inner svg {
     color: #FFFFFF !important;
     filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.55));
+  }
+
+  /* Four Pillars Card Primary CTA (Explore / Shop / Watch): Orange -> White bg with Orange words on hover */
+  .lantern-btn.lantern-btn--pillar-primary:hover,
+  .lantern-btn.lantern-btn--pillar-primary:focus-visible,
+  .lantern-btn.lantern-btn--pillar-secondary:hover,
+  .lantern-btn.lantern-btn--pillar-secondary:focus-visible {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 26px -4px rgba(200, 90, 35, 0.42);
+  }
+
+  .lantern-btn.lantern-btn--pillar-primary:hover .lantern-btn-inner,
+  .lantern-btn.lantern-btn--pillar-primary:focus-visible .lantern-btn-inner {
+    background-color: #FFFDF9 !important;
+    color: #C55B23 !important;
+    text-shadow: 0 0 10px rgba(197, 91, 35, 0.22);
+  }
+
+  .lantern-btn.lantern-btn--pillar-primary:hover .lantern-btn-inner svg,
+  .lantern-btn.lantern-btn--pillar-primary:focus-visible .lantern-btn-inner svg {
+    color: #C55B23 !important;
+    filter: drop-shadow(0 0 6px rgba(197, 91, 35, 0.25));
+  }
+
+  /* Four Pillars Card Secondary CTA (Host / Sell / Create / Join): White -> Orange bg with White words on hover */
+  .lantern-btn.lantern-btn--pillar-secondary:hover .lantern-btn-inner,
+  .lantern-btn.lantern-btn--pillar-secondary:focus-visible .lantern-btn-inner {
+    background-color: #C55B23 !important;
+    color: #FFFDF9 !important;
+    text-shadow: 0 0 12px rgba(255, 253, 249, 0.38);
+  }
+
+  .lantern-btn.lantern-btn--pillar-secondary:hover .lantern-btn-inner svg,
+  .lantern-btn.lantern-btn--pillar-secondary:focus-visible .lantern-btn-inner svg {
+    color: #FFFDF9 !important;
+    filter: drop-shadow(0 0 6px rgba(255, 253, 249, 0.35));
   }
 
   /* Single-element Lantern Border system for utility classes (.btn-*) */
@@ -908,3 +944,4 @@ main .lantern-card {
 main .editorial-card:hover {
   transform: translate3d(0, -2px, 0);
 }
+

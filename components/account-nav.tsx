@@ -135,7 +135,7 @@ export function AccountNav({
             })}
           </nav>
 
-          {/* Part 7: Dynamic Workspaces (Host Dashboard & Seller Desk side-by-side) */}
+          {/* Part 7: Dynamic Workspaces (Host Dashboard & Seller Dashboard side-by-side) */}
           <div
             className="flex items-center gap-2 flex-shrink-0"
             data-testid="account-nav-workspaces"
@@ -153,24 +153,23 @@ export function AccountNav({
               </Link>
             )}
 
-            {(workspaceState.showSellerDesk || isAdmin) && (
+            {workspaceState.showSellerDesk && (
               <Link
                 href="/seller/dashboard"
                 data-testid="nav-seller-desk-link"
                 className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-[#FFFDF9] bg-[#1F332A] hover:bg-[#C55B23] border border-[#2B4438] rounded-xl transition-all duration-200 ease-editorial group whitespace-nowrap"
-                title="Seller Desk for product & order management"
+                title="Seller Dashboard for product & order management"
               >
                 <Store className="w-3.5 h-3.5 text-[#FDE2A8]" />
-                <span>Seller Desk</span>
+                <span>Seller Dashboard</span>
                 <ArrowUpRight className="w-3 h-3 text-[#FDE2A8]/80 transition-colors" />
               </Link>
             )}
 
             {!workspaceState.showSellerDesk &&
-              !isAdmin &&
               workspaceState.showPendingSellerBanner && (
                 <Link
-                  href="/seller/dashboard"
+                  href="/products/sell"
                   data-testid="nav-seller-application-status-link"
                   className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-amber-900 bg-amber-50 hover:bg-amber-100 border border-amber-300 rounded-xl transition-all whitespace-nowrap"
                   title="View your Seller Application Status"

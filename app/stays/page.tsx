@@ -2,6 +2,7 @@ import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { HorizontalPropertyCard } from '@/components/stays/horizontal-property-card';
+import { StaysSharedTransitionRestorer } from '@/components/stays/property-detail-transition-shell';
 import { RegionalDestinationsSlider } from '@/components/stays/regional-destinations-slider';
 import { SearchBar } from '@/components/search-bar';
 import { BRAND, EXISTING_PROPERTIES } from '@/lib/constants';
@@ -193,6 +194,7 @@ export default async function StaysPage({ searchParams }: StaysPageProps) {
 
   return (
     <div className="space-y-10 sm:space-y-14 lg:space-y-16 pb-20">
+      <StaysSharedTransitionRestorer />
       {/* ─────────────────────────────────────────────────────────────────────
           1. STAYS HERO — HIMALAYAN NATURAL STONE ROOFING BACKGROUND
           • Starts at -mt-16 behind the header
@@ -357,7 +359,7 @@ export default async function StaysPage({ searchParams }: StaysPageProps) {
               </div>
 
               {filteredProperties.length > 0 ? (
-                <div className="space-y-5 sm:space-y-6">
+                <div className="space-y-3 sm:space-y-4 md:space-y-5">
                   {filteredProperties.map((property: any) => (
                     <HorizontalPropertyCard
                       key={property.id || property.slug}

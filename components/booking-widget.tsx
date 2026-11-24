@@ -165,54 +165,63 @@ export function BookingWidget({
   }, [rooms, selectedRoomId]);
 
   const checkDateOccupancyConflict = React.useCallback(
-    (nextCheckIn: string, nextCheckOut: string) => {
+    (nextCheckIn: string, nextCheckOut: string, roomIdOverride?: string) => {
       const primaryDate = nextCheckIn || nextCheckOut;
       if (!primaryDate) return null;
+      const targetRoomId = roomIdOverride || selectedRoom?.id;
+      if (!targetRoomId) return null;
 
-      // Check selected room first, then property-wide occupancy so any reserved or blocked date is caught
-      const roomConflict = findRoomOccupancyConflict({
-        checkIn: primaryDate,
-        checkOut: nextCheckIn ? nextCheckOut : undefined,
-        occupancy,
-        roomUnitId: selectedRoom?.id,
-      });
-      if (roomConflict) return roomConflict;
-
+      // Strictly check occupancy only for the selected room unit so other rooms' bookings/blocks never block this room
       return findRoomOccupancyConflict({
         checkIn: primaryDate,
         checkOut: nextCheckIn ? nextCheckOut : undefined,
         occupancy,
+        roomUnitId: targetRoomId,
       });
     },
     [occupancy, selectedRoom?.id]
   );
 
-  // Re-validate whenever occupancy finishes loading if dates were already chosen
+  // Re-validate whenever occupancy finishes loading or selected room changes if dates were already chosen
   useEffect(() => {
     if (!checkIn && !checkOut) return;
     if (occupancy.length === 0) return;
     const conflict = checkDateOccupancyConflict(checkIn, checkOut);
-    if (conflict) {
-      setErrorMessage(conflict.message);
-    }
-  }, [occupancy, checkIn, checkOut, checkDateOccupancyConflict]);
+    setErrorMessage(conflict ? conflict.message : null);
+  }, [occupancy, checkIn, checkOut, selectedRoom?.id, checkDateOccupancyConflict]);
 
   const syncDatesToCalendar = (
     nextCheckIn: string,
     nextCheckOut: string,
     conflictDateStr: string | null,
-    conflictMessage: string | null
+    conflictMessage: string | null,
+    nextRoomId?: string
   ) => {
     if (typeof window === 'undefined') return;
     window.dispatchEvent(
       new CustomEvent('uttarkunth:booking-widget-dates-changed', {
         detail: {
+          roomId: nextRoomId || selectedRoom?.id,
           checkIn: nextCheckIn,
           checkOut: nextCheckOut,
           conflictDateStr,
           conflictMessage,
         },
       })
+    );
+  };
+
+  const handleRoomChange = (nextRoomId: string) => {
+    setSelectedRoomId(nextRoomId);
+    const conflict = checkDateOccupancyConflict(checkIn, checkOut, nextRoomId);
+    const msg = conflict ? conflict.message : null;
+    setErrorMessage(msg);
+    syncDatesToCalendar(
+      checkIn,
+      checkOut,
+      conflict ? conflict.conflictDateStr : null,
+      msg,
+      nextRoomId
     );
   };
 
@@ -432,6 +441,31 @@ export function BookingWidget({
       )}
 
       <form onSubmit={handleSubmit} className="space-y-4">
+        {rooms.length > 1 && (
+          <div>
+            <label
+              htmlFor="booking-widget-room-select"
+              className="block text-xs font-semibold text-charcoal mb-1.5"
+            >
+              Select Room Unit
+            </label>
+            <select
+              id="booking-widget-room-select"
+              data-testid="booking-widget-room-select"
+              suppressHydrationWarning
+              value={selectedRoom?.id || ''}
+              onChange={(e) => handleRoomChange(e.target.value)}
+              className="w-full min-h-[44px] px-3 py-2 bg-[#F5F0E6] border border-[#D9CCB8] rounded-xl text-xs font-semibold text-charcoal focus:outline-none focus:border-forest focus:ring-2 focus:ring-forest/20 cursor-pointer"
+            >
+              {rooms.map((room) => (
+                <option key={room.id} value={room.id}>
+                  {room.room_name} — {formatINR(Number(room.base_price))}/night
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
         {selectedRoom && (
           <div className="space-y-2 rounded-xl border border-[#D9CCB8] bg-[#F5F0E6]/65 p-3">
             <div className="flex items-center justify-between gap-2">

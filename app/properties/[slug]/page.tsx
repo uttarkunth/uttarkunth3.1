@@ -8,7 +8,8 @@ import { createPublicServerSupabaseClient, createServerSupabaseClient } from '@/
 import { BRAND, EXISTING_PROPERTIES } from '@/lib/constants';
 import { BookingWidget } from '@/components/booking-widget';
 import { RoomAvailabilityCalendar } from '@/components/stays/room-availability-calendar';
-import { MapPin, Users, CheckCircle2, ShieldCheck, Clock, Home, Sparkles, ChevronLeft, Wifi, Coffee, Utensils, Car, Image as ImageIcon } from 'lucide-react';
+import { PropertyDetailTransitionShell } from '@/components/stays/property-detail-transition-shell';
+import { MapPin, Users, CheckCircle2, Image as ImageIcon } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 
@@ -132,23 +133,16 @@ export default async function PropertyDetailPage({ params, searchParams }: Prope
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-      {/* Back Link */}
-      <div>
-        <Link
-          href="/stays"
-          className="inline-flex items-center gap-1.5 text-xs font-semibold text-charcoal-muted hover:text-forest transition-colors"
-        >
-          <ChevronLeft className="w-4 h-4" />
-          <span>Back to All Stays</span>
-        </Link>
-      </div>
-
+    <PropertyDetailTransitionShell
+      propertyId={String(property.id || property.slug)}
+      propertySlug={String(property.slug || property.id)}
+      propertyName={property.name}
+    >
       {/* Property Header */}
       <div className="space-y-2">
         <div className="flex flex-wrap items-center gap-2">
           <span className="px-2.5 py-0.5 bg-forest/10 text-forest text-xs font-bold uppercase rounded-full">
-            {property.property_type === 'homestay' ? 'Authentic Homestay' : 'Mountain Retreat'}
+            {property.property_type === 'homestay' ? 'Homestay' : 'Mountain Retreat'}
           </span>
           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-ukorange/10 text-ukorange text-xs font-semibold rounded-full">
             <CheckCircle2 className="w-3.5 h-3.5" />
@@ -392,6 +386,6 @@ export default async function PropertyDetailPage({ params, searchParams }: Prope
           </div>
         </div>
       )}
-    </div>
+    </PropertyDetailTransitionShell>
   );
 }

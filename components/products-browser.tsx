@@ -600,12 +600,6 @@ export function ProductsBrowser({
                   <span>Become a Seller / Partner</span>
                   <ArrowUpRight className="h-4 w-4" />
                 </Link>
-                <Link
-                  href="/seller/dashboard"
-                  className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#FDE2A8]/35 bg-white/10 px-5 py-3.5 text-xs sm:text-sm font-semibold text-[#FFFDF9] hover:bg-white/15 transition-all"
-                >
-                  <span>Open Seller Desk</span>
-                </Link>
               </div>
             </div>
           </div>

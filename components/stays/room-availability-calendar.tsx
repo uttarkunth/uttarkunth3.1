@@ -83,7 +83,7 @@ export function RoomAvailabilityCalendar({
   const todayStr = useMemo(() => new Date().toISOString().split('T')[0], []);
 
   const [selectedRoomId, setSelectedRoomId] = useState<string>(
-    rooms.length > 1 ? 'all' : rooms[0]?.id || 'all'
+    rooms[0]?.id || ''
   );
   const [checkIn, setCheckIn] = useState<string>(initialCheckIn);
   const [checkOut, setCheckOut] = useState<string>(initialCheckOut);
@@ -92,6 +92,18 @@ export function RoomAvailabilityCalendar({
     dateStr: string;
     message: string;
   } | null>(null);
+
+  useEffect(() => {
+    if (!selectedRoomId && rooms[0]?.id) {
+      setSelectedRoomId(rooms[0].id);
+    } else if (
+      selectedRoomId &&
+      rooms.length > 0 &&
+      !rooms.some((r) => String(r.id) === String(selectedRoomId))
+    ) {
+      setSelectedRoomId(rooms[0].id);
+    }
+  }, [rooms, selectedRoomId]);
 
   const initialBaseDate = useMemo(() => {
     const source = initialCheckIn || todayStr;
@@ -169,12 +181,16 @@ export function RoomAvailabilityCalendar({
   useEffect(() => {
     function handleWidgetDatesChanged(event: Event) {
       const custom = event as CustomEvent<{
+        roomId?: string;
         checkIn?: string;
         checkOut?: string;
         conflictDateStr?: string | null;
         conflictMessage?: string | null;
       }>;
       if (!custom.detail) return;
+      if (typeof custom.detail.roomId === 'string' && custom.detail.roomId) {
+        setSelectedRoomId(custom.detail.roomId);
+      }
       if (typeof custom.detail.checkIn === 'string') {
         setCheckIn(custom.detail.checkIn);
       }
@@ -205,9 +221,7 @@ export function RoomAvailabilityCalendar({
 
   const activeRoom = useMemo(
     () =>
-      selectedRoomId === 'all'
-        ? rooms[0]
-        : rooms.find((r) => r.id === selectedRoomId) || rooms[0],
+      rooms.find((r) => String(r.id) === String(selectedRoomId)) || rooms[0],
     [rooms, selectedRoomId]
   );
 
@@ -220,7 +234,7 @@ export function RoomAvailabilityCalendar({
     ) => {
       if (typeof window === 'undefined') return;
       const payload: RoomAvailabilityDatesPayload = {
-        roomId: nextRoomId === 'all' ? rooms[0]?.id || '' : nextRoomId,
+        roomId: nextRoomId || rooms[0]?.id || '',
         checkIn: nextCheckIn,
         checkOut: nextCheckOut,
         conflictMessage,
@@ -277,12 +291,10 @@ export function RoomAvailabilityCalendar({
     (
       dateStr: string
     ): { status: 'available' | 'booked' | 'blocked'; kind?: string } => {
+      const targetRoomId = selectedRoomId || rooms[0]?.id || '';
       const match = occupancy.find((o) => {
-        if (
-          selectedRoomId &&
-          selectedRoomId !== 'all' &&
-          o.room_unit_id !== selectedRoomId
-        ) {
+        if (!targetRoomId || !o.room_unit_id) return false;
+        if (String(o.room_unit_id) !== String(targetRoomId)) {
           return false;
         }
         return dateStr >= o.start_date && dateStr < o.end_date;
@@ -299,7 +311,7 @@ export function RoomAvailabilityCalendar({
 
       return { status: 'available' };
     },
-    [occupancy, selectedRoomId]
+    [occupancy, selectedRoomId, rooms]
   );
 
   const dateSummary = useMemo(
@@ -418,33 +430,15 @@ export function RoomAvailabilityCalendar({
         </div>
       </div>
 
-      {/* 2. Room Unit Selector Tabs */}
-      {rooms.length > 1 && (
+      {/* 2. Room Unit Selector Tabs — Independent Calendar Per Room */}
+      {rooms.length > 0 && (
         <div className="space-y-2">
           <span className="font-sans text-xs font-semibold text-[#5C5549] block">
-            Select Room Unit to View Schedule:
+            Select Room to View Its Dedicated Calendar:
           </span>
           <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
-            <button
-              suppressHydrationWarning
-              type="button"
-              data-testid="room-availability-tab-all"
-              onClick={() => handleSelectRoom('all')}
-              className={`font-sans min-h-[44px] px-4 py-2 rounded-full text-xs font-semibold transition-all whitespace-nowrap inline-flex items-center gap-2 border cursor-pointer ${
-                selectedRoomId === 'all'
-                  ? 'bg-[#263D32] text-[#FFFDF9] border-[#263D32] shadow-xs animate-uk-pill-pop'
-                  : 'bg-[#FFFDF9] text-[#29251F] border-[#D9CCB8] hover:border-[#263D32]/60 hover:bg-[#F5F0E6]'
-              }`}
-            >
-              <BedDouble
-                className={`w-3.5 h-3.5 ${
-                  selectedRoomId === 'all' ? 'text-[#FDE2A8]' : 'text-[#C55B23]'
-                }`}
-              />
-              <span>All Rooms</span>
-            </button>
             {rooms.map((room) => {
-              const isSelected = room.id === selectedRoomId;
+              const isSelected = String(room.id) === String(activeRoom?.id);
               return (
                 <button
                   suppressHydrationWarning
@@ -484,12 +478,13 @@ export function RoomAvailabilityCalendar({
       {activeRoom && (
         <div className="p-3.5 bg-[#F5F0E6]/75 rounded-2xl border border-[#D9CCB8] flex flex-wrap items-center justify-between gap-3 text-xs">
           <div className="flex flex-wrap items-center gap-2.5">
-            <strong className="text-[#263D32] font-serif text-base">
-              {selectedRoomId === 'all'
-                ? `${propertyName} — All Rooms Schedule`
-                : activeRoom.room_name}
+            <strong
+              data-testid="room-calendar-active-room-name"
+              className="text-[#263D32] font-serif text-base"
+            >
+              {activeRoom.room_name} — Room Calendar
             </strong>
-            {selectedRoomId !== 'all' && activeRoom.attached_washroom !== undefined && (
+            {activeRoom.attached_washroom !== undefined && (
               <span
                 className={`font-sans px-2.5 py-0.5 text-[10.5px] font-semibold rounded-md border ${
                   activeRoom.attached_washroom
@@ -500,13 +495,11 @@ export function RoomAvailabilityCalendar({
                 {activeRoom.attached_washroom ? 'Attached Washroom' : 'Shared Washroom'}
               </span>
             )}
-            {selectedRoomId !== 'all' &&
-              activeRoom.view_type &&
-              activeRoom.view_type !== 'none' && (
-                <span className="font-sans px-2.5 py-0.5 text-[10.5px] font-semibold bg-[#263D32]/10 text-[#263D32] border border-[#263D32]/20 rounded-md capitalize">
-                  {activeRoom.view_type} View
-                </span>
-              )}
+            {activeRoom.view_type && activeRoom.view_type !== 'none' && (
+              <span className="font-sans px-2.5 py-0.5 text-[10.5px] font-semibold bg-[#263D32]/10 text-[#263D32] border border-[#263D32]/20 rounded-md capitalize">
+                {activeRoom.view_type} View
+              </span>
+            )}
             {loading && (
               <span className="font-sans text-[10.5px] text-[#5C5549] animate-pulse">
                 Syncing live schedule…

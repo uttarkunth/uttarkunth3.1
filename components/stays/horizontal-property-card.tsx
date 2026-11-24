@@ -1,15 +1,21 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { PropertyImage } from '@/components/property-image';
-import { PropertyQuickViewButton } from '@/components/stays/property-quick-view-modal';
+import { PropertyQuickViewModal } from '@/components/stays/property-quick-view-modal';
 import { getPropertyPhotoList } from '@/lib/property-images';
 import {
   formatPropertyTypeLabel,
-  normalizeAmenitiesList,
   type AmenityIconCategory,
 } from '@/lib/property-quick-view';
+import {
+  computePropertyRatingSummary,
+  formatCardAmenities,
+  getPropertyStartingRate,
+  type BoundingBoxRect,
+} from '@/lib/stays-card-transition';
 import {
   FAVOURITES_UPDATED_EVENT,
   isEcosystemItemSaved,
@@ -17,7 +23,6 @@ import {
 } from '@/lib/favourites';
 import { formatINR } from '@/lib/utils';
 import {
-  ArrowRight,
   Building2,
   Car,
   CheckCircle2,
@@ -27,25 +32,23 @@ import {
   Coffee,
   Compass,
   Droplets,
+  Eye,
   Flame,
   Heart,
   MapPin,
   Mountain,
   PawPrint,
-  ShieldCheck,
   Shirt,
-  Sparkles,
   Star,
   Sun,
   Utensils,
   Wifi,
 } from 'lucide-react';
-import { isPropertyGuestFavourite } from '@/lib/stays-search';
 
 function MinimalAmenityIcon({ category }: { category: AmenityIconCategory }) {
   const iconProps = {
     strokeWidth: 1.75,
-    className: 'w-3.5 h-3.5 text-[#C55B23] shrink-0',
+    className: 'w-3 h-3 md:w-3.5 md:h-3.5 text-[#263D32] shrink-0',
   };
   switch (category) {
     case 'wifi':
@@ -77,91 +80,77 @@ function MinimalAmenityIcon({ category }: { category: AmenityIconCategory }) {
   }
 }
 
-function getActualStartingRate(property: Record<string, any>): number | null {
-  const rooms = Array.isArray(property?.rooms)
-    ? property.rooms.filter((r: any) => r && r.active !== false)
-    : [];
-
-  const validRoomPrices = rooms
-    .map((r: any) => Number(r.base_price))
-    .filter((price: number) => Number.isFinite(price) && price > 0);
-
-  if (validRoomPrices.length > 0) {
-    return Math.min(...validRoomPrices);
-  }
-
-  const directPrice = Number(property?.base_price ?? property?.starting_price);
-  if (Number.isFinite(directPrice) && directPrice > 0) {
-    return directPrice;
-  }
-
-  return null;
-}
-
-function extractMealInfo(rawAmenities: unknown): string | null {
-  const normalized = normalizeAmenitiesList(rawAmenities);
-  const mealAmenity = normalized.find((a) => a.icon === 'meals');
-  return mealAmenity ? mealAmenity.label : null;
-}
-
 export interface HorizontalPropertyCardProps {
   property: Record<string, any>;
 }
 
 export function HorizontalPropertyCard({ property }: HorizontalPropertyCardProps) {
+  const router = useRouter();
+  const cardRef = useRef<HTMLElement>(null);
+  const ctaRef = useRef<HTMLButtonElement>(null);
+
   const [photoIndex, setPhotoIndex] = useState(0);
   const [isSaved, setIsSaved] = useState(false);
   const [heartPopKey, setHeartPopKey] = useState(0);
+  const [isQuickViewOpen, setIsQuickViewOpen] = useState(false);
+  const [quickViewOriginRect, setQuickViewOriginRect] = useState<BoundingBoxRect | null>(null);
 
   const photos = getPropertyPhotoList(property?.cover_photo, property?.photos);
   const totalPhotos = photos.length;
   const activePhoto = totalPhotos > 0 ? photos[photoIndex % totalPhotos] : null;
 
-  const startingRate = getActualStartingRate(property);
-  const amenities = normalizeAmenitiesList(property?.amenities);
-  const displayedAmenities = amenities.slice(0, 4);
-  const extraAmenitiesCount = Math.max(0, amenities.length - displayedAmenities.length);
+  const startingRate = getPropertyStartingRate(property);
+  const { desktopAmenities } = formatCardAmenities(
+    property?.amenities,
+    3,
+    3
+  );
+  const ratingSummary = computePropertyRatingSummary(property);
 
-  const mealInfo = extractMealInfo(property?.amenities);
   const propertyTypeLabel = formatPropertyTypeLabel(property?.property_type);
-  const isVerified =
-    property?.moderation_status === 'approved' || property?.published === true;
-  const isGuestFav = isPropertyGuestFavourite(property);
-  const isRequestBased =
-    !property?.booking_mode || property?.booking_mode === 'request_only';
 
-  const locationParts = [
-    property?.village,
-    property?.district,
-    property?.state,
-  ]
+  const locationParts = [property?.village, property?.district, property?.state]
     .map((p) => (typeof p === 'string' ? p.trim() : ''))
     .filter(Boolean);
   const locationText =
     locationParts.length > 0 ? locationParts.slice(0, 2).join(', ') : 'Jari, Kullu';
 
-  const itemId = String(property?.slug || property?.id || 'stay');
+  const propertySlug = String(property?.slug || property?.id || 'stay');
+  const propertyId = String(property?.id || property?.slug || 'stay');
+  const detailHref = `/stays/${propertySlug}`;
 
   useEffect(() => {
     const syncSaved = () => {
-      setIsSaved(isEcosystemItemSaved('stays', itemId));
+      setIsSaved(isEcosystemItemSaved('stays', propertySlug));
     };
     syncSaved();
     window.addEventListener(FAVOURITES_UPDATED_EVENT, syncSaved);
     return () => {
       window.removeEventListener(FAVOURITES_UPDATED_EVENT, syncSaved);
     };
-  }, [itemId]);
+  }, [propertySlug]);
+
+  const measureLiveCtaRect = useCallback((): BoundingBoxRect | null => {
+    if (!ctaRef.current) return quickViewOriginRect;
+    const r = ctaRef.current.getBoundingClientRect();
+    if (r.width === 0 && r.height === 0) return quickViewOriginRect;
+    return {
+      top: r.top,
+      left: r.left,
+      width: r.width,
+      height: r.height,
+    };
+  }, [quickViewOriginRect]);
 
   const handleToggleHeart = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     const result = toggleSavedEcosystemItem({
-      id: itemId,
+      id: propertySlug,
       category: 'stays',
       title: property?.name || 'Mountain Stay',
       subtitle: locationText,
-      href: `/stays/${property.slug}`,
+      href: detailHref,
       meta: startingRate ? `${formatINR(startingRate)} / night` : undefined,
     });
     setIsSaved(result.saved);
@@ -182,18 +171,54 @@ export function HorizontalPropertyCard({ property }: HorizontalPropertyCardProps
     setPhotoIndex((prev) => (prev + 1) % totalPhotos);
   };
 
+  const handleOpenQuickView = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const btn = ctaRef.current || e.currentTarget;
+    const rect = btn.getBoundingClientRect();
+    setQuickViewOriginRect({
+      top: rect.top,
+      left: rect.left,
+      width: rect.width,
+      height: rect.height,
+    });
+    setIsQuickViewOpen(true);
+  };
+
+  const handleCloseQuickView = useCallback(() => {
+    setIsQuickViewOpen(false);
+  }, []);
+
+  const handleCardSurfaceClick = (e: React.MouseEvent<HTMLElement>) => {
+    const target = e.target as HTMLElement | null;
+    if (!target) return;
+    if (target.closest('a, button, [role="dialog"]')) {
+      return;
+    }
+    router.push(detailHref);
+  };
+
+  const rawDescription =
+    typeof property?.description === 'string' ? property.description.trim() : '';
+
   return (
-    <div className="relative py-1">
+    <>
       <article
-        data-testid={`stays-result-card-${property.slug}`}
-        className="uk-tactile-card group relative z-10 bg-[#FFFDF9] rounded-[24px] border border-[#D9CCB8] hover:border-[#C55B23]/50 overflow-hidden flex flex-col lg:grid lg:grid-cols-[36%_42%_22%] lg:min-h-[268px] lg:max-h-[296px]"
+        ref={cardRef}
+        onClick={handleCardSurfaceClick}
+        data-testid={`stays-result-card-${propertySlug}`}
+        data-uk-property-card={propertySlug}
+        data-uk-property-id={propertyId}
+        className="uk-tactile-card group relative z-10 bg-[#FFFDF9] rounded-[20px] md:rounded-[24px] border border-[#D9CCB8] hover:border-[#C55B23]/45 p-3 sm:p-3.5 md:p-4 lg:p-5 flex flex-row items-stretch gap-3 sm:gap-3.5 md:grid md:grid-cols-[256px_1fr_204px] lg:grid-cols-[296px_1fr_224px] md:gap-5 lg:gap-6 cursor-pointer"
       >
         {/* ─────────────────────────────────────────────────────────────────────
-            LEFT — TACTILE HERO PHOTOGRAPHY DECK (36% on Desktop)
+            1. LEFT — PROPERTY PHOTOGRAPHY
+            • Mobile: Compact ~106px–118px wide rounded frame with bottom-left Guest favourite tag
+            • Desktop: Refined rounded 4:3 / 16:11 editorial frame with top-left Guest favourite tag
         ───────────────────────────────────────────────────────────────────── */}
-        <div className="relative w-full aspect-[16/11] sm:aspect-[16/9] lg:aspect-auto lg:h-full bg-[#263D32] overflow-hidden shrink-0">
+        <div className="relative w-[104px] sm:w-[118px] min-h-[116px] md:w-full md:h-[192px] lg:h-[204px] rounded-[14px] md:rounded-[16px] bg-[#263D32] overflow-hidden shrink-0 self-stretch md:self-center">
           <Link
-            href={`/stays/${property.slug}`}
+            href={detailHref}
             aria-label={`View ${property.name}`}
             className="relative block w-full h-full"
           >
@@ -202,53 +227,57 @@ export function HorizontalPropertyCard({ property }: HorizontalPropertyCardProps
                 src={activePhoto}
                 alt={`${property.name} — photo ${photoIndex + 1}`}
                 fill
-                sizes="(max-width: 768px) 100vw, (max-width: 1024px) 90vw, 420px"
-                transformWidth={720}
-                transformHeight={480}
-                className="object-cover transition-transform duration-700 ease-out group-hover:scale-[1.03]"
+                sizes="(max-width: 767px) 128px, (max-width: 1024px) 270px, 310px"
+                transformWidth={640}
+                transformHeight={440}
+                className="object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03]"
               />
             ) : (
-              <div className="absolute inset-0 bg-[#F5F0E6] flex flex-col items-center justify-center p-6 text-center text-[#263D32]">
-                <Building2 className="w-10 h-10 text-[#263D32]/40 mb-2" />
-                <span className="font-serif text-lg font-medium">{property.name}</span>
-                <span className="font-sans text-[11px] text-[#665E52] uppercase tracking-wider mt-1">
-                  {propertyTypeLabel}
+              <div className="absolute inset-0 bg-[#F5F0E6] flex flex-col items-center justify-center p-3 text-center text-[#263D32]">
+                <Building2 className="w-7 h-7 md:w-9 md:h-9 text-[#263D32]/40 mb-1" />
+                <span className="font-serif text-xs md:text-base font-medium line-clamp-1">
+                  {property.name}
                 </span>
               </div>
             )}
 
-            {/* Smooth Dark Bottom Gradient Overlay (for floating price pill & photo counter legibility) */}
+            {/* Subtle Top & Bottom Scrim for Badge & Heart Contrast */}
             <div
               aria-hidden="true"
-              className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/75 via-black/30 to-transparent"
+              className="pointer-events-none absolute inset-x-0 top-0 h-12 bg-gradient-to-b from-black/25 to-transparent"
+            />
+            <div
+              aria-hidden="true"
+              className="md:hidden pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-black/35 to-transparent"
             />
           </Link>
 
-          {/* Top-Left Floating Frosted-Glass Badge + Top-Right Liquid-Pop Heart Button (Video 00:02–00:06) */}
-          <div className="absolute top-3 inset-x-3 z-20 flex items-center justify-between gap-2 pointer-events-none">
-            <div className="flex items-center gap-1.5">
-              {isGuestFav ? (
-                <span className="pointer-events-auto inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#FFFDF9]/92 backdrop-blur-md border border-[#D9CCB8]/80 text-[#29251F] font-sans text-[11px] font-semibold shadow-sm">
-                  <Sparkles className="w-3 h-3 text-[#C55B23] shrink-0" />
-                  <span>Guest Favourite</span>
-                </span>
-              ) : (
-                <span className="pointer-events-auto inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#FFFDF9]/90 backdrop-blur-md border border-[#D9CCB8]/80 text-[#263D32] font-sans text-[11px] font-semibold shadow-sm">
-                  <span>{propertyTypeLabel}</span>
-                </span>
-              )}
+          {/* Homepage-Style "Guest favourite" Pill Badge */}
+          {ratingSummary.isGuestFavourite && (
+            <div
+              data-testid={`stays-card-guest-favourite-${propertySlug}`}
+              className="absolute bottom-1.5 left-1.5 md:bottom-auto md:top-2.5 md:left-2.5 z-20 pointer-events-none"
+            >
+              <span className="inline-flex items-center px-2 py-0.5 md:px-2.5 md:py-1 rounded-full bg-[#1A2B23]/65 backdrop-blur-md border border-[#FFFDF9]/25 text-[#FFF8EC] text-[9.5px] md:text-[11px] font-semibold tracking-wide shadow-[0_2px_10px_rgba(0,0,0,0.22)]">
+                Guest favourite
+              </span>
             </div>
+          )}
 
-            <button
-              key={heartPopKey}
-              type="button"
-              data-testid={`stays-card-favourite-button-${property.slug}`}
-              onClick={handleToggleHeart}
-              aria-label={
-                isSaved ? `Remove ${property.name} from saved stays` : `Save ${property.name}`
-              }
-              aria-pressed={isSaved}
-              className={`pointer-events-auto w-10 h-10 rounded-full backdrop-blur-md border flex items-center justify-center shadow-md transition-colors duration-200 cursor-pointer ${
+          {/* Favourite Button — Accessible Touch Target */}
+          <button
+            key={heartPopKey}
+            type="button"
+            data-testid={`stays-card-favourite-button-${propertySlug}`}
+            onClick={handleToggleHeart}
+            aria-label={
+              isSaved ? `Remove ${property.name} from saved stays` : `Save ${property.name}`
+            }
+            aria-pressed={isSaved}
+            className="absolute top-0.5 right-0.5 md:top-1.5 md:right-1.5 z-20 w-10 h-10 md:w-11 md:h-11 flex items-center justify-center cursor-pointer focus:outline-none"
+          >
+            <span
+              className={`w-7 h-7 md:w-8 md:h-8 rounded-full backdrop-blur-md border flex items-center justify-center shadow-xs transition-colors duration-200 ${
                 heartPopKey > 0 ? 'animate-uk-heart-pop' : ''
               } ${
                 isSaved
@@ -257,198 +286,184 @@ export function HorizontalPropertyCard({ property }: HorizontalPropertyCardProps
               }`}
             >
               <Heart
-                className={`w-4 h-4 transition-transform ${
+                className={`w-3.5 h-3.5 md:w-4 md:h-4 transition-transform ${
                   isSaved ? 'fill-[#FFFDF9] text-[#FFFDF9]' : 'text-[#FFFDF9]'
                 }`}
               />
-            </button>
-          </div>
+            </span>
+          </button>
 
-          {/* Subtle Image Navigation Arrows & Bottom Floating Dark-Glass Price + Photo Counter */}
+          {/* Subtle Desktop Image Navigation Arrows on Hover */}
           {totalPhotos > 1 && (
             <>
               <button
                 type="button"
                 onClick={handlePrevPhoto}
                 aria-label={`Previous photo of ${property.name}`}
-                className="absolute left-2.5 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-[#1A2B23]/65 hover:bg-[#1A2B23]/90 text-[#FFFDF9] border border-[#FFFDF9]/25 backdrop-blur-sm flex items-center justify-center opacity-85 hover:opacity-100 transition-all duration-200 cursor-pointer"
+                className="hidden md:flex absolute left-2 top-1/2 -translate-y-1/2 z-20 w-7 h-7 rounded-full bg-[#1A2B23]/65 hover:bg-[#1A2B23]/90 text-[#FFFDF9] border border-[#FFFDF9]/20 backdrop-blur-xs items-center justify-center opacity-0 group-hover:opacity-95 focus-visible:opacity-100 transition-opacity duration-200 cursor-pointer"
               >
-                <ChevronLeft className="w-4 h-4" />
+                <ChevronLeft className="w-3.5 h-3.5" />
               </button>
 
               <button
                 type="button"
                 onClick={handleNextPhoto}
                 aria-label={`Next photo of ${property.name}`}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-[#1A2B23]/65 hover:bg-[#1A2B23]/90 text-[#FFFDF9] border border-[#FFFDF9]/25 backdrop-blur-sm flex items-center justify-center opacity-85 hover:opacity-100 transition-all duration-200 cursor-pointer"
+                className="hidden md:flex absolute right-2 top-1/2 -translate-y-1/2 z-20 w-7 h-7 rounded-full bg-[#1A2B23]/65 hover:bg-[#1A2B23]/90 text-[#FFFDF9] border border-[#FFFDF9]/20 backdrop-blur-xs items-center justify-center opacity-0 group-hover:opacity-95 focus-visible:opacity-100 transition-opacity duration-200 cursor-pointer"
               >
-                <ChevronRight className="w-4 h-4" />
+                <ChevronRight className="w-3.5 h-3.5" />
               </button>
             </>
           )}
-
-          <div className="pointer-events-none absolute bottom-3 inset-x-3 z-20 flex items-center justify-between gap-2">
-            {/* Floating Dark-Glass Tariff Pill on Photo (Video 00:02–00:06) */}
-            {startingRate !== null && (
-              <div className="px-3 py-1 rounded-xl bg-[#18261F]/80 backdrop-blur-md border border-white/15 text-[#FFFDF9] font-sans text-xs font-bold tabular-nums shadow-sm">
-                {formatINR(startingRate)}
-                <span className="font-normal text-[10.5px] text-[#FAF4E8]/85"> / night</span>
-              </div>
-            )}
-
-            {totalPhotos > 1 && (
-              <div
-                data-testid={`stays-card-photo-counter-${property.slug}`}
-                className="ml-auto px-2.5 py-0.5 rounded-full bg-[#1A2B23]/75 backdrop-blur-sm border border-[#FFFDF9]/20 font-sans text-[11px] font-medium text-[#FFFDF9] tabular-nums tracking-wide"
-              >
-                {photoIndex + 1} / {totalPhotos}
-              </div>
-            )}
-          </div>
         </div>
 
         {/* ─────────────────────────────────────────────────────────────────────
-            CENTRE (42% on Desktop) & RIGHT (22% on Desktop)
+            2 & 3. CENTRE (PROPERTY INFORMATION) & RIGHT (PRICING + QUICK VIEW)
+            • Mobile: Stacked compact column on right of image with full wrapping amenities and lower [Green Rate Badge | Eye Quick View Button] row
+            • Desktop (md:contents): Dissolves into Column 2 (Centre) and Column 3 (Right)
         ───────────────────────────────────────────────────────────────────── */}
-        <div className="flex flex-col md:grid md:grid-cols-[1fr_240px] lg:contents flex-1">
-          {/* CENTRE — PROPERTY INFORMATION (42% on Desktop) */}
-          <div className="p-5 sm:p-6 lg:px-6 lg:py-5 flex flex-col justify-between gap-3.5 min-w-0">
-            <div className="space-y-2.5">
-              {/* Property Type, Verification Indicator & Quick View */}
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="font-sans inline-flex items-center px-2.5 py-0.5 rounded-md bg-[#F5F0E6] border border-[#D9CCB8] text-[#263D32] text-[11px] font-semibold tracking-wide">
-                    {propertyTypeLabel}
-                  </span>
-                  {isGuestFav && (
+        <div className="flex-1 min-w-0 flex flex-col justify-between gap-2 md:contents">
+          {/* 2. CENTRE — PROPERTY INFORMATION */}
+          <div className="flex flex-col justify-between min-w-0 md:py-0.5">
+            <div className="space-y-0.5 md:space-y-1.5 min-w-0">
+              {/* Category Label ("Homestay") + Genuine Rating Indicator */}
+              <div className="flex items-center gap-1.5 text-[10px] md:text-[11px] font-sans font-semibold uppercase tracking-[0.1em] text-[#665E52]">
+                <span data-testid={`stays-card-category-${propertySlug}`} className="truncate">
+                  {propertyTypeLabel}
+                </span>
+                {ratingSummary.hasGenuineReviews && ratingSummary.averageRatingLabel && (
+                  <>
+                    <span aria-hidden="true" className="text-[#B8AC99]">
+                      &middot;
+                    </span>
                     <span
-                      data-testid={`stays-card-guest-favourite-${property.slug}`}
-                      className="font-sans inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-[#263D32]/10 border border-[#263D32]/25 text-[#263D32] text-[11px] font-semibold"
+                      data-testid={`stays-card-rating-${propertySlug}`}
+                      className="inline-flex items-center gap-0.5 text-[#29251F] font-semibold normal-case tracking-normal shrink-0"
                     >
                       <Star className="w-3 h-3 fill-[#C55B23] text-[#C55B23] shrink-0" />
-                      <span>5.0 &bull; Guest Favourite</span>
+                      <span>{ratingSummary.averageRatingLabel}</span>
                     </span>
-                  )}
-                  {isVerified && (
-                    <span className="font-sans inline-flex items-center gap-1 text-[11px] font-medium text-[#263D32]">
-                      <ShieldCheck className="w-3.5 h-3.5 text-[#C55B23] shrink-0" />
-                      <span>Verified Himalayan Host</span>
-                    </span>
-                  )}
-                </div>
-                <PropertyQuickViewButton property={property} variant="compact" />
+                  </>
+                )}
               </div>
 
-              {/* Property Name in Cormorant Garamond, Medium + Location with Minimal Map-Pin Icon */}
-              <div className="space-y-1">
-                <h3 className="font-serif font-medium text-2xl sm:text-[26px] text-[#263D32] group-hover:text-[#C55B23] transition-colors leading-[1.15] tracking-tight">
-                  <Link
-                    href={`/stays/${property.slug}`}
-                    className="hover:underline focus:outline-none"
-                  >
-                    {property.name}
-                  </Link>
-                </h3>
+              {/* Editorial Property Name in Cormorant Garamond */}
+              <h3 className="font-serif font-semibold text-[18px] sm:text-[20px] md:text-[26px] lg:text-[28px] text-[#29251F] group-hover:text-[#263D32] transition-colors leading-[1.15] tracking-tight line-clamp-1">
+                <Link
+                  href={detailHref}
+                  className="hover:underline focus:outline-none"
+                >
+                  {property.name}
+                </Link>
+              </h3>
 
-                <div className="flex items-center gap-1.5 font-sans text-xs font-medium text-[#665E52]">
-                  <MapPin
-                    strokeWidth={1.75}
-                    className="w-3.5 h-3.5 text-[#C55B23] shrink-0"
-                  />
-                  <span>{locationText}</span>
-                </div>
+              {/* Location with Small Map-Pin Icon & Manrope */}
+              <div className="flex items-center gap-1 font-sans text-[11.5px] md:text-[13px] font-medium text-[#5C5549] truncate">
+                <MapPin
+                  strokeWidth={1.75}
+                  className="w-3 h-3 md:w-3.5 md:h-3.5 text-[#C55B23] shrink-0"
+                />
+                <span className="truncate">{locationText}</span>
               </div>
 
-              {/* Short Property Description */}
-              {property.description && (
-                <p className="font-sans font-normal text-[13px] text-[#5C5549] line-clamp-2 leading-relaxed">
-                  {property.description}
+              {/* Desktop Only: Short 1–2 Line Property Description */}
+              {rawDescription.length > 0 && (
+                <p className="hidden md:block font-sans font-normal text-[13.5px] text-[#5C5549] md:line-clamp-2 leading-relaxed pt-0.5 max-w-[54ch]">
+                  {rawDescription}
                 </p>
               )}
             </div>
 
-            {/* 3–4 Important Amenities with Minimalist Icons */}
-            {displayedAmenities.length > 0 && (
-              <div className="pt-2.5 border-t border-[#E8DFD1] flex flex-wrap items-center gap-x-3.5 gap-y-1.5">
-                {displayedAmenities.map((amenity) => (
-                  <div
+            {/* Amenities:
+                • Mobile (< md): Compact icon-only circular badges (Meals, Mountain View, Hot Water, Wi-Fi, etc.) in a single row so the mobile card height stays compact and balanced
+                • Desktop (md+): Icon + text pills */}
+            {desktopAmenities.length > 0 && (
+              <div
+                data-testid={`stays-card-desktop-amenities-${propertySlug}`}
+                className="flex flex-wrap items-center gap-1.5 md:gap-2 pt-1 md:pt-2.5"
+              >
+                {desktopAmenities.map((amenity) => (
+                  <span
                     key={amenity.label}
-                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#F5F0E6]/70 border border-[#D9CCB8]/70 font-sans text-[11.5px] font-medium text-[#29251F]"
+                    title={amenity.label}
+                    aria-label={amenity.label}
+                    className="inline-flex items-center justify-center w-6 h-6 md:w-auto md:h-auto md:gap-1.5 md:px-3 md:py-1 rounded-full bg-[#F5F0E6] border border-[#E5DBC9]/80 md:border-transparent text-[#29251F] font-sans text-[12px] font-medium leading-snug shrink-0"
                   >
                     <MinimalAmenityIcon category={amenity.icon} />
-                    <span className="truncate max-w-[170px]">{amenity.label}</span>
-                  </div>
-                ))}
-                {extraAmenitiesCount > 0 && (
-                  <span className="font-sans text-[11px] font-semibold text-[#665E52]">
-                    +{extraAmenitiesCount} more
+                    <span className="sr-only md:not-sr-only">{amenity.label}</span>
                   </span>
-                )}
+                ))}
               </div>
             )}
           </div>
 
-          {/* RIGHT — PRICING & BOOKING (22% on Desktop) */}
-          <div className="bg-[#F5F0E6]/80 border-t md:border-t-0 md:border-l border-[#D9CCB8]/85 p-5 sm:p-6 lg:px-5 lg:py-5 flex flex-col justify-between gap-3.5">
-            <div className="space-y-2.5">
-              {/* Actual Starting Room Rate with Clear Pricing Basis */}
+          {/* 3. RIGHT (Desktop) / LOWER ROW (Mobile) — GREEN RATE BADGE AND IN-PAGE QUICK VIEW CTA */}
+          <div className="flex flex-row items-center justify-between gap-2 pt-2 border-t border-[#EAE2D3]/75 md:border-t-0 md:border-l md:border-[#E8DFD1]/85 md:pl-5 lg:pl-6 md:pt-1 md:pb-1 md:flex-col md:items-start md:justify-between">
+            {/* Pricing Block — Rate Highlighted in Forest Green Background */}
+            <div className="min-w-0">
               {startingRate !== null ? (
-                <div>
-                  <span className="font-sans block text-[10.5px] font-semibold uppercase tracking-[0.1em] text-[#665E52]">
-                    Starting from
+                <>
+                  <span className="hidden md:block font-sans text-[10.5px] font-semibold uppercase tracking-[0.11em] text-[#665E52]">
+                    STARTING FROM
                   </span>
-                  <div className="mt-0.5 flex items-baseline gap-1">
-                    <span className="font-sans text-2xl sm:text-[26px] font-semibold text-[#263D32] tabular-nums tracking-tight leading-none">
+                  <div
+                    data-testid={`stays-card-price-badge-${propertySlug}`}
+                    className="inline-flex items-baseline gap-1 md:gap-1.5 px-2.5 py-1 md:px-3.5 md:py-1.5 md:mt-1.5 rounded-lg md:rounded-xl bg-[#263D32] text-[#FFFDF9] shadow-[0_3px_10px_rgba(38,61,50,0.16)]"
+                  >
+                    <span className="font-sans text-[14px] sm:text-[15.5px] md:text-[22px] lg:text-[24px] font-bold text-[#FFFDF9] tabular-nums tracking-tight leading-none">
                       {formatINR(startingRate)}
                     </span>
-                    <span className="font-sans text-xs font-normal text-[#665E52]">
+                    <span className="font-sans text-[10.5px] md:text-[11.5px] font-medium text-[#FAF4E8]/90 whitespace-nowrap">
                       / night
                     </span>
                   </div>
-                  <span className="font-sans block text-[11px] font-normal text-[#665E52] mt-1">
-                    Per room &bull; 100% direct to host
+                  <span className="hidden md:block font-sans text-[12px] font-medium text-[#5C5549] mt-1.5">
+                    Per room &middot; Direct host payment
                   </span>
-                </div>
+                </>
               ) : (
-                <div>
-                  <span className="font-sans block text-[10.5px] font-semibold uppercase tracking-[0.1em] text-[#665E52]">
-                    Tariff &amp; Availability
+                <>
+                  <span className="hidden md:block font-sans text-[10.5px] font-semibold uppercase tracking-[0.11em] text-[#665E52]">
+                    STARTING FROM
                   </span>
-                  <p className="font-sans text-sm font-semibold text-[#263D32] mt-1">
-                    Contact host for rates
-                  </p>
-                </div>
-              )}
-
-              {/* Relevant Meal Information, where available */}
-              {mealInfo && (
-                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[#FFFDF9] border border-[#D9CCB8]/90 text-[#263D32] font-sans text-[11px] font-medium">
-                  <Utensils className="w-3 h-3 text-[#C55B23] shrink-0" />
-                  <span className="line-clamp-1">{mealInfo}</span>
-                </div>
+                  <span className="inline-flex items-center px-3 py-1 rounded-lg bg-[#263D32] text-[#FFFDF9] font-sans text-xs font-semibold md:mt-1.5">
+                    Rates on request
+                  </span>
+                </>
               )}
             </div>
 
-            {/* Request-Based Booking Indicator & Prominent "View Stay" CTA */}
-            <div className="space-y-2.5">
-              {isRequestBased && (
-                <div className="flex items-center gap-1.5 font-sans text-[11px] font-medium text-[#665E52]">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#C55B23] shrink-0" />
-                  <span>Request-based booking</span>
-                </div>
-              )}
-
-              <Link
-                href={`/stays/${property.slug}`}
-                className="font-sans w-full min-h-[44px] inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-full bg-[#263D32] hover:bg-[#C55B23] text-[#FFFDF9] font-semibold text-xs sm:text-[13px] tracking-wide transition-colors duration-200 shadow-xs"
-              >
-                <span>View Stay</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </Link>
-            </div>
+            {/* In-Page Quick View CTA:
+                • Mobile (< md): Compact circular Eye-icon-only button so it never overlaps any element on any phone width
+                • Desktop (md+): Full editorial Eye icon + "Quick View" pill button below the rate */}
+            <button
+              ref={ctaRef}
+              type="button"
+              onClick={handleOpenQuickView}
+              data-testid={`quick-view-trigger-${propertySlug}`}
+              data-uk-quick-view-cta={propertySlug}
+              data-uk-quick-view-cta-id={propertyId}
+              title={`Quick View ${property.name}`}
+              aria-label={`Quick View ${property.name}`}
+              aria-haspopup="dialog"
+              aria-expanded={isQuickViewOpen}
+              className="group/qv font-sans w-9 h-9 md:w-full md:h-auto md:min-h-[44px] inline-flex items-center justify-center md:gap-2 p-0 md:px-4 md:py-2.5 rounded-full bg-[#F5F0E6] hover:bg-[#263D32] text-[#263D32] hover:text-[#FFFDF9] border border-[#263D32]/30 hover:border-[#263D32] focus:outline-none font-semibold text-[12px] md:text-[13px] tracking-wide transition-colors duration-200 shrink-0 whitespace-nowrap cursor-pointer"
+            >
+              <Eye className="w-4 h-4 md:w-3.5 md:h-3.5 text-[#C55B23] group-hover/qv:text-[#FFFDF9] transition-colors shrink-0" />
+              <span className="hidden md:inline">Quick View</span>
+            </button>
           </div>
         </div>
       </article>
-    </div>
+
+      {/* In-Page Animated Quick View Modal — Expands smoothly from & Collapses smoothly back into the Quick View CTA */}
+      <PropertyQuickViewModal
+        property={property}
+        isOpen={isQuickViewOpen}
+        originRect={quickViewOriginRect}
+        getOriginRect={measureLiveCtaRect}
+        onClose={handleCloseQuickView}
+      />
+    </>
   );
 }

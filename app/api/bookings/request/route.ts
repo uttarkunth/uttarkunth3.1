@@ -97,18 +97,12 @@ export async function POST(req: NextRequest) {
     );
 
     if (Array.isArray(publicOccupancy) && publicOccupancy.length > 0) {
-      const rpcConflict =
-        findRoomOccupancyConflict({
-          checkIn: check_in,
-          checkOut: check_out,
-          occupancy: publicOccupancy,
-          roomUnitId: room_unit_id,
-        }) ||
-        findRoomOccupancyConflict({
-          checkIn: check_in,
-          checkOut: check_out,
-          occupancy: publicOccupancy,
-        });
+      const rpcConflict = findRoomOccupancyConflict({
+        checkIn: check_in,
+        checkOut: check_out,
+        occupancy: publicOccupancy,
+        roomUnitId: room_unit_id,
+      });
       if (rpcConflict) {
         return NextResponse.json(
           {

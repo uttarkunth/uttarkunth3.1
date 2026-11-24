@@ -76,13 +76,6 @@ const ARROW_NAV_ITEMS = [
     iconColor: 'text-terracotta',
     match: (p: string) => p === '/about',
   },
-  {
-    label: 'Seller Dashboard',
-    href: '/seller/dashboard',
-    icon: ShoppingBag,
-    iconColor: 'text-terracotta',
-    match: (p: string) => p.startsWith('/seller'),
-  },
 ];
 
 function renderProfileMenuIcon(iconName: ProfileMenuIconName) {

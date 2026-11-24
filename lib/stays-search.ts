@@ -955,8 +955,10 @@ export function findRoomOccupancyConflict(params: {
   const roomBlocks = occupancy
     .filter((o) => {
       if (!o || !o.start_date || !o.end_date) return false;
-      if (filterBySpecificRoom && o.room_unit_id && o.room_unit_id !== roomUnitId) {
-        return false;
+      if (filterBySpecificRoom) {
+        if (!o.room_unit_id || String(o.room_unit_id) !== String(roomUnitId)) {
+          return false;
+        }
       }
       return true;
     })

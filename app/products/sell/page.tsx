@@ -23,17 +23,6 @@ export default function SellProductsPage() {
         <p className="font-sans font-normal text-sm sm:text-base text-charcoal-muted max-w-xl mx-auto">
           We invite mountain weavers, beekeepers, herbalists, and local food makers to connect with conscious customers across India.
         </p>
-        <div className="pt-2 flex flex-wrap items-center justify-center gap-3">
-          <Link
-            href="/seller/dashboard"
-            data-testid="sell-page-open-seller-dashboard"
-            className="font-sans inline-flex items-center gap-2 rounded-xl bg-forest px-5 py-3 text-xs sm:text-sm font-semibold text-ivory shadow-sm hover:bg-ukorange transition-colors"
-          >
-            <Store className="w-4 h-4 text-ukorange" />
-            <span>Open Seller Dashboard (Manage Inventory &amp; Active Sales)</span>
-            <ArrowRight className="w-4 h-4" />
-          </Link>
-        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

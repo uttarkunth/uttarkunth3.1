@@ -101,7 +101,7 @@ export function formatPropertyTypeLabel(rawType?: string | null): string {
   const cleaned = (rawType || '').toLowerCase().trim();
   switch (cleaned) {
     case 'homestay':
-      return 'Traditional Homestay';
+      return 'Homestay';
     case 'estate':
       return 'Heritage Estate';
     case 'cottage':
@@ -111,7 +111,7 @@ export function formatPropertyTypeLabel(rawType?: string | null): string {
     case 'retreat':
       return 'Mountain Retreat';
     default:
-      return 'Himalayan Homestay';
+      return 'Homestay';
   }
 }
 

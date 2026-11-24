@@ -29,13 +29,6 @@ export function TreasuresOfHimalayasShowcase({
 
         <div className="flex flex-wrap items-center gap-3 shrink-0">
           <Link
-            href="/seller/dashboard"
-            data-testid="home-featured-seller-dashboard-link"
-            className="font-sans text-xs sm:text-sm font-semibold text-[#C55B23] hover:text-[#1F332A] transition-colors no-underline"
-          >
-            Seller Dashboard &rarr;
-          </Link>
-          <Link
             href="/products"
             className="font-sans text-xs sm:text-sm font-semibold text-[#1F332A] hover:text-[#C55B23] transition-colors no-underline"
           >
@@ -81,19 +74,13 @@ export function TreasuresOfHimalayasShowcase({
 
         <div className="flex flex-wrap items-center gap-3 shrink-0">
           <Link
-            href="/seller/dashboard"
-            data-testid="home-seller-dashboard-cta"
+            href="/products/sell"
+            data-testid="home-sell-your-products-cta"
             className="inline-flex items-center gap-2 px-5 py-3 rounded-full bg-[#C55B23] hover:bg-[#AD4D1B] text-[#FFFDF9] font-sans text-xs font-semibold uppercase tracking-wider transition-colors shadow-sm no-underline"
           >
             <Store className="w-4 h-4" />
-            <span>Seller Dashboard</span>
-            <ArrowRight className="w-3.5 h-3.5" />
-          </Link>
-          <Link
-            href="/products/sell"
-            className="inline-flex items-center gap-1.5 px-4 py-3 rounded-full bg-white/10 hover:bg-white/20 text-[#FFFDF9] border border-white/20 font-sans text-xs font-semibold transition-colors no-underline"
-          >
             <span>Sell Your Products</span>
+            <ArrowRight className="w-3.5 h-3.5" />
           </Link>
           <Link
             href="/products"
