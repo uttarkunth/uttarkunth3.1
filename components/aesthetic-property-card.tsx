@@ -54,7 +54,7 @@ export function AestheticPropertyCard({ property }: { property: AestheticPropert
   }, [property.id, property.slug]);
 
   return (
-    <div className="group bg-white rounded-3xl overflow-hidden border border-forest/15 hover:border-forest/40 shadow-soft hover:shadow-2xl transition-all duration-500 flex flex-col justify-between">
+    <div className="uk-tactile-card group bg-white rounded-3xl overflow-hidden border border-forest/15 hover:border-terracotta/45 flex flex-col justify-between">
       
       {/* Photo Scrubber Container */}
       <div 

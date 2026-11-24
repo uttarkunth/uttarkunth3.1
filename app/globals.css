@@ -875,26 +875,28 @@ html[data-uk-intro-gate="completed"] [data-uk-site-shell] {
 }
 
 .uk-tactile-card {
+  box-shadow:
+    0 4px 14px -3px rgba(24, 38, 31, 0.07),
+    0 2px 6px -2px rgba(24, 38, 31, 0.04);
   transition:
     transform 320ms cubic-bezier(0.22, 1, 0.36, 1),
     box-shadow 320ms cubic-bezier(0.22, 1, 0.36, 1),
-    border-color 240ms cubic-bezier(0.22, 1, 0.36, 1);
+    border-color 260ms cubic-bezier(0.22, 1, 0.36, 1);
   will-change: transform, box-shadow;
 }
 
 .uk-tactile-card:hover {
-  transform: translate3d(0, -3px, 0);
+  transform: translate3d(0, -4px, 0);
   box-shadow:
-    0 20px 42px -12px rgba(24, 38, 31, 0.18),
-    0 6px 16px -4px rgba(197, 91, 35, 0.10);
+    0 14px 28px -8px rgba(24, 38, 31, 0.14),
+    0 6px 14px -4px rgba(24, 38, 31, 0.07);
 }
 
 .uk-tactile-card:active {
-  transform: translate3d(0, -1px, 0) scale(0.992);
+  transform: translate3d(0, -1px, 0) scale(0.995);
 }
 
-/* Global sitewide tactile upgrade for cards, articles, and interactive pills */
-main article,
+/* Editorial card subtle hover transition (excludes 3D portrait carousel cards) */
 main .editorial-card,
 main .lantern-card {
   transition:
@@ -903,9 +905,6 @@ main .lantern-card {
     border-color 240ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-main article:hover,
 main .editorial-card:hover {
   transform: translate3d(0, -2px, 0);
 }
-
-

@@ -40,11 +40,11 @@ function StayRowCard({ property }: { property: any }) {
   return (
     <article
       data-testid={`featured-stay-card-${property.slug}`}
-      className="group w-[calc(50%-7px)] min-w-[154px] max-w-[200px] sm:w-[224px] sm:max-w-none md:w-[236px] lg:w-[246px] shrink-0 snap-start flex flex-col text-inherit select-none"
+      className="uk-tactile-card group w-[calc(50%-7px)] min-w-[154px] max-w-[200px] sm:w-[224px] sm:max-w-none md:w-[236px] lg:w-[246px] shrink-0 snap-start flex flex-col rounded-[20px] bg-[#FFFDF9]/95 border border-[#E5DEC9]/90 hover:border-[#C55B23]/45 overflow-hidden text-inherit select-none"
     >
-      {/* Square-ish Rounded Image Frame matching Reference UI */}
+      {/* Square-ish Rounded Image Frame seamlessly integrated into card top */}
       <div
-        className="relative aspect-[20/19] w-full rounded-[20px] overflow-hidden bg-[#1F332A] shadow-[0_6px_18px_rgba(24,36,29,0.09)] group-hover:shadow-[0_12px_26px_rgba(24,36,29,0.15)] transition-all duration-300"
+        className="relative aspect-[20/19] w-full overflow-hidden bg-[#1F332A]"
         onMouseLeave={() => setPhotoIndex(0)}
       >
         <Link
@@ -131,8 +131,8 @@ function StayRowCard({ property }: { property: any }) {
         </div>
       </div>
 
-      {/* Compact 2-Line Metadata Below Image (Matching Reference UI/UX) */}
-      <div className="pt-2.5 px-0.5 space-y-0.5">
+      {/* Clean Rounded Footer Metadata Inside Card */}
+      <div className="px-3.5 pt-2.5 pb-3 space-y-0.5 bg-[#FFFDF9]/95">
         <h3 className="font-sans text-[14.5px] sm:text-[15px] font-semibold text-[#1F332A] group-hover:text-[#C55B23] transition-colors leading-snug line-clamp-1">
           <Link href={`/stays/${property.slug}`} className="no-underline text-inherit">
             {property.name} in {locality}
@@ -162,9 +162,9 @@ function SeeAllStaysCard({ group }: { group: StayLocationGroup }) {
     <Link
       href={group.href}
       aria-label={`See all ${group.title}`}
-      className="group w-[calc(50%-7px)] min-w-[154px] max-w-[200px] sm:w-[224px] sm:max-w-none md:w-[236px] lg:w-[246px] shrink-0 snap-start flex flex-col cursor-pointer text-inherit no-underline select-none"
+      className="uk-tactile-card group w-[calc(50%-7px)] min-w-[154px] max-w-[200px] sm:w-[224px] sm:max-w-none md:w-[236px] lg:w-[246px] shrink-0 snap-start self-stretch flex flex-col rounded-[20px] bg-[#FAF6EE]/95 hover:bg-[#FFFDF9] border border-[#E5DEC9]/90 hover:border-[#C55B23]/45 overflow-hidden cursor-pointer text-inherit no-underline select-none"
     >
-      <div className="relative aspect-[20/19] w-full rounded-[20px] bg-[#FAF6EE]/95 group-hover:bg-[#FFFDF9] border border-[#E5DEC9] group-hover:border-[#C55B23]/45 shadow-[0_6px_18px_rgba(24,36,29,0.06)] group-hover:shadow-[0_12px_26px_rgba(24,36,29,0.12)] transition-all duration-300 flex flex-col items-center justify-center p-4">
+      <div className="relative flex-1 min-h-[190px] w-full flex flex-col items-center justify-center p-4">
         {/* 3-Photo Stacked Polaroid Collage matching Mobile & Desktop Reference */}
         <div className="relative w-28 h-24 sm:w-32 sm:h-28 flex items-center justify-center">
           {/* Back-Top Thumbnail */}
@@ -276,10 +276,10 @@ function LocationStaysRow({ group }: { group: StayLocationGroup }) {
         </div>
       </div>
 
-      {/* Horizontal Cards Track */}
+      {/* Horizontal Cards Track with top, bottom, and side breathing room so hover lift and shadow never clip */}
       <div
         ref={scrollRef}
-        className="flex items-start gap-3.5 sm:gap-5 overflow-x-auto snap-x snap-mandatory scroll-smooth scrollbar-none pb-1"
+        className="flex items-stretch gap-3.5 sm:gap-5 overflow-x-auto snap-x snap-mandatory scroll-smooth scrollbar-none pt-3 pb-5 px-2.5 -mx-2.5 -mt-1.5"
       >
         {group.properties.map((property: any) => (
           <StayRowCard key={property.id || property.slug} property={property} />

@@ -5,6 +5,7 @@ import { Footer } from '@/components/footer';
 import { MobileBottomNav } from '@/components/mobile-bottom-nav';
 import { BRAND } from '@/lib/constants';
 import { BrandIntroSplash } from '@/components/brand-intro-splash';
+import { CookieConsentBanner } from '@/components/cookie-consent-banner';
 
 export const metadata: Metadata = {
   title: `${BRAND.name} — Authentic Himalayan Homestays & Retreats`,
@@ -40,7 +41,7 @@ export default function RootLayout({
         </a>
         <script
           dangerouslySetInnerHTML={{
-            __html: `try{document.querySelectorAll('[fdprocessedid]').forEach(function(el){el.removeAttribute('fdprocessedid')});var p=new URLSearchParams(window.location.search);var skip=p.get('autostart')==='1'||(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches);var seen=sessionStorage.getItem('uk_splash_seen')==='1';document.documentElement.setAttribute('data-uk-intro-gate',(seen||skip)?'completed':'active');}catch(e){document.documentElement.setAttribute('data-uk-intro-gate','active');}`,
+            __html: `try{document.querySelectorAll('[fdprocessedid]').forEach(function(el){el.removeAttribute('fdprocessedid')});var p=new URLSearchParams(window.location.search);var skip=p.get('autostart')==='1'||(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches);var rawC=localStorage.getItem('uttarkunth_cookie_consent_v1');var funcOk=false;if(rawC){try{var pc=JSON.parse(rawC);funcOk=Boolean(pc&&pc.version==='2026.1'&&pc.categories&&pc.categories.functional===true);}catch(e){}}if(!funcOk){try{sessionStorage.removeItem('uk_splash_seen');sessionStorage.removeItem('uttarkunth_explore_spotlight_shown_v1');}catch(e){}}var seen=funcOk&&sessionStorage.getItem('uk_splash_seen')==='1';document.documentElement.setAttribute('data-uk-intro-gate',(seen||skip)?'completed':'active');}catch(e){document.documentElement.setAttribute('data-uk-intro-gate','active');}`,
           }}
         />
         <BrandIntroSplash />
@@ -51,9 +52,11 @@ export default function RootLayout({
           </main>
           <Footer />
           <MobileBottomNav />
+          <CookieConsentBanner />
         </div>
       </body>
     </html>
   );
 }
+
 

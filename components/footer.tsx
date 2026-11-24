@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { Logo } from './logo';
 import { BRAND, PILLARS } from '@/lib/constants';
 import { MapPin, Mail, ArrowUpRight } from 'lucide-react';
+import { CookiePreferencesTrigger } from './cookie-preferences-trigger';
 
 export function Footer() {
   return (
@@ -185,6 +186,18 @@ export function Footer() {
                 </Link>
               </li>
               <li>
+                <Link href="/cookie-policy" className="hover:text-terracotta transition-colors">
+                  Cookie Policy
+                </Link>
+              </li>
+              <li>
+                <CookiePreferencesTrigger
+                  label="Cookie Preferences"
+                  testId="footer-cookie-preferences-btn"
+                  className="hover:text-terracotta transition-colors text-left cursor-pointer"
+                />
+              </li>
+              <li>
                 <Link href="/terms" className="hover:text-terracotta transition-colors">
                   Terms &amp; Conditions
                 </Link>
@@ -213,6 +226,14 @@ export function Footer() {
             <Link href="/privacy" className="hover:text-warm-canvas transition-colors">
               Privacy
             </Link>
+            <Link href="/cookie-policy" className="hover:text-warm-canvas transition-colors">
+              Cookies
+            </Link>
+            <CookiePreferencesTrigger
+              label="Cookie Preferences"
+              testId="footer-bottom-cookie-preferences-btn"
+              className="hover:text-warm-canvas transition-colors cursor-pointer"
+            />
             <Link href="/terms" className="hover:text-warm-canvas transition-colors">
               Terms
             </Link>

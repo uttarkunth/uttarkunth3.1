@@ -16,6 +16,7 @@ import {
   EXPLORE_SPOTLIGHT_FADEOUT_MS,
   consumeExploreSpotlightSession,
 } from '@/lib/explore-spotlight';
+import { isFunctionalStorageAllowed } from '@/lib/cookie-consent';
 import {
   UnifiedHeroSearchBar,
   type StayPropertyItem,
@@ -132,6 +133,7 @@ export function FourPillarsShowcase({
   productions = [],
 }: FourPillarsShowcaseProps) {
   const [currentIndex, setCurrentIndex] = useState<number>(0);
+  const [prevActiveIndex, setPrevActiveIndex] = useState<number>(0);
   const [isBarInteracting, setIsBarInteracting] = useState<boolean>(false);
   const [spotlightPhase, setSpotlightPhase] = useState<SpotlightPhase>('idle');
   const hasShownInSessionRef = useRef<boolean>(false);
@@ -141,7 +143,13 @@ export function FourPillarsShowcase({
 
   const updateCarousel = useCallback(
     (targetIndex: number) => {
-      setCurrentIndex(((targetIndex % totalCards) + totalCards) % totalCards);
+      const normalized = ((targetIndex % totalCards) + totalCards) % totalCards;
+      setCurrentIndex((prev) => {
+        if (prev !== normalized) {
+          setPrevActiveIndex(prev);
+        }
+        return normalized;
+      });
     },
     [totalCards]
   );
@@ -192,7 +200,9 @@ export function FourPillarsShowcase({
       if (hasTriggeredMobileMountRef.current) return;
       hasTriggeredMobileMountRef.current = true;
       consumeExploreSpotlightSession(
-        typeof window !== 'undefined' ? window.sessionStorage : null,
+        typeof window !== 'undefined' && isFunctionalStorageAllowed()
+          ? window.sessionStorage
+          : null,
         hasShownInSessionRef
       );
       runCardAndBarTransition();
@@ -269,7 +279,9 @@ export function FourPillarsShowcase({
 
       // Only trigger the scale + light transition on the first tap per session
       const shouldRunSpotlight = consumeExploreSpotlightSession(
-        typeof window !== 'undefined' ? window.sessionStorage : null,
+        typeof window !== 'undefined' && isFunctionalStorageAllowed()
+          ? window.sessionStorage
+          : null,
         hasShownInSessionRef
       );
 
@@ -330,32 +342,83 @@ export function FourPillarsShowcase({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [currentIndex, isBarInteracting, updateCarousel]);
 
-  const touchStartXRef = useRef<number | null>(null);
-  const touchStartYRef = useRef<number | null>(null);
+  // Unified Finger Swipe (Touch) & Cursor Drag-Slide (Mouse Pointer) state
+  const gestureStartXRef = useRef<number | null>(null);
+  const gestureStartYRef = useRef<number | null>(null);
+  const isPointerDownRef = useRef<boolean>(false);
+  const didSwipeRef = useRef<boolean>(false);
+  const swipeCooldownTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
-    if (e.touches.length !== 1) return;
-    touchStartXRef.current = e.touches[0].clientX;
-    touchStartYRef.current = e.touches[0].clientY;
+  const markSwipeCompleted = () => {
+    didSwipeRef.current = true;
+    if (swipeCooldownTimerRef.current) {
+      clearTimeout(swipeCooldownTimerRef.current);
+    }
+    swipeCooldownTimerRef.current = setTimeout(() => {
+      didSwipeRef.current = false;
+    }, 260);
   };
 
-  const handleTouchEnd = (e: React.TouchEvent<HTMLDivElement>) => {
-    if (touchStartXRef.current === null || touchStartYRef.current === null) return;
-    const touchEndX = e.changedTouches[0]?.clientX ?? touchStartXRef.current;
-    const touchEndY = e.changedTouches[0]?.clientY ?? touchStartYRef.current;
-    const deltaX = touchEndX - touchStartXRef.current;
-    const deltaY = touchEndY - touchStartYRef.current;
-    touchStartXRef.current = null;
-    touchStartYRef.current = null;
-
-    // Trigger slide only on intentional horizontal swipe
-    if (Math.abs(deltaX) > 36 && Math.abs(deltaX) > Math.abs(deltaY) * 1.2) {
+  const evaluateHorizontalSwipe = (deltaX: number, deltaY: number): boolean => {
+    // Only trigger slide on an intentional horizontal swipe/drag (never on hover or stationary touch)
+    if (Math.abs(deltaX) >= 34 && Math.abs(deltaX) > Math.abs(deltaY) * 1.15) {
+      markSwipeCompleted();
       if (deltaX < 0) {
         updateCarousel(currentIndex + 1);
       } else {
         updateCarousel(currentIndex - 1);
       }
+      return true;
     }
+    return false;
+  };
+
+  const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (e.touches.length !== 1) return;
+    gestureStartXRef.current = e.touches[0].clientX;
+    gestureStartYRef.current = e.touches[0].clientY;
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (gestureStartXRef.current === null || gestureStartYRef.current === null) return;
+    const touchEndX = e.changedTouches[0]?.clientX ?? gestureStartXRef.current;
+    const touchEndY = e.changedTouches[0]?.clientY ?? gestureStartYRef.current;
+    const deltaX = touchEndX - gestureStartXRef.current;
+    const deltaY = touchEndY - gestureStartYRef.current;
+    gestureStartXRef.current = null;
+    gestureStartYRef.current = null;
+
+    evaluateHorizontalSwipe(deltaX, deltaY);
+  };
+
+  const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.button !== 0) return;
+    // Ignore drag start if user clicked directly on a navigation arrow button
+    const target = e.target as HTMLElement | null;
+    if (target?.closest?.('button[data-carousel-nav="true"]')) return;
+    isPointerDownRef.current = true;
+    gestureStartXRef.current = e.clientX;
+    gestureStartYRef.current = e.clientY;
+  };
+
+  const handleMouseUp = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!isPointerDownRef.current || gestureStartXRef.current === null || gestureStartYRef.current === null) {
+      isPointerDownRef.current = false;
+      return;
+    }
+    const deltaX = e.clientX - gestureStartXRef.current;
+    const deltaY = e.clientY - gestureStartYRef.current;
+    isPointerDownRef.current = false;
+    gestureStartXRef.current = null;
+    gestureStartYRef.current = null;
+
+    evaluateHorizontalSwipe(deltaX, deltaY);
+  };
+
+  const handleMouseLeave = () => {
+    isPointerDownRef.current = false;
+    gestureStartXRef.current = null;
+    gestureStartYRef.current = null;
   };
 
   const getCardState = (idx: number): CardPositionState => {
@@ -413,6 +476,9 @@ export function FourPillarsShowcase({
       <div
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
+        onMouseDown={handleMouseDown}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseLeave}
         className="order-2 relative z-20 w-full max-w-6xl mx-auto h-[272px] sm:h-[364px] flex items-center justify-center px-0 sm:px-4 touch-pan-y"
       >
         {/* Soft Unbounded Ambient Color Aura (Transitions smoothly with active card) */}
@@ -462,37 +528,50 @@ export function FourPillarsShowcase({
         <div
           className="relative w-full h-full flex items-center justify-center [perspective:1000px]"
         >
-          {/* Decorative Pillar Feather Icon Bloom Layer (z-[16]: behind active card z-20, above side cards z-10) */}
+          {/* Decorative Pillar Feather Icon Bloom Layer (z-[16]: behind active card z-20, above side cards z-10/z-[14]) */}
           <PillarFeatherBloom activePillar={activePillar} />
 
           {PILLARS_DATA.map((pillar, idx) => {
             const state = getCardState(idx);
             const isActive = state === 'active';
             const isSide = state === 'prev' || state === 'next';
+            const wasJustActive = !isActive && idx === prevActiveIndex;
             const isCardPeak = isActive && spotlightPhase === 'peak';
             const isCardSettling = isActive && spotlightPhase === 'settling';
 
-            // Continuous 3D ring transforms so cards orbit smoothly without jumping across the stage
+            // Layering ensures the newly selected active card (z-20) ALWAYS glides smoothly to the front
+            // above the outgoing card (z-[14]) and stationary side cards (z-10).
+            const sideZIndexClass = wasJustActive ? 'z-[14]' : 'z-10';
+
+            // Continuous 3D ring transforms so cards orbit smoothly to the front only when tapped or swiped
             const positionTransformClass =
               state === 'active'
                 ? isCardPeak
                   ? 'z-20 opacity-100 blur-0 brightness-[1.18] [transform:translate3d(0,0,0)_scale(1.06)] sm:[transform:translate3d(0,0,0)_scale(1.045)]'
                   : 'z-20 opacity-100 blur-0 brightness-100 [transform:translate3d(0,0,0)_scale(1)]'
                 : state === 'prev'
-                  ? 'z-10 opacity-65 sm:opacity-70 blur-[1px] sm:blur-[1.5px] [transform:translate3d(-144px,0,-110px)_scale(0.82)] sm:[transform:translate3d(-336px,0,-120px)_scale(0.82)] cursor-pointer'
+                  ? `${sideZIndexClass} opacity-65 sm:opacity-75 blur-[1px] sm:blur-[1.2px] [transform:translate3d(-144px,0,-110px)_scale(0.82)] sm:[transform:translate3d(-336px,0,-120px)_scale(0.82)] cursor-pointer`
                   : state === 'next'
-                    ? 'z-10 opacity-65 sm:opacity-70 blur-[1px] sm:blur-[1.5px] [transform:translate3d(144px,0,-110px)_scale(0.82)] sm:[transform:translate3d(336px,0,-120px)_scale(0.82)] cursor-pointer'
+                    ? `${sideZIndexClass} opacity-65 sm:opacity-75 blur-[1px] sm:blur-[1.2px] [transform:translate3d(144px,0,-110px)_scale(0.82)] sm:[transform:translate3d(336px,0,-120px)_scale(0.82)] cursor-pointer`
                     : 'z-0 opacity-0 blur-[6px] pointer-events-none [transform:translate3d(0,0,-220px)_scale(0.7)]';
 
             return (
               <article
                 key={pillar.id}
-                onClick={() => {
-                  if (isSide) updateCarousel(idx);
+                onClick={(e) => {
+                  if (didSwipeRef.current) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    return;
+                  }
+                  if (isSide) {
+                    updateCarousel(idx);
+                  }
                 }}
                 aria-hidden={!isActive}
                 data-carousel-nav={isSide ? 'true' : undefined}
-                data-testid={isActive ? 'active-pillar-carousel-card' : undefined}
+                data-carousel-state={state}
+                data-testid={isActive ? 'active-pillar-carousel-card' : `pillar-carousel-card-${pillar.id}`}
                 data-spotlight={isActive ? spotlightPhase : 'idle'}
                 className={cn(
                   'portrait-card absolute w-[212px] sm:w-[292px] h-[270px] sm:h-[352px] rounded-[20px] sm:rounded-[24px] overflow-hidden',
@@ -500,10 +579,10 @@ export function FourPillarsShowcase({
                   isCardPeak
                     ? 'duration-500 [transition-timing-function:cubic-bezier(0.22,1,0.36,1)] border border-[#FFFDF9]/90 shadow-[0_0_46px_rgba(255,253,249,0.52),0_0_24px_rgba(253,226,168,0.45),0_22px_46px_-8px_rgba(16,26,21,0.52)]'
                     : isCardSettling
-                      ? 'duration-[900ms] [transition-timing-function:cubic-bezier(0.22,1,0.36,1)] border border-[#F5F0E6]/35 shadow-[0_22px_46px_-8px_rgba(16,26,21,0.58)]'
+                      ? 'duration-[800ms] [transition-timing-function:cubic-bezier(0.22,1,0.36,1)] border border-[#F5F0E6]/35 shadow-[0_22px_46px_-8px_rgba(16,26,21,0.58)]'
                       : isActive
-                        ? 'duration-[820ms] [transition-timing-function:cubic-bezier(0.22,1,0.36,1)] border border-[#F5F0E6]/35 shadow-[0_22px_46px_-8px_rgba(16,26,21,0.58)]'
-                        : 'duration-[820ms] [transition-timing-function:cubic-bezier(0.22,1,0.36,1)] border border-[#D9CCB8]/40 shadow-[0_14px_30px_-6px_rgba(16,26,21,0.42)]',
+                        ? 'duration-[680ms] [transition-timing-function:cubic-bezier(0.22,1,0.36,1)] border border-[#F5F0E6]/35 shadow-[0_22px_46px_-8px_rgba(16,26,21,0.58)]'
+                        : 'duration-[680ms] [transition-timing-function:cubic-bezier(0.22,1,0.36,1)] border border-[#D9CCB8]/40 shadow-[0_14px_30px_-6px_rgba(16,26,21,0.42)]',
                   positionTransformClass
                 )}
               >
@@ -513,13 +592,14 @@ export function FourPillarsShowcase({
                   alt={pillar.imageAlt}
                   fill
                   sizes="340px"
-                  className="object-cover object-center"
+                  draggable={false}
+                  className="object-cover object-center pointer-events-none select-none"
                 />
 
                 {/* Smooth Aesthetic Himalayan Gradient Vignette Overlay */}
                 <div
                   aria-hidden="true"
-                  className="absolute inset-0 bg-gradient-to-b from-[#1A2B23]/30 via-[#1A2B23]/52 to-[#1A2B23]/93 z-10"
+                  className="absolute inset-0 bg-gradient-to-b from-[#1A2B23]/30 via-[#1A2B23]/52 to-[#1A2B23]/93 z-10 pointer-events-none"
                 />
 
                 {/* Soft Light Overlay (Lightens up and slowly fades out in sync with scaling back to exact position) */}
@@ -555,7 +635,7 @@ export function FourPillarsShowcase({
                   {/* Bottom Concise Balanced Action Buttons */}
                   <div
                     className={cn(
-                      'space-y-1.5 sm:space-y-2.5 transition-opacity duration-700 ease-out',
+                      'space-y-1.5 sm:space-y-2.5 transition-opacity duration-500 ease-out',
                       isActive ? 'opacity-100' : 'opacity-0 pointer-events-none'
                     )}
                   >
@@ -563,6 +643,13 @@ export function FourPillarsShowcase({
                       <Link
                         href={pillar.href}
                         tabIndex={isActive ? 0 : -1}
+                        draggable={false}
+                        onClick={(e) => {
+                          if (didSwipeRef.current) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                          }
+                        }}
                         onMouseMove={handleLanternMouseMove}
                         className="lantern-btn group flex-1 max-w-[96px] sm:max-w-[116px] bg-[#C85A23]/45 shadow-sm whitespace-nowrap"
                       >
@@ -575,6 +662,13 @@ export function FourPillarsShowcase({
                       <Link
                         href={pillar.secondaryHref}
                         tabIndex={isActive ? 0 : -1}
+                        draggable={false}
+                        onClick={(e) => {
+                          if (didSwipeRef.current) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                          }
+                        }}
                         onMouseMove={handleLanternMouseMove}
                         className="lantern-btn group flex-1 max-w-[96px] sm:max-w-[116px] bg-[#C85A23]/30 whitespace-nowrap"
                       >

@@ -183,16 +183,10 @@ export function HorizontalPropertyCard({ property }: HorizontalPropertyCardProps
   };
 
   return (
-    <div className="relative pt-1.5 pb-1">
-      {/* Subtle Layered Deck Stack Shadow Behind Active Card (Video 00:02–00:06 aesthetic) */}
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-x-4 -bottom-1.5 h-8 rounded-[24px] bg-[#E8DFD1]/75 border border-[#D9CCB8]/70 shadow-xs transition-transform duration-300"
-      />
-
+    <div className="relative py-1">
       <article
         data-testid={`stays-result-card-${property.slug}`}
-        className="uk-tactile-card group relative z-10 bg-[#FFFDF9] rounded-[24px] border border-[#D9CCB8] hover:border-[#C55B23]/60 overflow-hidden shadow-[0_14px_34px_-10px_rgba(24,38,31,0.14)] flex flex-col lg:grid lg:grid-cols-[36%_42%_22%] lg:min-h-[268px] lg:max-h-[296px]"
+        className="uk-tactile-card group relative z-10 bg-[#FFFDF9] rounded-[24px] border border-[#D9CCB8] hover:border-[#C55B23]/50 overflow-hidden flex flex-col lg:grid lg:grid-cols-[36%_42%_22%] lg:min-h-[268px] lg:max-h-[296px]"
       >
         {/* ─────────────────────────────────────────────────────────────────────
             LEFT — TACTILE HERO PHOTOGRAPHY DECK (36% on Desktop)

@@ -38,6 +38,7 @@ import {
 import type { Destination } from '@/lib/destinations';
 import { computeMobileSearchScrollTarget } from '@/lib/explore-spotlight';
 import { parseVoiceSearchCommand } from '@/lib/voice-search';
+import { isFunctionalStorageAllowed, CONSENT_UPDATED_EVENT } from '@/lib/cookie-consent';
 import {
   unifiedClientSearchHandler,
   segmentHighlightedText,
@@ -232,28 +233,39 @@ export function UnifiedHeroSearchBar({
     productions: [],
   });
 
-  // Load recent searches on mount
+  // Load recent searches on mount and react to consent updates
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    const loaded: Record<SearchableServiceType, RecentSearchEntry[]> = {
-      stays: [],
-      products: [],
-      productions: [],
-    };
-    (['stays', 'products', 'productions'] as SearchableServiceType[]).forEach((svc) => {
-      try {
-        const raw = window.localStorage.getItem(STORAGE_KEYS[svc]);
-        if (raw) {
-          const parsed = JSON.parse(raw);
-          if (Array.isArray(parsed)) {
-            loaded[svc] = parsed.slice(0, MAX_RECENT_ITEMS);
+
+    const syncRecentFromConsent = () => {
+      const loaded: Record<SearchableServiceType, RecentSearchEntry[]> = {
+        stays: [],
+        products: [],
+        productions: [],
+      };
+      if (isFunctionalStorageAllowed()) {
+        (['stays', 'products', 'productions'] as SearchableServiceType[]).forEach((svc) => {
+          try {
+            const raw = window.localStorage.getItem(STORAGE_KEYS[svc]);
+            if (raw) {
+              const parsed = JSON.parse(raw);
+              if (Array.isArray(parsed)) {
+                loaded[svc] = parsed.slice(0, MAX_RECENT_ITEMS);
+              }
+            }
+          } catch {
+            // Ignore storage errors
           }
-        }
-      } catch {
-        // Ignore storage errors
+        });
       }
-    });
-    setRecentByService(loaded);
+      setRecentByService(loaded);
+    };
+
+    syncRecentFromConsent();
+    window.addEventListener(CONSENT_UPDATED_EVENT, syncRecentFromConsent);
+    return () => {
+      window.removeEventListener(CONSENT_UPDATED_EVENT, syncRecentFromConsent);
+    };
   }, []);
 
   // Reset keyboard highlight & expand state when active carousel slide changes, while keeping the search handler open
@@ -348,7 +360,9 @@ export function UnifiedHeroSearchBar({
         };
         const updated = [nextEntry, ...deduped].slice(0, MAX_RECENT_ITEMS);
         try {
-          window.localStorage.setItem(STORAGE_KEYS[entry.service], JSON.stringify(updated));
+          if (isFunctionalStorageAllowed()) {
+            window.localStorage.setItem(STORAGE_KEYS[entry.service], JSON.stringify(updated));
+          }
         } catch {
           // Ignore storage quota errors
         }

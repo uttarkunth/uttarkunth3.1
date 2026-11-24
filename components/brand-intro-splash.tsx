@@ -2,6 +2,11 @@
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
+import {
+  CONSENT_UPDATED_EVENT,
+  CookieConsentRecord,
+  isFunctionalStorageAllowed,
+} from '@/lib/cookie-consent';
 
 interface BrandIntroSplashProps {
   forceShow?: boolean;
@@ -29,7 +34,9 @@ export function BrandIntroSplash({ forceShow = false }: BrandIntroSplashProps) {
     setClosing(true);
     document.documentElement.setAttribute('data-uk-intro-gate', 'revealing');
     try {
-      sessionStorage.setItem('uk_splash_seen', '1');
+      if (isFunctionalStorageAllowed()) {
+        sessionStorage.setItem('uk_splash_seen', '1');
+      }
     } catch {
       // Ignore storage errors
     }
@@ -45,10 +52,29 @@ export function BrandIntroSplash({ forceShow = false }: BrandIntroSplashProps) {
   }, []);
 
   useEffect(() => {
+    const handleConsentChange = (event: Event) => {
+      const custom = event as CustomEvent<CookieConsentRecord>;
+      try {
+        if (custom.detail?.categories?.functional && hasFinishedRef.current) {
+          sessionStorage.setItem('uk_splash_seen', '1');
+        }
+      } catch {
+        // Ignore storage errors
+      }
+    };
+    window.addEventListener(CONSENT_UPDATED_EVENT, handleConsentChange);
+    return () => {
+      window.removeEventListener(CONSENT_UPDATED_EVENT, handleConsentChange);
+    };
+  }, []);
+
+  useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const skipForAutostart = params.get('autostart') === '1';
     const alreadySeen =
-      typeof window !== 'undefined' && sessionStorage.getItem('uk_splash_seen') === '1';
+      typeof window !== 'undefined' &&
+      isFunctionalStorageAllowed() &&
+      sessionStorage.getItem('uk_splash_seen') === '1';
     const prefersReducedMotion =
       typeof window !== 'undefined' &&
       window.matchMedia('(prefers-reduced-motion: reduce)').matches;

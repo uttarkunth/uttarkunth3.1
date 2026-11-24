@@ -4,6 +4,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { BookingRequestSchema } from '@/lib/validations';
 import { calculateNights, validateStayDates, generateBookingReference } from '@/lib/booking-calculator';
+import { formatUnavailableDateMessage, findRoomOccupancyConflict } from '@/lib/stays-search';
 import { notifyHostNewBooking, sendNotification } from '@/lib/notifications';
 
 export const dynamic = 'force-dynamic';
@@ -85,9 +86,41 @@ export async function POST(req: NextRequest) {
       }, { status: 400 });
     }
 
-    // 6. Check for confirmed date conflicts in stay_bookings
-    // Per Uttarkunth architecture: Pending requests represent requests, NOT confirmed room blocks.
-    // Only confirmed bookings (and manual host availability blocks) prevent new booking requests.
+    // 6. Check public room occupancy RPC (SECURITY DEFINER — sees all confirmed bookings and host blocks regardless of RLS)
+    const { data: publicOccupancy } = await (supabase.rpc as any)(
+      'get_public_room_occupancy',
+      {
+        p_property_id: property_id,
+        p_from: check_in,
+        p_to: check_out,
+      }
+    );
+
+    if (Array.isArray(publicOccupancy) && publicOccupancy.length > 0) {
+      const rpcConflict =
+        findRoomOccupancyConflict({
+          checkIn: check_in,
+          checkOut: check_out,
+          occupancy: publicOccupancy,
+          roomUnitId: room_unit_id,
+        }) ||
+        findRoomOccupancyConflict({
+          checkIn: check_in,
+          checkOut: check_out,
+          occupancy: publicOccupancy,
+        });
+      if (rpcConflict) {
+        return NextResponse.json(
+          {
+            ok: false,
+            error: rpcConflict.message,
+          },
+          { status: 409 }
+        );
+      }
+    }
+
+    // 7. Check for confirmed date conflicts in stay_bookings
     const { data: conflictingBookings, error: conflictErr } = await supabase
       .from('stay_bookings')
       .select('id, check_in, check_out, status')
@@ -99,24 +132,34 @@ export async function POST(req: NextRequest) {
     if (conflictErr) {
       console.error('Conflict check error:', conflictErr);
     } else if (conflictingBookings && conflictingBookings.length > 0) {
+      const firstConflict = conflictingBookings[0];
+      const conflictDate =
+        firstConflict.check_in && firstConflict.check_in > check_in
+          ? firstConflict.check_in
+          : check_in;
       return NextResponse.json({
         ok: false,
-        error: 'The requested dates already have a confirmed reservation for this room.'
+        error: formatUnavailableDateMessage(conflictDate, 'booked')
       }, { status: 409 });
     }
 
-    // 7. Check availability blocks
-    const { data: blocks, error: blockErr } = await supabase
+    // 8. Check availability blocks
+    const { data: blocks } = await supabase
       .from('room_availability_blocks')
-      .select('id')
+      .select('id, blocked_from, blocked_until')
       .eq('room_unit_id', room_unit_id)
       .lt('blocked_from', check_out)
       .gt('blocked_until', check_in);
 
     if (blocks && blocks.length > 0) {
+      const firstBlock = blocks[0];
+      const conflictDate =
+        firstBlock.blocked_from && firstBlock.blocked_from > check_in
+          ? firstBlock.blocked_from
+          : check_in;
       return NextResponse.json({
         ok: false,
-        error: 'This room is blocked by the host for the selected dates.'
+        error: formatUnavailableDateMessage(conflictDate, 'blocked')
       }, { status: 409 });
     }
 

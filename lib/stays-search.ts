@@ -862,3 +862,144 @@ export function formatSearchCapsuleSummary(params: {
     fullText: `${whereText} · ${whenText} · ${whoText}`,
   };
 }
+
+const FULL_MONTH_NAMES = [
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
+];
+
+export interface RoomOccupancyInterval {
+  room_unit_id?: string;
+  start_date: string;
+  end_date: string;
+  kind: 'booking' | 'block' | 'booked' | 'blocked' | string;
+}
+
+export interface RoomOccupancyConflictResult {
+  conflictDateStr: string;
+  formattedDate: string;
+  status: 'booked' | 'blocked';
+  message: string;
+}
+
+/**
+ * Formats an ISO date string (YYYY-MM-DD) with the day and full month name, e.g. "25 November".
+ */
+export function formatDateWithMonthName(dateStr: string): string {
+  if (!dateStr) return '';
+  const trimmed = dateStr.trim();
+  const parts = trimmed.split('-').map(Number);
+  if (parts.length !== 3 || parts.some((n) => Number.isNaN(n))) {
+    return trimmed;
+  }
+  const [, month, day] = parts;
+  const monthName = FULL_MONTH_NAMES[month - 1];
+  if (!monthName || day < 1 || day > 31) {
+    return trimmed;
+  }
+  return `${day} ${monthName}`;
+}
+
+/**
+ * Generates the professional response when a user attempts to select or book a date that is booked or blocked:
+ * "The 25 November date you selected is booked. Please try different dates."
+ * or
+ * "The 25 November date you selected is blocked. Please try different dates."
+ * (or "The date you selected is booked. Please try different dates." when no date label is provided)
+ */
+export function formatUnavailableDateMessage(
+  dateStrOrLabel: string,
+  status: 'booked' | 'blocked'
+): string {
+  const formattedDate = /^\d{4}-\d{2}-\d{2}$/.test((dateStrOrLabel || '').trim())
+    ? formatDateWithMonthName(dateStrOrLabel)
+    : (dateStrOrLabel || '').trim();
+
+  const statusWord = status === 'booked' ? 'booked' : 'blocked';
+
+  if (!formattedDate) {
+    return `The date you selected is ${statusWord}. Please try different dates.`;
+  }
+
+  return `The ${formattedDate} date you selected is ${statusWord}. Please try different dates.`;
+}
+
+/**
+ * Checks whether a single date (checkIn without checkOut) or a stay range [checkIn, checkOut)
+ * conflicts with any booked or host-blocked interval for the selected room unit (or all rooms if roomUnitId is omitted or 'all').
+ * Returns the exact conflicting date formatted with its month name and the user-facing response message.
+ */
+export function findRoomOccupancyConflict(params: {
+  checkIn: string;
+  checkOut?: string;
+  occupancy: RoomOccupancyInterval[];
+  roomUnitId?: string;
+}): RoomOccupancyConflictResult | null {
+  const { checkIn, checkOut, occupancy, roomUnitId } = params;
+  if (!checkIn || !Array.isArray(occupancy) || occupancy.length === 0) {
+    return null;
+  }
+
+  const filterBySpecificRoom = Boolean(roomUnitId && roomUnitId !== 'all');
+
+  const roomBlocks = occupancy
+    .filter((o) => {
+      if (!o || !o.start_date || !o.end_date) return false;
+      if (filterBySpecificRoom && o.room_unit_id && o.room_unit_id !== roomUnitId) {
+        return false;
+      }
+      return true;
+    })
+    .sort((a, b) => a.start_date.localeCompare(b.start_date));
+
+  // Case 1: Single date check (no checkOut or checkOut <= checkIn)
+  if (!checkOut || checkOut <= checkIn) {
+    const match = roomBlocks.find(
+      (o) => checkIn >= o.start_date && checkIn < o.end_date
+    );
+    if (!match) return null;
+
+    const status: 'booked' | 'blocked' =
+      match.kind === 'booking' || match.kind === 'booked' ? 'booked' : 'blocked';
+    const formattedDate = formatDateWithMonthName(checkIn);
+    return {
+      conflictDateStr: checkIn,
+      formattedDate,
+      status,
+      message: formatUnavailableDateMessage(checkIn, status),
+    };
+  }
+
+  // Case 2: Date range [checkIn, checkOut)
+  const overlapping = roomBlocks.find(
+    (o) => checkIn < o.end_date && checkOut > o.start_date
+  );
+  if (!overlapping) return null;
+
+  // The first conflicting night inside the user's selected range [checkIn, checkOut)
+  const conflictDateStr =
+    overlapping.start_date > checkIn ? overlapping.start_date : checkIn;
+  const status: 'booked' | 'blocked' =
+    overlapping.kind === 'booking' || overlapping.kind === 'booked'
+      ? 'booked'
+      : 'blocked';
+  const formattedDate = formatDateWithMonthName(conflictDateStr);
+
+  return {
+    conflictDateStr,
+    formattedDate,
+    status,
+    message: formatUnavailableDateMessage(conflictDateStr, status),
+  };
+}
+

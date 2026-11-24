@@ -1,3 +1,5 @@
+import { isFunctionalStorageAllowed } from './cookie-consent';
+
 export type SavedItemCategory = 'stays' | 'products' | 'productions' | 'destinations';
 
 export interface SavedEcosystemItem {
@@ -46,26 +48,38 @@ export function toggleSavedItemInList(
   };
 }
 
+let memorySavedItems: SavedEcosystemItem[] = [];
+
 export function loadSavedItems(): SavedEcosystemItem[] {
   if (typeof window === 'undefined') return [];
+  if (!isFunctionalStorageAllowed()) {
+    return memorySavedItems;
+  }
   try {
     const raw = window.localStorage.getItem(FAVOURITES_STORAGE_KEY);
-    if (!raw) return [];
+    if (!raw) return memorySavedItems;
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed)) return [];
-    return parsed.filter(
+    const valid = parsed.filter(
       (item): item is SavedEcosystemItem =>
         Boolean(item && typeof item.id === 'string' && typeof item.title === 'string' && typeof item.href === 'string')
     );
+    memorySavedItems = valid;
+    return valid;
   } catch {
-    return [];
+    return memorySavedItems;
   }
 }
 
 export function persistSavedItems(items: SavedEcosystemItem[]): void {
   if (typeof window === 'undefined') return;
+  memorySavedItems = items;
   try {
-    window.localStorage.setItem(FAVOURITES_STORAGE_KEY, JSON.stringify(items));
+    if (isFunctionalStorageAllowed()) {
+      window.localStorage.setItem(FAVOURITES_STORAGE_KEY, JSON.stringify(items));
+    } else {
+      window.localStorage.removeItem(FAVOURITES_STORAGE_KEY);
+    }
     window.dispatchEvent(new CustomEvent(FAVOURITES_UPDATED_EVENT, { detail: items }));
   } catch {
     // Ignore storage quota errors
@@ -85,3 +99,4 @@ export function toggleSavedEcosystemItem(
   persistSavedItems(nextList);
   return { saved, items: nextList };
 }
+

@@ -15,6 +15,8 @@ import {
   handleCalendarDateClick,
   formatStayDateRangeSummary,
   formatShortStayDate,
+  formatUnavailableDateMessage,
+  findRoomOccupancyConflict,
   CalendarDayVisualState,
 } from '@/lib/stays-search';
 import { formatINR } from '@/lib/utils';
@@ -41,6 +43,7 @@ export interface RoomAvailabilityDatesPayload {
   roomId: string;
   checkIn: string;
   checkOut: string;
+  conflictMessage?: string | null;
 }
 
 export interface RoomOption {
@@ -79,7 +82,9 @@ export function RoomAvailabilityCalendar({
 }: RoomAvailabilityCalendarProps) {
   const todayStr = useMemo(() => new Date().toISOString().split('T')[0], []);
 
-  const [selectedRoomId, setSelectedRoomId] = useState<string>(rooms[0]?.id || '');
+  const [selectedRoomId, setSelectedRoomId] = useState<string>(
+    rooms.length > 1 ? 'all' : rooms[0]?.id || 'all'
+  );
   const [checkIn, setCheckIn] = useState<string>(initialCheckIn);
   const [checkOut, setCheckOut] = useState<string>(initialCheckOut);
   const [hoverDate, setHoverDate] = useState<string | null>(null);
@@ -136,10 +141,10 @@ export function RoomAvailabilityCalendar({
     async function fetchOccupancy() {
       setLoading(true);
       try {
-        const fromStr = new Date(Date.UTC(viewYear, viewMonth - 1, 1))
+        const fromStr = new Date(Date.UTC(viewYear, viewMonth - 2, 1))
           .toISOString()
           .split('T')[0];
-        const toStr = new Date(Date.UTC(viewYear, viewMonth + 3, 0))
+        const toStr = new Date(Date.UTC(viewYear, viewMonth + 6, 0))
           .toISOString()
           .split('T')[0];
         const res = await fetch(
@@ -161,30 +166,92 @@ export function RoomAvailabilityCalendar({
     }
   }, [propertyId, viewYear, viewMonth]);
 
+  useEffect(() => {
+    function handleWidgetDatesChanged(event: Event) {
+      const custom = event as CustomEvent<{
+        checkIn?: string;
+        checkOut?: string;
+        conflictDateStr?: string | null;
+        conflictMessage?: string | null;
+      }>;
+      if (!custom.detail) return;
+      if (typeof custom.detail.checkIn === 'string') {
+        setCheckIn(custom.detail.checkIn);
+      }
+      if (typeof custom.detail.checkOut === 'string') {
+        setCheckOut(custom.detail.checkOut);
+      }
+      if (custom.detail.conflictMessage) {
+        setInvalidTooltip({
+          dateStr: custom.detail.conflictDateStr || custom.detail.checkIn || '',
+          message: custom.detail.conflictMessage,
+        });
+      } else {
+        setInvalidTooltip(null);
+      }
+    }
+
+    window.addEventListener(
+      'uttarkunth:booking-widget-dates-changed',
+      handleWidgetDatesChanged
+    );
+    return () => {
+      window.removeEventListener(
+        'uttarkunth:booking-widget-dates-changed',
+        handleWidgetDatesChanged
+      );
+    };
+  }, []);
+
   const activeRoom = useMemo(
-    () => rooms.find((r) => r.id === selectedRoomId) || rooms[0],
+    () =>
+      selectedRoomId === 'all'
+        ? rooms[0]
+        : rooms.find((r) => r.id === selectedRoomId) || rooms[0],
     [rooms, selectedRoomId]
   );
 
   const broadcastSelection = useCallback(
-    (nextRoomId: string, nextCheckIn: string, nextCheckOut: string) => {
+    (
+      nextRoomId: string,
+      nextCheckIn: string,
+      nextCheckOut: string,
+      conflictMessage: string | null = null
+    ) => {
       if (typeof window === 'undefined') return;
       const payload: RoomAvailabilityDatesPayload = {
-        roomId: nextRoomId,
+        roomId: nextRoomId === 'all' ? rooms[0]?.id || '' : nextRoomId,
         checkIn: nextCheckIn,
         checkOut: nextCheckOut,
+        conflictMessage,
       };
       window.dispatchEvent(
         new CustomEvent(ROOM_AVAILABILITY_DATES_EVENT, { detail: payload })
       );
     },
-    []
+    [rooms]
   );
 
   const handleSelectRoom = (roomId: string) => {
     setSelectedRoomId(roomId);
+    if (checkIn) {
+      const conflict = findRoomOccupancyConflict({
+        checkIn,
+        checkOut,
+        occupancy,
+        roomUnitId: roomId,
+      });
+      if (conflict) {
+        setInvalidTooltip({
+          dateStr: conflict.conflictDateStr,
+          message: conflict.message,
+        });
+        broadcastSelection(roomId, checkIn, checkOut, conflict.message);
+        return;
+      }
+    }
     setInvalidTooltip(null);
-    broadcastSelection(roomId, checkIn, checkOut);
+    broadcastSelection(roomId, checkIn, checkOut, null);
   };
 
   const handlePrevMonth = () => {
@@ -211,7 +278,13 @@ export function RoomAvailabilityCalendar({
       dateStr: string
     ): { status: 'available' | 'booked' | 'blocked'; kind?: string } => {
       const match = occupancy.find((o) => {
-        if (selectedRoomId && o.room_unit_id !== selectedRoomId) return false;
+        if (
+          selectedRoomId &&
+          selectedRoomId !== 'all' &&
+          o.room_unit_id !== selectedRoomId
+        ) {
+          return false;
+        }
         return dateStr >= o.start_date && dateStr < o.end_date;
       });
 
@@ -229,18 +302,6 @@ export function RoomAvailabilityCalendar({
     [occupancy, selectedRoomId]
   );
 
-  const doesRangeOverlapOccupiedNight = useCallback(
-    (startStr: string, endStr: string): boolean => {
-      if (!startStr || !endStr || endStr <= startStr) return false;
-      return occupancy.some((o) => {
-        if (selectedRoomId && o.room_unit_id !== selectedRoomId) return false;
-        // Two [start, end) intervals overlap iff startStr < o.end_date && endStr > o.start_date
-        return startStr < o.end_date && endStr > o.start_date;
-      });
-    },
-    [occupancy, selectedRoomId]
-  );
-
   const dateSummary = useMemo(
     () => formatStayDateRangeSummary(checkIn, checkOut),
     [checkIn, checkOut]
@@ -249,18 +310,15 @@ export function RoomAvailabilityCalendar({
   const onDayClick = (dateStr: string) => {
     const occ = getDateOccupancyStatus(dateStr);
 
-    // If selecting check-in (or restarting a completed range), the check-in night itself cannot be occupied
-    if (!checkIn || (checkIn && checkOut)) {
-      if (occ.status !== 'available') {
-        setInvalidTooltip({
-          dateStr,
-          message:
-            occ.status === 'booked'
-              ? 'This night is already booked. Please choose an open check-in date.'
-              : 'This date is blocked by the host. Please choose an open check-in date.',
-        });
-        return;
-      }
+    // 1. Direct click on a booked or host-blocked date
+    if (occ.status !== 'available') {
+      const message = formatUnavailableDateMessage(dateStr, occ.status);
+      setInvalidTooltip({
+        dateStr,
+        message,
+      });
+      broadcastSelection(selectedRoomId, checkIn, checkOut, message);
+      return;
     }
 
     const outcome = handleCalendarDateClick(dateStr, todayStr, checkIn, checkOut);
@@ -272,25 +330,29 @@ export function RoomAvailabilityCalendar({
       return;
     }
 
-    // If completing a range, ensure no occupied nights sit inside [checkIn, checkOut)
-    if (
-      outcome.checkIn &&
-      outcome.checkOut &&
-      doesRangeOverlapOccupiedNight(outcome.checkIn, outcome.checkOut)
-    ) {
-      setInvalidTooltip({
-        dateStr,
-        message:
-          'Your selected stay range includes unavailable nights. Please choose open consecutive dates.',
+    // 2. If completing a range [checkIn, checkOut), check if any booked/blocked night sits inside the range
+    if (outcome.checkIn && outcome.checkOut) {
+      const conflict = findRoomOccupancyConflict({
+        checkIn: outcome.checkIn,
+        checkOut: outcome.checkOut,
+        occupancy,
+        roomUnitId: selectedRoomId,
       });
-      return;
+      if (conflict) {
+        setInvalidTooltip({
+          dateStr: conflict.conflictDateStr,
+          message: conflict.message,
+        });
+        broadcastSelection(selectedRoomId, checkIn, checkOut, conflict.message);
+        return;
+      }
     }
 
     setInvalidTooltip(null);
     setHoverDate(null);
     setCheckIn(outcome.checkIn);
     setCheckOut(outcome.checkOut);
-    broadcastSelection(selectedRoomId, outcome.checkIn, outcome.checkOut);
+    broadcastSelection(selectedRoomId, outcome.checkIn, outcome.checkOut, null);
   };
 
   const handleResetDates = () => {
@@ -363,6 +425,24 @@ export function RoomAvailabilityCalendar({
             Select Room Unit to View Schedule:
           </span>
           <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
+            <button
+              suppressHydrationWarning
+              type="button"
+              data-testid="room-availability-tab-all"
+              onClick={() => handleSelectRoom('all')}
+              className={`font-sans min-h-[44px] px-4 py-2 rounded-full text-xs font-semibold transition-all whitespace-nowrap inline-flex items-center gap-2 border cursor-pointer ${
+                selectedRoomId === 'all'
+                  ? 'bg-[#263D32] text-[#FFFDF9] border-[#263D32] shadow-xs animate-uk-pill-pop'
+                  : 'bg-[#FFFDF9] text-[#29251F] border-[#D9CCB8] hover:border-[#263D32]/60 hover:bg-[#F5F0E6]'
+              }`}
+            >
+              <BedDouble
+                className={`w-3.5 h-3.5 ${
+                  selectedRoomId === 'all' ? 'text-[#FDE2A8]' : 'text-[#C55B23]'
+                }`}
+              />
+              <span>All Rooms</span>
+            </button>
             {rooms.map((room) => {
               const isSelected = room.id === selectedRoomId;
               return (
@@ -405,9 +485,11 @@ export function RoomAvailabilityCalendar({
         <div className="p-3.5 bg-[#F5F0E6]/75 rounded-2xl border border-[#D9CCB8] flex flex-wrap items-center justify-between gap-3 text-xs">
           <div className="flex flex-wrap items-center gap-2.5">
             <strong className="text-[#263D32] font-serif text-base">
-              {activeRoom.room_name}
+              {selectedRoomId === 'all'
+                ? `${propertyName} — All Rooms Schedule`
+                : activeRoom.room_name}
             </strong>
-            {activeRoom.attached_washroom !== undefined && (
+            {selectedRoomId !== 'all' && activeRoom.attached_washroom !== undefined && (
               <span
                 className={`font-sans px-2.5 py-0.5 text-[10.5px] font-semibold rounded-md border ${
                   activeRoom.attached_washroom
@@ -418,11 +500,13 @@ export function RoomAvailabilityCalendar({
                 {activeRoom.attached_washroom ? 'Attached Washroom' : 'Shared Washroom'}
               </span>
             )}
-            {activeRoom.view_type && activeRoom.view_type !== 'none' && (
-              <span className="font-sans px-2.5 py-0.5 text-[10.5px] font-semibold bg-[#263D32]/10 text-[#263D32] border border-[#263D32]/20 rounded-md capitalize">
-                {activeRoom.view_type} View
-              </span>
-            )}
+            {selectedRoomId !== 'all' &&
+              activeRoom.view_type &&
+              activeRoom.view_type !== 'none' && (
+                <span className="font-sans px-2.5 py-0.5 text-[10.5px] font-semibold bg-[#263D32]/10 text-[#263D32] border border-[#263D32]/20 rounded-md capitalize">
+                  {activeRoom.view_type} View
+                </span>
+              )}
             {loading && (
               <span className="font-sans text-[10.5px] text-[#5C5549] animate-pulse">
                 Syncing live schedule…
@@ -594,13 +678,14 @@ export function RoomAvailabilityCalendar({
 
                     const isPast = state === 'past-disabled';
                     const occ = getDateOccupancyStatus(cell.dateStr);
-                    const isBooked = !isPast && occ.status === 'booked';
-                    const isBlocked = !isPast && occ.status === 'blocked';
+                    const isBooked = occ.status === 'booked';
+                    const isBlocked = occ.status === 'blocked';
+                    const isPastUnoccupied = isPast && !isBooked && !isBlocked;
                     const isInvalidClickedCell = invalidTooltip?.dateStr === cell.dateStr;
 
                     // Outer track background for continuous range strip without gaps
                     let trackBgClass = '';
-                    if (hasContinuousRange && !isPast) {
+                    if (hasContinuousRange && !isPastUnoccupied) {
                       if (state === 'check-in-start') {
                         const hasRightRange =
                           Boolean(checkOut && checkOut > checkIn) ||
@@ -638,18 +723,18 @@ export function RoomAvailabilityCalendar({
                     let buttonStyleClass =
                       'text-[#29251F] hover:bg-[#F5F0E6] hover:border hover:border-[#263D32]/40 rounded-full';
 
-                    if (isPast) {
+                    if (isBooked) {
+                      buttonStyleClass =
+                        'bg-[#FDF2F1] hover:bg-[#F9DEDC] text-[#8F281E] border border-[#E6B8B3] rounded-full cursor-pointer';
+                    } else if (isBlocked) {
+                      buttonStyleClass =
+                        'bg-[#FDF5EC] hover:bg-[#FAE8D4] text-[#8A4215] border border-[#E5C6A0] rounded-full cursor-pointer';
+                    } else if (isPastUnoccupied) {
                       buttonStyleClass =
                         'text-[#5C5549]/35 opacity-45 cursor-not-allowed rounded-full';
                     } else if (state === 'check-in-start' || state === 'check-out-end') {
                       buttonStyleClass =
                         'bg-[#263D32] text-[#FFFDF9] font-bold shadow-xs rounded-full ring-2 ring-[#263D32]/20';
-                    } else if (isBooked) {
-                      buttonStyleClass =
-                        'bg-[#FDF2F1] text-[#8F281E]/75 border border-[#E6B8B3] rounded-full cursor-not-allowed';
-                    } else if (isBlocked) {
-                      buttonStyleClass =
-                        'bg-[#FDF5EC] text-[#8A4215]/75 border border-[#E5C6A0] rounded-full cursor-not-allowed';
                     } else if (state === 'valid-preview-end') {
                       buttonStyleClass =
                         'bg-[#345244] text-[#FFFDF9] font-bold shadow-xs rounded-full';
@@ -670,16 +755,16 @@ export function RoomAvailabilityCalendar({
                         'text-[#263D32] font-bold border border-[#263D32] rounded-full hover:bg-[#E3ECE6]/60';
                     }
 
-                    const statusDotColor = isPast
+                    const statusDotColor = isBooked
+                      ? 'bg-[#C94A3E]'
+                      : isBlocked
+                      ? 'bg-[#D9822B]'
+                      : isPastUnoccupied
                       ? null
                       : state === 'check-in-start' ||
                         state === 'check-out-end' ||
                         state === 'valid-preview-end'
                       ? 'bg-[#FDE2A8]'
-                      : isBooked
-                      ? 'bg-[#C94A3E]'
-                      : isBlocked
-                      ? 'bg-[#D9822B]'
                       : 'bg-[#263D32]/65';
 
                     return (
@@ -690,17 +775,25 @@ export function RoomAvailabilityCalendar({
                         <button
                           suppressHydrationWarning
                           type="button"
-                          disabled={isPast}
+                          disabled={isPastUnoccupied}
                           data-testid={`room-calendar-day-${cell.dateStr}`}
                           data-state={state}
-                          data-occupancy={isPast ? 'past' : occ.status}
+                          data-occupancy={
+                            isBooked
+                              ? 'booked'
+                              : isBlocked
+                              ? 'blocked'
+                              : isPastUnoccupied
+                              ? 'past'
+                              : occ.status
+                          }
                           aria-label={`${cell.dateStr}${
-                            isPast
-                              ? ' (Past date)'
-                              : isBooked
+                            isBooked
                               ? ' (Booked)'
                               : isBlocked
                               ? ' (Host Block)'
+                              : isPastUnoccupied
+                              ? ' (Past date)'
                               : state === 'check-in-start'
                               ? ' (Check-in)'
                               : state === 'check-out-end'
@@ -711,10 +804,10 @@ export function RoomAvailabilityCalendar({
                             state === 'check-in-start' || state === 'check-out-end'
                           }
                           onMouseEnter={() => {
-                            if (!isPast) setHoverDate(cell.dateStr);
+                            if (!isPastUnoccupied) setHoverDate(cell.dateStr);
                           }}
                           onFocus={() => {
-                            if (!isPast) setHoverDate(cell.dateStr);
+                            if (!isPastUnoccupied) setHoverDate(cell.dateStr);
                           }}
                           onClick={() => onDayClick(cell.dateStr)}
                           className={`relative z-10 w-11 h-11 flex flex-col items-center justify-center font-sans text-xs sm:text-sm tabular-nums transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#263D32] ${buttonStyleClass} ${

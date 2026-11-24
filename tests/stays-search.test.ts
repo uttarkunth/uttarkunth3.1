@@ -12,6 +12,9 @@ import {
   filterStaysProperties,
   formatSearchCapsuleSummary,
   INVALID_CHECKOUT_TOOLTIP_MESSAGE,
+  formatDateWithMonthName,
+  formatUnavailableDateMessage,
+  findRoomOccupancyConflict,
 } from '../lib/stays-search';
 import { CURATED_DESTINATIONS } from '../lib/destinations';
 import { EXISTING_PROPERTIES } from '../lib/constants';
@@ -272,4 +275,82 @@ describe('Stays Search Redesign — WHERE, WHEN, WHO & Direct Amenity Chips', ()
       assert.ok(activeCapsule.fullText.endsWith('· 2 guests, 1 infant'));
     });
   });
+
+  describe('Live Room Availability — Booked & Host-Blocked Date Response Messages', () => {
+    it('formats date with full month name (e.g. "25 November") and returns professional booked/blocked message', () => {
+      assert.equal(formatDateWithMonthName('2026-11-25'), '25 November');
+      assert.equal(
+        formatUnavailableDateMessage('2026-11-25', 'booked'),
+        'The 25 November date you selected is booked. Please try different dates.'
+      );
+      assert.equal(
+        formatUnavailableDateMessage('2026-11-28', 'blocked'),
+        'The 28 November date you selected is blocked. Please try different dates.'
+      );
+      assert.equal(
+        formatUnavailableDateMessage('', 'booked'),
+        'The date you selected is booked. Please try different dates.'
+      );
+      assert.equal(
+        formatUnavailableDateMessage('', 'blocked'),
+        'The date you selected is blocked. Please try different dates.'
+      );
+    });
+
+    it('detects single-date and date-range overlaps with booked or blocked occupancy intervals', () => {
+      const occupancy = [
+        {
+          room_unit_id: 'room-1',
+          start_date: '2026-12-14',
+          end_date: '2026-12-16',
+          kind: 'booking' as const,
+        },
+        {
+          room_unit_id: 'room-1',
+          start_date: '2026-12-20',
+          end_date: '2026-12-22',
+          kind: 'block' as const,
+        },
+      ];
+
+      // Direct check-in on a booked date
+      const directBooked = findRoomOccupancyConflict({
+        checkIn: '2026-12-14',
+        checkOut: '',
+        occupancy,
+        roomUnitId: 'room-1',
+      });
+      assert.ok(directBooked);
+      assert.equal(directBooked.status, 'booked');
+      assert.equal(
+        directBooked.message,
+        'The 14 December date you selected is booked. Please try different dates.'
+      );
+
+      // Range overlapping a host-blocked date (Dec 19 -> Dec 23 overlaps Dec 20)
+      const rangeBlocked = findRoomOccupancyConflict({
+        checkIn: '2026-12-19',
+        checkOut: '2026-12-23',
+        occupancy,
+        roomUnitId: 'room-1',
+      });
+      assert.ok(rangeBlocked);
+      assert.equal(rangeBlocked.status, 'blocked');
+      assert.equal(rangeBlocked.conflictDateStr, '2026-12-20');
+      assert.equal(
+        rangeBlocked.message,
+        'The 20 December date you selected is blocked. Please try different dates.'
+      );
+
+      // Available range (Dec 16 checkout day of previous booking -> Dec 19) has no conflict
+      const availableRange = findRoomOccupancyConflict({
+        checkIn: '2026-12-16',
+        checkOut: '2026-12-19',
+        occupancy,
+        roomUnitId: 'room-1',
+      });
+      assert.equal(availableRange, null);
+    });
+  });
 });
+

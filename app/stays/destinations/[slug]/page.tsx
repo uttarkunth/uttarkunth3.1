@@ -172,7 +172,7 @@ export default async function DestinationDetailPage({ params }: DestinationPageP
                 return (
                   <div
                     key={property.id}
-                    className="bg-white rounded-3xl border border-forest/15 overflow-hidden shadow-soft hover:shadow-lifted transition-all flex flex-col group"
+                    className="uk-tactile-card bg-white rounded-3xl border border-forest/15 hover:border-terracotta/45 overflow-hidden flex flex-col group"
                   >
                     <div className="relative aspect-[3/2] w-full bg-forest-dark overflow-hidden">
                       {coverPhoto ? (
@@ -268,7 +268,7 @@ export default async function DestinationDetailPage({ params }: DestinationPageP
                   return (
                     <div
                       key={property.id}
-                      className="bg-white rounded-3xl border border-forest/15 overflow-hidden shadow-soft hover:shadow-lifted transition-all flex flex-col group"
+                      className="uk-tactile-card bg-white rounded-3xl border border-forest/15 hover:border-terracotta/45 overflow-hidden flex flex-col group"
                     >
                       <div className="relative aspect-[3/2] w-full bg-forest-dark overflow-hidden">
                         {coverPhoto ? (

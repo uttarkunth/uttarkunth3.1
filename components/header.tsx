@@ -18,6 +18,7 @@ import {
   getServerHeaderVisibilitySnapshot,
   syncHeaderVisibilityOnRouteChange,
 } from '@/lib/sticky-header-offset';
+import { isFunctionalStorageAllowed } from '@/lib/cookie-consent';
 import {
   ArrowUp,
   User,
@@ -126,7 +127,7 @@ export function Header() {
   const headerHidden = headerVisibility.headerHidden;
 
   const loadLocallyReadIds = useCallback((): string[] => {
-    if (typeof window === 'undefined') return [];
+    if (typeof window === 'undefined' || !isFunctionalStorageAllowed()) return [];
     try {
       const raw = window.localStorage.getItem(READ_NOTIFICATIONS_STORAGE_KEY);
       if (!raw) return [];
@@ -228,7 +229,9 @@ export function Header() {
       );
       setLocallyReadIds(allIds);
       try {
-        window.localStorage.setItem(READ_NOTIFICATIONS_STORAGE_KEY, JSON.stringify(allIds));
+        if (isFunctionalStorageAllowed()) {
+          window.localStorage.setItem(READ_NOTIFICATIONS_STORAGE_KEY, JSON.stringify(allIds));
+        }
       } catch {
         // Ignore storage errors
       }

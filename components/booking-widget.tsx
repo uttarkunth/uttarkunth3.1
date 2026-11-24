@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import { calculateNights, calculateBookingPrice, validateStayDates } from '@/lib/booking-calculator';
+import { findRoomOccupancyConflict, RoomOccupancyInterval } from '@/lib/stays-search';
 import { formatINR } from '@/lib/utils';
 import { Calendar, Users, ShieldCheck, Clock, CheckCircle2, AlertCircle, Sparkles, UserCheck } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
@@ -70,6 +71,26 @@ export function BookingWidget({
   const [guestPhone, setGuestPhone] = useState<string>(currentUser?.phone || '');
   const [isAutoFilled, setIsAutoFilled] = useState<boolean>(Boolean(currentUser?.email));
   const [specialRequests, setSpecialRequests] = useState<string>('');
+  const [occupancy, setOccupancy] = useState<RoomOccupancyInterval[]>([]);
+
+  useEffect(() => {
+    let active = true;
+    async function loadOccupancy() {
+      try {
+        const res = await fetch(`/api/stays/${propertyId}/occupancy`);
+        const data = await res.json();
+        if (active && data.ok && Array.isArray(data.occupancy)) {
+          setOccupancy(data.occupancy);
+        }
+      } catch {
+        // Non-blocking fallback
+      }
+    }
+    loadOccupancy();
+    return () => {
+      active = false;
+    };
+  }, [propertyId]);
 
   useEffect(() => {
     async function loadAuthProfile() {
@@ -96,22 +117,40 @@ export function BookingWidget({
     loadAuthProfile();
   }, []);
 
+  const [loading, setLoading] = useState<boolean>(false);
+  const [submittedBooking, setSubmittedBooking] = useState<{
+    reference: string;
+    total: number;
+    status: string;
+  } | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
   useEffect(() => {
     function handleCalendarDatesSelected(event: Event) {
       const custom = event as CustomEvent<{
         roomId?: string;
         checkIn?: string;
         checkOut?: string;
+        conflictMessage?: string | null;
       }>;
       if (!custom.detail) return;
       if (custom.detail.roomId) {
         setSelectedRoomId(custom.detail.roomId);
       }
-      if (typeof custom.detail.checkIn === 'string') {
+      if (typeof custom.detail.checkIn === 'string' && custom.detail.checkIn) {
         setCheckIn(custom.detail.checkIn);
+      } else if (custom.detail.checkIn === '' && !custom.detail.conflictMessage) {
+        setCheckIn('');
       }
-      if (typeof custom.detail.checkOut === 'string') {
+      if (typeof custom.detail.checkOut === 'string' && custom.detail.checkOut) {
         setCheckOut(custom.detail.checkOut);
+      } else if (custom.detail.checkOut === '' && !custom.detail.conflictMessage) {
+        setCheckOut('');
+      }
+      if (custom.detail.conflictMessage) {
+        setErrorMessage(custom.detail.conflictMessage);
+      } else if (custom.detail.checkIn || custom.detail.checkOut) {
+        setErrorMessage(null);
       }
     }
 
@@ -121,17 +160,99 @@ export function BookingWidget({
     };
   }, []);
 
-  const [loading, setLoading] = useState<boolean>(false);
-  const [submittedBooking, setSubmittedBooking] = useState<{
-    reference: string;
-    total: number;
-    status: string;
-  } | null>(null);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-
   const selectedRoom = useMemo(() => {
     return rooms.find(r => r.id === selectedRoomId) || rooms[0];
   }, [rooms, selectedRoomId]);
+
+  const checkDateOccupancyConflict = React.useCallback(
+    (nextCheckIn: string, nextCheckOut: string) => {
+      const primaryDate = nextCheckIn || nextCheckOut;
+      if (!primaryDate) return null;
+
+      // Check selected room first, then property-wide occupancy so any reserved or blocked date is caught
+      const roomConflict = findRoomOccupancyConflict({
+        checkIn: primaryDate,
+        checkOut: nextCheckIn ? nextCheckOut : undefined,
+        occupancy,
+        roomUnitId: selectedRoom?.id,
+      });
+      if (roomConflict) return roomConflict;
+
+      return findRoomOccupancyConflict({
+        checkIn: primaryDate,
+        checkOut: nextCheckIn ? nextCheckOut : undefined,
+        occupancy,
+      });
+    },
+    [occupancy, selectedRoom?.id]
+  );
+
+  // Re-validate whenever occupancy finishes loading if dates were already chosen
+  useEffect(() => {
+    if (!checkIn && !checkOut) return;
+    if (occupancy.length === 0) return;
+    const conflict = checkDateOccupancyConflict(checkIn, checkOut);
+    if (conflict) {
+      setErrorMessage(conflict.message);
+    }
+  }, [occupancy, checkIn, checkOut, checkDateOccupancyConflict]);
+
+  const syncDatesToCalendar = (
+    nextCheckIn: string,
+    nextCheckOut: string,
+    conflictDateStr: string | null,
+    conflictMessage: string | null
+  ) => {
+    if (typeof window === 'undefined') return;
+    window.dispatchEvent(
+      new CustomEvent('uttarkunth:booking-widget-dates-changed', {
+        detail: {
+          checkIn: nextCheckIn,
+          checkOut: nextCheckOut,
+          conflictDateStr,
+          conflictMessage,
+        },
+      })
+    );
+  };
+
+  const handleCheckInChange = (nextCheckIn: string) => {
+    setCheckIn(nextCheckIn);
+    if (!nextCheckIn && !checkOut) {
+      setErrorMessage(null);
+      syncDatesToCalendar('', '', null, null);
+      return;
+    }
+    const conflict = checkDateOccupancyConflict(nextCheckIn, checkOut);
+    const msg = conflict ? conflict.message : null;
+    setErrorMessage(msg);
+    syncDatesToCalendar(
+      nextCheckIn,
+      checkOut,
+      conflict ? conflict.conflictDateStr : null,
+      msg
+    );
+  };
+
+  const handleCheckOutChange = (nextCheckOut: string) => {
+    setCheckOut(nextCheckOut);
+    if (!checkIn && !nextCheckOut) {
+      setErrorMessage(null);
+      syncDatesToCalendar('', '', null, null);
+      return;
+    }
+    const conflict =
+      checkDateOccupancyConflict(checkIn, nextCheckOut) ||
+      (nextCheckOut ? checkDateOccupancyConflict(nextCheckOut, '') : null);
+    const msg = conflict ? conflict.message : null;
+    setErrorMessage(msg);
+    syncDatesToCalendar(
+      checkIn,
+      nextCheckOut,
+      conflict ? conflict.conflictDateStr : null,
+      msg
+    );
+  };
 
   const basePrice = Number(selectedRoom?.base_price || 0);
   const selectedRoomPhotos = getPropertyPhotoList(null, [
@@ -146,13 +267,26 @@ export function BookingWidget({
     return calculateBookingPrice(basePrice, checkIn, checkOut);
   }, [basePrice, checkIn, checkOut]);
 
-  const todayStr = new Date().toISOString().split('T')[0];
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage(null);
 
-    // Validate dates
+    // 1. Check if any selected date is booked or blocked by the host FIRST
+    const occupancyConflict =
+      checkDateOccupancyConflict(checkIn, checkOut) ||
+      (checkOut ? checkDateOccupancyConflict(checkOut, '') : null);
+    if (occupancyConflict) {
+      setErrorMessage(occupancyConflict.message);
+      syncDatesToCalendar(
+        checkIn,
+        checkOut,
+        occupancyConflict.conflictDateStr,
+        occupancyConflict.message
+      );
+      return;
+    }
+
+    // 2. Validate dates
     const dateValidation = validateStayDates(checkIn, checkOut);
     if (!dateValidation.valid) {
       setErrorMessage(dateValidation.error || "Please verify your stay dates.");
@@ -298,32 +432,6 @@ export function BookingWidget({
       )}
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        {/* Room Selection */}
-        {rooms.length > 1 && (
-          <div>
-            <label
-              htmlFor="booking-widget-room-select"
-              className="block text-xs font-semibold text-charcoal mb-1.5"
-            >
-              Select Room Type
-            </label>
-            <select
-              id="booking-widget-room-select"
-              suppressHydrationWarning
-              value={selectedRoomId}
-              onChange={(e) => setSelectedRoomId(e.target.value)}
-              className="w-full min-h-[44px] px-3 py-2.5 text-sm bg-[#F5F0E6] border border-[#D9CCB8] rounded-xl font-medium text-charcoal focus:ring-2 focus:ring-forest/20 focus:border-forest focus:outline-none"
-            >
-              {rooms.map((r) => (
-                <option key={r.id} value={r.id}>
-                  {r.room_name} — {formatINR(Number(r.base_price))}/night (
-                  {r.attached_washroom ? 'Private washroom' : 'Shared washroom'})
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
-
         {selectedRoom && (
           <div className="space-y-2 rounded-xl border border-[#D9CCB8] bg-[#F5F0E6]/65 p-3">
             <div className="flex items-center justify-between gap-2">
@@ -362,9 +470,8 @@ export function BookingWidget({
               suppressHydrationWarning
               type="date"
               required
-              min={todayStr}
               value={checkIn}
-              onChange={(e) => setCheckIn(e.target.value)}
+              onChange={(e) => handleCheckInChange(e.target.value)}
               className="w-full min-h-[44px] px-3 py-2 bg-[#F5F0E6] border border-[#D9CCB8] rounded-xl text-xs font-semibold text-charcoal focus:outline-none focus:border-forest focus:ring-2 focus:ring-forest/20"
             />
           </div>
@@ -382,9 +489,9 @@ export function BookingWidget({
               suppressHydrationWarning
               type="date"
               required
-              min={checkIn || todayStr}
+              min={checkIn || undefined}
               value={checkOut}
-              onChange={(e) => setCheckOut(e.target.value)}
+              onChange={(e) => handleCheckOutChange(e.target.value)}
               className="w-full min-h-[44px] px-3 py-2 bg-[#F5F0E6] border border-[#D9CCB8] rounded-xl text-xs font-semibold text-charcoal focus:outline-none focus:border-forest focus:ring-2 focus:ring-forest/20"
             />
           </div>

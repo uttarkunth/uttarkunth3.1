@@ -64,7 +64,7 @@ export function PropertyCard({
   return (
     <article
       data-testid={`property-card-${property.slug}`}
-      className="group bg-warm-surface rounded-2xl overflow-hidden border border-beige/90 hover:border-forest/35 shadow-editorial-sm hover:shadow-editorial-lg transition-all duration-500 ease-editorial flex flex-col justify-between text-inherit"
+      className="uk-tactile-card group bg-warm-surface rounded-2xl overflow-hidden border border-beige/90 hover:border-terracotta/45 flex flex-col justify-between text-inherit"
     >
       {/* Photo Scrubber Container */}
       <div
