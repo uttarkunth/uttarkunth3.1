@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { checkIsPlatformAdmin } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,6 +16,32 @@ export async function GET(req: NextRequest) {
 
     const adminClient = createAdminClient();
 
+    // Check if the authenticated user has listed/assigned properties (or is platform admin)
+    let isHost = false;
+    try {
+      const isAdmin = await checkIsPlatformAdmin(user.id);
+      if (isAdmin) {
+        isHost = true;
+      } else {
+        const { count: ownedCount } = await adminClient
+          .from('properties')
+          .select('id', { count: 'exact', head: true })
+          .eq('host_id', user.id);
+
+        if ((ownedCount || 0) > 0) {
+          isHost = true;
+        } else {
+          const { count: assignedCount } = await (adminClient.from('property_hosts') as any)
+            .select('id', { count: 'exact', head: true })
+            .eq('user_id', user.id)
+            .in('role', ['manager', 'co_host']);
+          isHost = (assignedCount || 0) > 0;
+        }
+      }
+    } catch {
+      isHost = false;
+    }
+
     // 1. Try querying user_notifications table
     const { data: dbNotifications, error } = await adminClient
       .from('user_notifications')
@@ -23,7 +50,7 @@ export async function GET(req: NextRequest) {
       .order('created_at', { ascending: false });
 
     if (!error && dbNotifications && dbNotifications.length > 0) {
-      return NextResponse.json({ ok: true, notifications: dbNotifications });
+      return NextResponse.json({ ok: true, isHost, notifications: dbNotifications });
     }
 
     // 2. Fallback: Aggregate live dynamic notifications from across the 4 pillars
@@ -110,6 +137,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({
       ok: true,
+      isHost,
       notifications,
     });
   } catch (err: any) {

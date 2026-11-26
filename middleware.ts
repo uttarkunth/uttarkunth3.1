@@ -376,7 +376,7 @@ export async function middleware(request: NextRequest) {
     if (
       pathname.startsWith('/guest') ||
       pathname.startsWith('/host') ||
-      pathname.startsWith('/account') ||
+      (pathname.startsWith('/account') && !pathname.startsWith('/account/stays/host')) ||
       pathname.startsWith('/trips')
     ) {
       const redirectUrl = new URL('/login', request.url);

@@ -1,5 +1,4 @@
 import React from 'react';
-import { redirect } from 'next/navigation';
 import { HeroVideo } from '@/components/hero-video';
 import { FourPillarsShowcase } from '@/components/home/four-pillars-showcase';
 import { FeaturedStaysRows } from '@/components/home/featured-stays-rows';
@@ -145,15 +144,7 @@ async function getHomePageData() {
   }
 }
 
-export default async function HomePage({
-  searchParams,
-}: {
-  searchParams?: { public?: string };
-}) {
-  if (searchParams?.public !== '1') {
-    redirect('/account/stays/host');
-  }
-
+export default async function HomePage() {
   const { properties, destinations, products, reviews } = await getHomePageData();
 
   return (

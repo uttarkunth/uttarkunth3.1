@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import {
   LayoutGrid,
@@ -21,8 +22,9 @@ import {
   ArrowLeft,
   Bell,
   Sparkles,
-  ExternalLink,
+  Plus,
 } from 'lucide-react';
+import { useAdaptiveSubnavTop } from '@/components/sticky-subnav-shell';
 import {
   getPropertyDisplayName,
   isPropertyLive,
@@ -71,6 +73,7 @@ export function HostWorkspaceShell({
   userEmail,
 }: HostWorkspaceShellProps) {
   const pathname = usePathname();
+  const { headerHidden, isScrolled, topStyle } = useAdaptiveSubnavTop();
   const [selectedPropertyId, setSelectedPropertyIdState] = useState<string>('all');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(false);
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState<boolean>(false);
@@ -229,19 +232,66 @@ export function HostWorkspaceShell({
     },
   ];
 
+  const activeNavItem =
+    navGroups.flatMap((g) => g.items).find((item) => item.isActive) || navGroups[0].items[0];
+
+  const renderUttarkunthLogoBadge = (size: 'sm' | 'md' = 'sm') => (
+    <span
+      className={`relative rounded-[10px] bg-[#FFFDF9] border border-[#E5DEC9] shadow-2xs flex items-center justify-center shrink-0 ${
+        size === 'sm' ? 'w-8 h-8' : 'w-9 h-9'
+      }`}
+    >
+      <Image
+        src="/logo.png"
+        alt="Uttarkunth"
+        width={size === 'sm' ? 22 : 26}
+        height={size === 'sm' ? 22 : 26}
+        referrerPolicy="no-referrer"
+        className={`${
+          size === 'sm' ? 'w-5 h-5' : 'w-6 h-6'
+        } object-contain [filter:url(#uttarkunth-terracotta-logo)]`}
+      />
+    </span>
+  );
+
   const renderSidebarContent = (collapsed: boolean) => (
     <div className="flex flex-col h-full justify-between gap-4">
       <div className="space-y-4">
-        {!collapsed && (
-          <div className="flex items-center justify-between px-2.5 pt-1">
-            <span className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-[#D9CCB8]">
-              HOST WORKSPACE
-            </span>
+        {/* Uttarkunth Brand Identity in Host Sidebar */}
+        {!collapsed ? (
+          <div className="flex items-center justify-between px-2 pt-0.5">
+            <Link
+              href="/"
+              data-testid="host-sidebar-brand-logo"
+              className="inline-flex items-center gap-2.5 group focus:outline-none"
+              title="Uttarkunth Homepage"
+            >
+              {renderUttarkunthLogoBadge('sm')}
+              <div>
+                <span className="font-serif text-base font-bold text-[#FFFDF9] leading-none block group-hover:text-[#FDE2A8] transition-colors">
+                  Uttarkunth
+                </span>
+                <span className="text-[9px] font-extrabold uppercase tracking-[0.16em] text-[#D9CCB8] block mt-0.5">
+                  HOST WORKSPACE
+                </span>
+              </div>
+            </Link>
             {isAdmin && (
               <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase bg-[#A84C1C]/40 text-[#FFFDF9] border border-[#FFFDF9]/20">
                 <Shield className="w-2.5 h-2.5" /> Admin
               </span>
             )}
+          </div>
+        ) : (
+          <div className="flex flex-col items-center pt-0.5">
+            <Link
+              href="/"
+              data-testid="host-sidebar-brand-logo-collapsed"
+              title="Uttarkunth Homepage"
+              className="inline-flex items-center justify-center focus:outline-none"
+            >
+              {renderUttarkunthLogoBadge('sm')}
+            </Link>
           </div>
         )}
 
@@ -418,52 +468,112 @@ export function HostWorkspaceShell({
     >
       <div
         data-testid="host-workspace-shell"
-        className="min-h-[calc(100vh-4rem)] bg-[#F5F0E6] text-[#29251F] flex flex-col md:flex-row max-w-[1600px] mx-auto"
+        className="min-h-[calc(100vh-4rem)] bg-[#F5F0E6] text-[#29251F] flex flex-col max-w-[1600px] mx-auto"
       >
         {/* ===================================================================
-            MOBILE TOP WORKSPACE BAR (< 768px)
+            STICKY GREEN HOST NAVIGATION BAR (ALL VIEWPORTS)
+            • Has Hamburger / Sidebar toggle, Uttarkunth Logo + Host Desk,
+              Property Selector, and Notifications Bell
+            • Moves smoothly to top: 0px when global Header (with profile icon
+              and main logo) hides during scroll
            =================================================================== */}
         <div
           data-testid="host-mobile-topbar"
-          className="md:hidden sticky top-16 z-30 bg-[#1A2B23] text-[#FFFDF9] border-b border-[#FFFDF9]/12 px-3.5 py-2.5 flex items-center justify-between gap-2.5 shadow-sm"
+          data-header-hidden={headerHidden ? 'true' : 'false'}
+          data-is-scrolled={isScrolled ? 'true' : 'false'}
+          data-subnav-state={headerHidden ? 'pinned-to-top' : 'below-header'}
+          style={{ top: `var(--uk-subnav-top, ${topStyle})` }}
+          className={`sticky z-30 bg-[#1A2B23] text-[#FFFDF9] border-b border-[#FFFDF9]/14 px-3.5 sm:px-5 lg:px-7 h-14 flex items-center justify-between gap-2.5 transition-[top,box-shadow] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+            headerHidden ? 'top-0 shadow-md' : 'top-16 shadow-sm'
+          }`}
         >
-          <div className="flex items-center gap-2.5 min-w-0">
+          <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+            {/* Mobile Hamburger Button (< 768px) */}
             <button
               type="button"
               data-testid="host-mobile-menu-button"
               onClick={() => setIsMobileDrawerOpen(true)}
               aria-label="Open Host Workspace menu"
-              className="w-10 h-10 rounded-xl bg-[#FFFDF9]/10 border border-[#FFFDF9]/15 flex items-center justify-center text-[#FFFDF9] active:scale-95 transition-transform shrink-0 cursor-pointer"
+              className="md:hidden w-9 h-9 rounded-xl bg-[#263D32] hover:bg-[#FFFDF9]/15 border border-[#FFFDF9]/16 flex items-center justify-center text-[#FFFDF9] active:scale-95 transition-transform shrink-0 cursor-pointer"
             >
-              <Menu className="w-5 h-5" />
+              <Menu className="w-4 h-4" />
             </button>
-            <div className="min-w-0">
-              <span className="block text-[9px] font-extrabold uppercase tracking-[0.14em] text-[#F2B58E]">
-                Uttarkunth Host Desk
+
+            {/* Desktop Sidebar Collapse / Expand Hamburger Toggle (768px+) */}
+            <button
+              type="button"
+              data-testid="host-topbar-sidebar-toggle"
+              onClick={() => setIsSidebarCollapsed((prev) => !prev)}
+              aria-label={isSidebarCollapsed ? 'Expand Host Sidebar' : 'Collapse Host Sidebar'}
+              title={isSidebarCollapsed ? 'Expand Host Sidebar' : 'Collapse Host Sidebar'}
+              className="hidden md:inline-flex w-9 h-9 rounded-xl bg-[#263D32] hover:bg-[#FFFDF9]/15 border border-[#FFFDF9]/16 items-center justify-center text-[#FFFDF9] transition-colors shrink-0 cursor-pointer"
+            >
+              <Menu className="w-4 h-4" />
+            </button>
+
+            {/* Uttarkunth Official Brand Logo + Host Desk Identity */}
+            <Link
+              href="/"
+              data-testid="host-topbar-logo"
+              className="inline-flex items-center gap-2 shrink-0 group focus:outline-none"
+              title="Uttarkunth Homepage"
+            >
+              {renderUttarkunthLogoBadge('sm')}
+              <div className="leading-tight">
+                <span className="font-serif text-sm sm:text-base font-bold text-[#FFFDF9] group-hover:text-[#FDE2A8] transition-colors block">
+                  Uttarkunth
+                </span>
+                <span className="block text-[9px] font-extrabold uppercase tracking-[0.14em] text-[#F2B58E]">
+                  Host Desk
+                </span>
+              </div>
+            </Link>
+
+            <span
+              aria-hidden="true"
+              className="hidden sm:inline-block h-5 w-[1px] bg-[#FFFDF9]/15 mx-0.5"
+            />
+
+            {/* Active Section Badge (Desktop) & Property Selector */}
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="hidden lg:inline-flex items-center px-2.5 py-1 rounded-lg bg-[#263D32] border border-[#FFFDF9]/12 text-[11px] font-bold text-[#E1DDD4]">
+                {activeNavItem.label}
               </span>
-              <select
-                aria-label="Filter by assigned property"
-                data-testid="host-mobile-property-selector"
-                value={selectedPropertyId}
-                onChange={(e) => setSelectedPropertyId(e.target.value)}
-                className="bg-transparent text-[#FFFDF9] text-xs font-extrabold focus:outline-none truncate max-w-[175px] sm:max-w-[260px] cursor-pointer"
-              >
-                <option value="all" className="bg-[#1A2B23] text-[#FFFDF9]">
-                  All properties ({properties.length})
-                </option>
-                {properties.map((p) => (
-                  <option key={p.id} value={p.id} className="bg-[#1A2B23] text-[#FFFDF9]">
-                    {getPropertyDisplayName(p)}
+
+              <div className="relative min-w-0">
+                <select
+                  aria-label="Filter by assigned property"
+                  data-testid="host-mobile-property-selector"
+                  value={selectedPropertyId}
+                  onChange={(e) => setSelectedPropertyId(e.target.value)}
+                  className="appearance-none bg-[#263D32] hover:bg-[#2F4A3D] border border-[#FFFDF9]/16 rounded-xl pl-2.5 pr-7 py-1.5 text-[#FFFDF9] text-xs font-extrabold focus:outline-none truncate max-w-[145px] sm:max-w-[230px] cursor-pointer transition-colors"
+                >
+                  <option value="all" className="bg-[#1A2B23] text-[#FFFDF9]">
+                    All properties ({properties.length})
                   </option>
-                ))}
-              </select>
+                  {properties.map((p) => (
+                    <option key={p.id} value={p.id} className="bg-[#1A2B23] text-[#FFFDF9]">
+                      {getPropertyDisplayName(p)}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="w-3.5 h-3.5 text-[#D9CCB8] absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
+              </div>
             </div>
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
             <Link
+              href="/stays/list-property"
+              className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#263D32] hover:bg-[#2F4A3D] border border-[#FFFDF9]/16 text-xs font-bold text-[#FFFDF9] transition-colors"
+            >
+              <Plus className="w-3.5 h-3.5 text-[#F2B58E]" />
+              <span>Add Property</span>
+            </Link>
+            <Link
               href="/account/stays/host/bookings"
-              className="relative inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-[#FFFDF9]/10 border border-[#FFFDF9]/15 text-xs font-bold text-[#FFFDF9]"
+              data-testid="host-topbar-notifications"
+              className="relative inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-[#263D32] hover:bg-[#2F4A3D] border border-[#FFFDF9]/16 text-xs font-bold text-[#FFFDF9] transition-colors"
               title="Pending booking requests"
             >
               <Bell className="w-3.5 h-3.5 text-[#F2B58E]" />
@@ -493,10 +603,12 @@ export function HostWorkspaceShell({
             />
             <aside className="relative z-10 w-[272px] max-w-[85vw] bg-[#1A2B23] text-[#FFFDF9] h-full overflow-y-auto p-4 flex flex-col justify-between shadow-2xl border-r border-[#FFFDF9]/12">
               <div className="flex items-center justify-between pb-3 mb-2 border-b border-[#FFFDF9]/12">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-[10px] bg-[#263D32] border border-[#FFFDF9]/15 flex items-center justify-center text-[#F7E8D4] font-serif text-lg font-semibold">
-                    उ
-                  </div>
+                <Link
+                  href="/"
+                  onClick={() => setIsMobileDrawerOpen(false)}
+                  className="flex items-center gap-2.5 focus:outline-none"
+                >
+                  {renderUttarkunthLogoBadge('sm')}
                   <div>
                     <span className="font-serif text-lg font-semibold text-[#FFFDF9] leading-none block">
                       Uttarkunth
@@ -505,7 +617,7 @@ export function HostWorkspaceShell({
                       Host Desk
                     </span>
                   </div>
-                </div>
+                </Link>
                 <button
                   type="button"
                   data-testid="host-mobile-drawer-close"
@@ -522,23 +634,29 @@ export function HostWorkspaceShell({
         )}
 
         {/* ===================================================================
-            TABLET & DESKTOP PERSISTENT VERTICAL SIDEBAR (768px+)
+            WORKSPACE BODY: SIDEBAR + MAIN CONTENT SURFACE
            =================================================================== */}
-        <aside
-          data-testid="host-desktop-sidebar"
-          className={`hidden md:flex flex-col shrink-0 bg-[#1A2B23] text-[#FFFDF9] border-r border-[#FFFDF9]/10 px-3.5 py-5 sticky top-16 h-[calc(100vh-4rem)] overflow-y-auto transition-all duration-200 ${
-            isSidebarCollapsed ? 'w-[76px]' : 'w-[224px] lg:w-[238px]'
-          }`}
-        >
-          {renderSidebarContent(isSidebarCollapsed)}
-        </aside>
+        <div className="flex-1 flex flex-col md:flex-row min-w-0">
+          {/* TABLET & DESKTOP PERSISTENT VERTICAL SIDEBAR (768px+) */}
+          <aside
+            data-testid="host-desktop-sidebar"
+            data-header-hidden={headerHidden ? 'true' : 'false'}
+            style={{
+              top: `calc(var(--uk-subnav-top, ${topStyle}) + 3.5rem)`,
+              height: headerHidden ? 'calc(100vh - 3.5rem)' : 'calc(100vh - 7.5rem)',
+            }}
+            className={`hidden md:flex flex-col shrink-0 bg-[#1A2B23] text-[#FFFDF9] border-r border-[#FFFDF9]/10 px-3.5 py-4 sticky overflow-y-auto transition-[width,top,height] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+              headerHidden ? 'top-14' : 'top-[120px]'
+            } ${isSidebarCollapsed ? 'w-[76px]' : 'w-[224px] lg:w-[238px]'}`}
+          >
+            {renderSidebarContent(isSidebarCollapsed)}
+          </aside>
 
-        {/* ===================================================================
-            MAIN HOST WORKSPACE CONTENT SURFACE
-           =================================================================== */}
-        <main className="flex-1 min-w-0 px-3.5 sm:px-5 lg:px-8 py-5 sm:py-6 pb-24 md:pb-12">
-          {children}
-        </main>
+          {/* MAIN HOST WORKSPACE CONTENT SURFACE */}
+          <main className="flex-1 min-w-0 px-3.5 sm:px-5 lg:px-8 py-5 sm:py-6 pb-24 md:pb-12">
+            {children}
+          </main>
+        </div>
 
         {/* ===================================================================
             MOBILE HOST WORKSPACE BOTTOM NAVIGATION (< 768px)

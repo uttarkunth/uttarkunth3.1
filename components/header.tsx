@@ -108,6 +108,7 @@ export function Header() {
   const [navExpanded, setNavExpanded] = useState(false);
   const [accountDropdownOpen, setAccountDropdownOpen] = useState(false);
   const [user, setUser] = useState<UserIdentityInput | null>(null);
+  const [isHost, setIsHost] = useState(false);
   const [notifications, setNotifications] = useState<Array<{ id?: string; read?: boolean }>>([]);
   const [locallyReadIds, setLocallyReadIds] = useState<string[]>([]);
   const headerRef = useRef<HTMLElement>(null);
@@ -188,22 +189,40 @@ export function Header() {
     syncHeaderVisibilityOnRouteChange();
   }, [pathname]);
 
-  // Fetch notifications from existing /api/account/notifications endpoint
+  // Fetch notifications and host status from existing /api/account/notifications endpoint
   const fetchUserNotifications = useCallback(async (activeUser: UserIdentityInput | null) => {
-    if (typeof window !== 'undefined' && (window as any).__uttarkunthTestAuth?.notifications) {
-      setNotifications((window as any).__uttarkunthTestAuth.notifications);
+    if (typeof window !== 'undefined' && (window as any).__uttarkunthTestAuth) {
+      const testAuth = (window as any).__uttarkunthTestAuth;
+      if (Array.isArray(testAuth.notifications)) {
+        setNotifications(testAuth.notifications);
+      }
+      const testUser = testAuth.user as any;
+      setIsHost(
+        Boolean(
+          testAuth.isHost ??
+            testUser?.isHost ??
+            testUser?.user_metadata?.is_host ??
+            testUser?.user_metadata?.role === 'host'
+        )
+      );
       return;
     }
     if (!activeUser) {
       setNotifications([]);
+      setIsHost(false);
       return;
     }
     try {
       const res = await fetch('/api/account/notifications', { cache: 'no-store' });
       if (res.ok) {
         const data = await res.json();
-        if (data?.ok && Array.isArray(data.notifications)) {
-          setNotifications(data.notifications);
+        if (data?.ok) {
+          if (Array.isArray(data.notifications)) {
+            setNotifications(data.notifications);
+          }
+          if (typeof data.isHost === 'boolean') {
+            setIsHost(data.isHost);
+          }
         }
       }
     } catch {
@@ -238,6 +257,15 @@ export function Header() {
       if (testAuth && 'user' in testAuth) {
         setUser(testAuth.user);
         setNotifications(Array.isArray(testAuth.notifications) ? testAuth.notifications : []);
+        const testUser = testAuth.user as any;
+        setIsHost(
+          Boolean(
+            testAuth.isHost ??
+              testUser?.isHost ??
+              testUser?.user_metadata?.is_host ??
+              testUser?.user_metadata?.role === 'host'
+          )
+        );
         return true;
       }
       return false;
@@ -262,10 +290,18 @@ export function Header() {
     const enrichUserWithProfile = async (sessionUser: any) => {
       if (!sessionUser) {
         setUser(null);
+        setIsHost(false);
         setNotifications([]);
         return;
       }
       setUser(sessionUser);
+      setIsHost(
+        Boolean(
+          sessionUser?.isHost ||
+            sessionUser?.user_metadata?.is_host ||
+            sessionUser?.user_metadata?.role === 'host'
+        )
+      );
       fetchUserNotifications(sessionUser);
       try {
         const { data: profileRow } = await (supabase.from('profiles' as any) as any)
@@ -322,6 +358,7 @@ export function Header() {
       delete (window as any).__uttarkunthTestAuth;
       window.dispatchEvent(new CustomEvent('uttarkunth-auth-override-changed'));
       setUser(null);
+      setIsHost(false);
       setNotifications([]);
       setAccountDropdownOpen(false);
       return;
@@ -358,6 +395,8 @@ export function Header() {
 
   const avatarDisplay = resolveUserAvatarDisplay(user);
   const isAuthenticated = avatarDisplay.isAuthenticated;
+  const showHostDashboardInMenu =
+    isAuthenticated && (isHost || Boolean(pathname?.startsWith('/account/stays/host')));
   const unreadNotificationExists =
     isAuthenticated && hasUnreadNotifications(notifications, locallyReadIds);
   const profileMenuItems = getProfileMenuItems(isAuthenticated, pathname);
@@ -558,20 +597,34 @@ export function Header() {
                   })}
                 </div>
 
-                {/* Bottom CTA Footer — Login / Sign Up when logged out, Log Out when signed in */}
-                <div className="pt-1.5 mt-1 border-t border-[#E5DEC9]/70 px-3 pb-1">
+                {/* Bottom CTA Footer — Host Dashboard (when user listed a property, just before Log Out in Uttarkunth brand green) + Log Out or Login/Sign Up */}
+                <div className="pt-1.5 mt-1 border-t border-[#E5DEC9]/70 px-3 pb-1 space-y-1.5">
                   {isAuthenticated ? (
-                    <button
-                      type="button"
-                      role="menuitem"
-                      data-testid="profile-menu-logout-cta"
-                      suppressHydrationWarning
-                      onClick={handleSignOut}
-                      className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-semibold text-[#29251F] bg-[#F5F0E6] hover:bg-status-danger-bg/60 hover:text-status-danger border border-[#E2D9C5] transition-colors"
-                    >
-                      <LogOut className="w-3.5 h-3.5 shrink-0" />
-                      <span>Log Out</span>
-                    </button>
+                    <>
+                      {showHostDashboardInMenu && (
+                        <Link
+                          href="/account/stays/host"
+                          role="menuitem"
+                          data-testid="profile-menu-host-dashboard-cta"
+                          onClick={() => setAccountDropdownOpen(false)}
+                          className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-semibold text-[#FFFDF9] bg-[#263D32] hover:bg-[#1A2B23] border border-[#263D32] shadow-2xs transition-colors"
+                        >
+                          <Home className="w-3.5 h-3.5 text-[#FDE2A8] shrink-0" />
+                          <span>Host Dashboard</span>
+                        </Link>
+                      )}
+                      <button
+                        type="button"
+                        role="menuitem"
+                        data-testid="profile-menu-logout-cta"
+                        suppressHydrationWarning
+                        onClick={handleSignOut}
+                        className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-semibold text-[#29251F] bg-[#F5F0E6] hover:bg-status-danger-bg/60 hover:text-status-danger border border-[#E2D9C5] transition-colors"
+                      >
+                        <LogOut className="w-3.5 h-3.5 shrink-0" />
+                        <span>Log Out</span>
+                      </button>
+                    </>
                   ) : (
                     <div
                       data-testid="profile-menu-guest-ctas"
