@@ -1,5 +1,4 @@
 import React from 'react';
-import { redirect } from 'next/navigation';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { getHostProperties, getHostBookings } from '@/lib/host';
 import { BookingsManager } from '@/components/host/bookings-manager';
@@ -12,16 +11,7 @@ export default async function HostBookingsPage() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) {
-    redirect('/login?next=/account/stays/host/bookings');
-  }
-
-  const { properties, isHost, isAdmin } = await getHostProperties(user.id);
-
-  if (!isHost && !isAdmin) {
-    redirect('/account/stays/host');
-  }
-
+  const { properties } = await getHostProperties(user?.id);
   const propertyIds = properties.map((p: any) => p.id);
   const bookings = await getHostBookings(propertyIds);
 

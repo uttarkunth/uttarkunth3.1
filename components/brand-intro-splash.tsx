@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
+import { usePathname } from 'next/navigation';
 import {
   CONSENT_UPDATED_EVENT,
   CookieConsentRecord,
@@ -13,9 +14,12 @@ interface BrandIntroSplashProps {
 }
 
 export function BrandIntroSplash({ forceShow = false }: BrandIntroSplashProps) {
+  const pathname = usePathname();
+  const isHostWorkspaceRoute = Boolean(pathname?.startsWith('/account/stays/host'));
+
   // Default visible=true on initial SSR render so the splash is present in HTML
   // BEFORE the homepage ever paints (eliminating the homepage-first flash).
-  const [visible, setVisible] = useState(true);
+  const [visible, setVisible] = useState(!isHostWorkspaceRoute);
   const [closing, setClosing] = useState(false);
   const [progress, setProgress] = useState(0);
   const rafRef = useRef<number | null>(null);
@@ -79,7 +83,10 @@ export function BrandIntroSplash({ forceShow = false }: BrandIntroSplashProps) {
       typeof window !== 'undefined' &&
       window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-    if (!forceShow && (alreadySeen || prefersReducedMotion || skipForAutostart)) {
+    if (
+      !forceShow &&
+      (isHostWorkspaceRoute || alreadySeen || prefersReducedMotion || skipForAutostart)
+    ) {
       hasFinishedRef.current = true;
       document.documentElement.setAttribute('data-uk-intro-gate', 'completed');
       setVisible(false);

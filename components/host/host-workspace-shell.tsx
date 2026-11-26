@@ -16,10 +16,12 @@ import {
   X,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   Shield,
   ArrowLeft,
   Bell,
-  Building2,
+  Sparkles,
+  ExternalLink,
 } from 'lucide-react';
 import {
   getPropertyDisplayName,
@@ -109,7 +111,6 @@ export function HostWorkspaceShell({
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [isMobileDrawerOpen]);
 
-  // If user is neither host nor admin, render children directly (onboarding empty state)
   if (!isHost && !isAdmin) {
     return (
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -119,6 +120,15 @@ export function HostWorkspaceShell({
   }
 
   const activeCount = properties.filter(isPropertyLive).length;
+  const currentSelectedProp =
+    selectedPropertyId === 'all'
+      ? null
+      : properties.find((p) => p.id === selectedPropertyId) || null;
+  const switcherMonogram = currentSelectedProp
+    ? getPropertyDisplayName(currentSelectedProp).charAt(0).toUpperCase()
+    : properties[0]
+    ? getPropertyDisplayName(properties[0]).charAt(0).toUpperCase()
+    : 'U';
 
   const navGroups: {
     groupLabel: string;
@@ -129,11 +139,11 @@ export function HostWorkspaceShell({
       icon: React.ComponentType<{ className?: string }>;
       isActive: boolean;
       badge?: number;
-      badgeHighlight?: boolean;
+      badgeType?: 'count' | 'pending';
     }[];
   }[] = [
     {
-      groupLabel: 'WORKSPACE',
+      groupLabel: 'Workspace',
       items: [
         {
           id: 'overview',
@@ -145,7 +155,7 @@ export function HostWorkspaceShell({
       ],
     },
     {
-      groupLabel: 'PROPERTY WORKSPACE',
+      groupLabel: 'Property workspace',
       items: [
         {
           id: 'properties',
@@ -154,11 +164,12 @@ export function HostWorkspaceShell({
           icon: Home,
           isActive: pathname?.startsWith('/account/stays/host/properties') || false,
           badge: properties.length,
+          badgeType: 'count',
         },
       ],
     },
     {
-      groupLabel: 'MANAGE STAYS',
+      groupLabel: 'Manage stays',
       items: [
         {
           id: 'bookings',
@@ -166,8 +177,8 @@ export function HostWorkspaceShell({
           href: '/account/stays/host/bookings',
           icon: Inbox,
           isActive: pathname?.startsWith('/account/stays/host/bookings') || false,
-          badge: pendingCount > 0 ? pendingCount : undefined,
-          badgeHighlight: pendingCount > 0,
+          badge: pendingCount,
+          badgeType: 'pending',
         },
         {
           id: 'calendar',
@@ -186,7 +197,7 @@ export function HostWorkspaceShell({
       ],
     },
     {
-      groupLabel: 'INSIGHTS',
+      groupLabel: 'Insights',
       items: [
         {
           id: 'performance',
@@ -198,7 +209,7 @@ export function HostWorkspaceShell({
       ],
     },
     {
-      groupLabel: 'ACCOUNT & SUPPORT',
+      groupLabel: 'Account & support',
       items: [
         {
           id: 'settings',
@@ -221,44 +232,54 @@ export function HostWorkspaceShell({
   const renderSidebarContent = (collapsed: boolean) => (
     <div className="flex flex-col h-full justify-between gap-4">
       <div className="space-y-4">
-        {/* Top Property Switcher */}
-        {!collapsed ? (
-          <div className="p-3 rounded-[14px] bg-[#FFFDF9]/[0.06] border border-[#FFFDF9]/12 space-y-1.5">
-            <div className="flex items-center justify-between">
-              <label
-                htmlFor="host-sidebar-property-select"
-                className="text-[10px] uppercase tracking-[0.12em] text-[#FFFDF9]/60 font-bold"
-              >
-                Property view
-              </label>
-              {isAdmin && (
-                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase bg-[#C55B23]/25 text-[#FDE2A8] border border-[#C55B23]/40">
-                  <Shield className="w-2.5 h-2.5" /> Admin
-                </span>
-              )}
-            </div>
-            <select
-              id="host-sidebar-property-select"
-              data-testid="host-property-selector"
-              value={selectedPropertyId}
-              onChange={(e) => setSelectedPropertyId(e.target.value)}
-              className="w-full px-2.5 py-2 rounded-[10px] border border-[#FFFDF9]/15 bg-[#101C16]/60 text-[#FFFDF9] text-xs font-bold focus:outline-none focus:border-[#C55B23] cursor-pointer"
-            >
-              <option value="all" className="bg-[#1A2B23] text-[#FFFDF9]">
-                All properties ({properties.length})
-              </option>
-              {properties.map((p) => (
-                <option key={p.id} value={p.id} className="bg-[#1A2B23] text-[#FFFDF9]">
-                  {getPropertyDisplayName(p)}
-                  {p.village ? ` · ${p.village}` : ''}
-                </option>
-              ))}
-            </select>
-            <div className="flex items-center gap-1.5 pt-0.5 text-[11px] text-[#FFFDF9]/70">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#3E9B63] shrink-0" />
-              <span className="truncate">
-                {activeCount} published · Direct payment model
+        {!collapsed && (
+          <div className="flex items-center justify-between px-2.5 pt-1">
+            <span className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-[#D9CCB8]">
+              HOST WORKSPACE
+            </span>
+            {isAdmin && (
+              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase bg-[#A84C1C]/40 text-[#FFFDF9] border border-[#FFFDF9]/20">
+                <Shield className="w-2.5 h-2.5" /> Admin
               </span>
+            )}
+          </div>
+        )}
+
+        {/* Top Property Switcher matching V2 Prototype */}
+        {!collapsed ? (
+          <div className="relative mx-1 p-2.5 rounded-[13px] bg-[#FFFDF9]/[0.075] hover:bg-[#FFFDF9]/[0.11] border border-[#FFFDF9]/16 transition-colors">
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-[9px] bg-gradient-to-br from-[#78927E] to-[#345244] border border-white/20 flex items-center justify-center text-white font-serif text-lg font-semibold shrink-0">
+                {switcherMonogram}
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="relative">
+                  <select
+                    id="host-sidebar-property-select"
+                    aria-label="Select property workspace"
+                    data-testid="host-property-selector"
+                    value={selectedPropertyId}
+                    onChange={(e) => setSelectedPropertyId(e.target.value)}
+                    className="w-full appearance-none bg-transparent pr-5 text-[#FFFDF9] text-xs font-extrabold truncate focus:outline-none cursor-pointer"
+                  >
+                    <option value="all" className="bg-[#1A2B23] text-[#FFFDF9]">
+                      All properties
+                    </option>
+                    {properties.map((p) => (
+                      <option key={p.id} value={p.id} className="bg-[#1A2B23] text-[#FFFDF9]">
+                        {getPropertyDisplayName(p)}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="w-3.5 h-3.5 text-[#D9CCB8] absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none" />
+                </div>
+                <div className="flex items-center gap-1.5 mt-0.5 text-[10px] font-bold text-[#B8D8C1]">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#77BD8F] shrink-0" />
+                  <span className="truncate">
+                    {activeCount} active {activeCount === 1 ? 'listing' : 'listings'}
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
         ) : (
@@ -267,19 +288,19 @@ export function HostWorkspaceShell({
               type="button"
               onClick={() => setIsSidebarCollapsed(false)}
               title="Expand sidebar to switch property"
-              className="w-11 h-11 rounded-xl bg-[#FFFDF9]/8 border border-[#FFFDF9]/14 flex items-center justify-center text-[#FFFDF9] hover:bg-[#FFFDF9]/14 transition-colors"
+              className="w-10 h-10 rounded-[10px] bg-gradient-to-br from-[#78927E] to-[#345244] border border-white/20 flex items-center justify-center text-white font-serif text-lg font-semibold cursor-pointer"
             >
-              <Building2 className="w-5 h-5 text-[#E57C44]" />
+              {switcherMonogram}
             </button>
           </div>
         )}
 
         {/* Navigation Groups */}
-        <nav aria-label="Host Workspace Navigation" className="space-y-3.5">
+        <nav aria-label="Host Workspace Navigation" className="space-y-4">
           {navGroups.map((group) => (
             <div key={group.groupLabel} className="space-y-1">
               {!collapsed && (
-                <div className="px-2.5 pt-1 text-[10px] font-extrabold uppercase tracking-[0.13em] text-[#FFFDF9]/45">
+                <div className="px-3 text-[9px] font-extrabold uppercase tracking-[0.14em] text-[#BEB3A3]">
                   {group.groupLabel}
                 </div>
               )}
@@ -293,18 +314,18 @@ export function HostWorkspaceShell({
                       data-testid={`host-nav-${item.id}`}
                       title={collapsed ? item.label : undefined}
                       aria-current={item.isActive ? 'page' : undefined}
-                      className={`group flex items-center justify-between gap-2.5 px-3 py-2.5 rounded-[11px] text-[13px] font-semibold transition-all duration-150 ${
+                      className={`group flex items-center justify-between gap-2.5 min-h-[41px] px-3 rounded-[11px] text-xs font-bold transition-all duration-150 ${
                         item.isActive
-                          ? 'bg-[#A84C1C] text-[#FFFDF9] border border-[#FFFDF9]/16 shadow-[0_6px_16px_rgba(0,0,0,0.18)] font-bold'
-                          : 'text-[#FFFDF9]/78 border border-transparent hover:bg-[#FFFDF9]/[0.07] hover:text-[#FFFDF9]'
+                          ? 'bg-[#A84C1C] text-white border border-[#FFDAC2]/16 shadow-[0_6px_16px_rgba(0,0,0,0.18)]'
+                          : 'text-[#E1DDD4] border border-transparent hover:bg-[#FFFDF9]/[0.09] hover:text-[#FFFDF9]'
                       } ${collapsed ? 'justify-center px-2' : ''}`}
                     >
                       <span className="flex items-center gap-2.5 min-w-0">
                         <Icon
-                          className={`w-[17px] h-[17px] shrink-0 ${
+                          className={`w-[17px] h-[17px] shrink-0 transition-colors ${
                             item.isActive
-                              ? 'text-[#FFFDF9]'
-                              : 'text-[#FFFDF9]/75 group-hover:text-[#FFFDF9]'
+                              ? 'text-white'
+                              : 'text-[#BFB8AA] group-hover:text-[#F2B58E]'
                           }`}
                         />
                         {!collapsed && <span className="truncate">{item.label}</span>}
@@ -312,12 +333,12 @@ export function HostWorkspaceShell({
 
                       {!collapsed && typeof item.badge !== 'undefined' && (
                         <span
-                          className={`min-w-[20px] h-5 px-1.5 rounded-full text-[11px] font-extrabold tabular-nums inline-flex items-center justify-center ${
-                            item.isActive
-                              ? 'bg-[#101C16]/30 text-[#FFFDF9] border border-[#FFFDF9]/25'
-                              : item.badgeHighlight
-                              ? 'bg-[#C55B23] text-[#FFFDF9]'
-                              : 'bg-[#FFFDF9]/12 text-[#FFFDF9]'
+                          className={`min-w-[20px] px-1.5 py-0.5 rounded-[7px] text-[10px] font-extrabold tabular-nums text-center ${
+                            item.badgeType === 'count'
+                              ? 'bg-[#FFFDF9]/[0.13] text-[#FFFDF9] border border-[#FFFDF9]/14'
+                              : item.isActive
+                              ? 'bg-[#FFFDF9] text-[#8E3E17]'
+                              : 'bg-[#F5E4DA] text-[#8E3E17]'
                           }`}
                         >
                           {item.badge}
@@ -332,60 +353,53 @@ export function HostWorkspaceShell({
         </nav>
       </div>
 
-      {/* Bottom Help Card & Collapse Toggle */}
-      <div className="space-y-3 pt-3 border-t border-[#FFFDF9]/10">
+      {/* Bottom Help Card & Footer */}
+      <div className="space-y-3 pt-2">
         {!collapsed && (
-          <div className="p-3 rounded-[14px] bg-[#FFFDF9]/[0.06] border border-[#FFFDF9]/12 space-y-1.5">
-            <strong className="block text-xs font-bold text-[#FFFDF9]">
-              Here when you need us
-            </strong>
-            <p className="text-[11px] text-[#FFFDF9]/70 leading-relaxed">
-              Questions about bookings, property updates or availability blocks?
+          <div className="mx-1 p-3.5 rounded-[14px] bg-[#FFFDF9]/[0.075] border border-[#FFFDF9]/[0.13] space-y-1.5">
+            <div className="flex items-center gap-1.5 text-xs font-extrabold text-[#FFFDF9]">
+              <Sparkles className="w-3.5 h-3.5 text-[#F2B58E]" />
+              <span>Here when you need us</span>
+            </div>
+            <p className="text-[11px] text-[#D5CCBE] leading-relaxed">
+              Get help with guest requests, property details and availability.
             </p>
             <Link
               href="/account/stays/host/support"
-              className="inline-flex items-center gap-1 text-xs font-bold text-[#F3B089] hover:text-[#FFFDF9] transition-colors pt-0.5"
+              className="inline-flex items-center gap-1 text-[11px] font-extrabold text-[#F2B58E] hover:text-white transition-colors pt-0.5"
             >
-              <span>Open Help &amp; Support</span>
+              <span>Visit host support</span>
               <span>&rarr;</span>
             </Link>
           </div>
         )}
 
-        <div className="flex items-center justify-between gap-2">
-          <Link
-            href="/account"
-            title="Return to general Account overview"
-            className={`inline-flex items-center gap-2 text-xs font-semibold text-[#FFFDF9]/70 hover:text-[#FFFDF9] px-2.5 py-2 rounded-lg hover:bg-[#FFFDF9]/8 transition-colors ${
-              collapsed ? 'w-full justify-center' : ''
-            }`}
-          >
-            <ArrowLeft className="w-3.5 h-3.5 shrink-0" />
-            {!collapsed && <span className="truncate">Personal Account</span>}
-          </Link>
+        <div className="pt-3 border-t border-[#FFFDF9]/14 flex items-center justify-between gap-2 px-1">
+          <div className="flex items-center gap-2 min-w-0">
+            <Link
+              href="/account"
+              title="Return to general Account overview"
+              className="inline-flex items-center gap-1.5 text-[11px] font-bold text-[#BEB3A3] hover:text-[#FFFDF9] transition-colors truncate"
+            >
+              <ArrowLeft className="w-3.5 h-3.5 shrink-0" />
+              {!collapsed && <span className="truncate">Uttarkunth Host Desk</span>}
+            </Link>
+          </div>
 
           <button
             type="button"
             onClick={() => setIsSidebarCollapsed((prev) => !prev)}
             data-testid="host-sidebar-collapse-toggle"
             title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-            className="hidden lg:inline-flex w-8 h-8 rounded-lg bg-[#FFFDF9]/8 hover:bg-[#FFFDF9]/15 border border-[#FFFDF9]/12 items-center justify-center text-[#FFFDF9]/80 hover:text-[#FFFDF9] transition-colors cursor-pointer shrink-0"
+            className="hidden md:inline-flex w-7 h-7 rounded-lg bg-[#FFFDF9]/8 hover:bg-[#FFFDF9]/15 border border-[#FFFDF9]/12 items-center justify-center text-[#BEB3A3] hover:text-[#FFFDF9] transition-colors cursor-pointer shrink-0"
           >
             {collapsed ? (
-              <ChevronRight className="w-4 h-4" />
+              <ChevronRight className="w-3.5 h-3.5" />
             ) : (
-              <ChevronLeft className="w-4 h-4" />
+              <ChevronLeft className="w-3.5 h-3.5" />
             )}
           </button>
         </div>
-
-        {!collapsed && (
-          <div className="px-2 text-[11px] text-[#FFFDF9]/45 leading-snug">
-            Uttarkunth Host Workspace
-            <br />
-            Direct-to-host model
-          </div>
-        )}
       </div>
     </div>
   );
@@ -404,14 +418,14 @@ export function HostWorkspaceShell({
     >
       <div
         data-testid="host-workspace-shell"
-        className="min-h-[calc(100vh-4rem)] bg-[#F5F0E6] text-[#29251F] flex flex-col lg:flex-row max-w-[1600px] mx-auto"
+        className="min-h-[calc(100vh-4rem)] bg-[#F5F0E6] text-[#29251F] flex flex-col md:flex-row max-w-[1600px] mx-auto"
       >
         {/* ===================================================================
-            MOBILE / TABLET TOP WORKSPACE BAR (< 1024px)
+            MOBILE TOP WORKSPACE BAR (< 768px)
            =================================================================== */}
         <div
           data-testid="host-mobile-topbar"
-          className="lg:hidden sticky top-16 z-30 bg-[#1A2B23] text-[#FFFDF9] border-b border-[#FFFDF9]/12 px-3.5 py-2.5 flex items-center justify-between gap-2.5 shadow-sm"
+          className="md:hidden sticky top-16 z-30 bg-[#1A2B23] text-[#FFFDF9] border-b border-[#FFFDF9]/12 px-3.5 py-2.5 flex items-center justify-between gap-2.5 shadow-sm"
         >
           <div className="flex items-center gap-2.5 min-w-0">
             <button
@@ -424,15 +438,15 @@ export function HostWorkspaceShell({
               <Menu className="w-5 h-5" />
             </button>
             <div className="min-w-0">
-              <span className="block text-[10px] font-bold uppercase tracking-[0.12em] text-[#E57C44]">
-                Host Workspace
+              <span className="block text-[9px] font-extrabold uppercase tracking-[0.14em] text-[#F2B58E]">
+                Uttarkunth Host Desk
               </span>
               <select
                 aria-label="Filter by assigned property"
                 data-testid="host-mobile-property-selector"
                 value={selectedPropertyId}
                 onChange={(e) => setSelectedPropertyId(e.target.value)}
-                className="bg-transparent text-[#FFFDF9] text-xs font-bold focus:outline-none truncate max-w-[175px] sm:max-w-[260px] cursor-pointer"
+                className="bg-transparent text-[#FFFDF9] text-xs font-extrabold focus:outline-none truncate max-w-[175px] sm:max-w-[260px] cursor-pointer"
               >
                 <option value="all" className="bg-[#1A2B23] text-[#FFFDF9]">
                   All properties ({properties.length})
@@ -449,40 +463,48 @@ export function HostWorkspaceShell({
           <div className="flex items-center gap-2 shrink-0">
             <Link
               href="/account/stays/host/bookings"
-              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-[#FFFDF9]/10 border border-[#FFFDF9]/15 text-xs font-bold text-[#FFFDF9]"
+              className="relative inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-[#FFFDF9]/10 border border-[#FFFDF9]/15 text-xs font-bold text-[#FFFDF9]"
               title="Pending booking requests"
             >
-              <Bell className="w-3.5 h-3.5 text-[#E57C44]" />
+              <Bell className="w-3.5 h-3.5 text-[#F2B58E]" />
               <span className="tabular-nums">{pendingCount}</span>
+              {pendingCount > 0 && (
+                <span className="w-2 h-2 rounded-full bg-[#C55B23] absolute -top-0.5 -right-0.5" />
+              )}
             </Link>
           </div>
         </div>
 
         {/* ===================================================================
-            MOBILE / TABLET SLIDE-IN NAVIGATION DRAWER (< 1024px)
+            MOBILE SLIDE-IN NAVIGATION DRAWER (< 768px)
            =================================================================== */}
         {isMobileDrawerOpen && (
           <div
-            className="lg:hidden fixed inset-0 z-50 flex"
+            className="md:hidden fixed inset-0 z-50 flex"
             role="dialog"
             aria-modal="true"
             aria-label="Host Workspace Navigation Drawer"
             data-testid="host-mobile-drawer"
           >
             <div
-              className="fixed inset-0 bg-[#101C16]/60 backdrop-blur-[2px]"
+              className="fixed inset-0 bg-[#141F19]/50 backdrop-blur-[2px]"
               onClick={() => setIsMobileDrawerOpen(false)}
               aria-hidden="true"
             />
-            <aside className="relative z-10 w-[284px] max-w-[85vw] bg-[#1A2B23] text-[#FFFDF9] h-full overflow-y-auto p-4 flex flex-col justify-between shadow-2xl border-r border-[#FFFDF9]/12">
+            <aside className="relative z-10 w-[272px] max-w-[85vw] bg-[#1A2B23] text-[#FFFDF9] h-full overflow-y-auto p-4 flex flex-col justify-between shadow-2xl border-r border-[#FFFDF9]/12">
               <div className="flex items-center justify-between pb-3 mb-2 border-b border-[#FFFDF9]/12">
-                <div>
-                  <span className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#E57C44] block">
-                    Uttarkunth Stays
-                  </span>
-                  <span className="font-serif text-lg font-bold text-[#FFFDF9]">
-                    Host Desk
-                  </span>
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-[10px] bg-[#263D32] border border-[#FFFDF9]/15 flex items-center justify-center text-[#F7E8D4] font-serif text-lg font-semibold">
+                    उ
+                  </div>
+                  <div>
+                    <span className="font-serif text-lg font-semibold text-[#FFFDF9] leading-none block">
+                      Uttarkunth
+                    </span>
+                    <span className="text-[9px] font-extrabold uppercase tracking-[0.16em] text-[#BEB3A3] block mt-0.5">
+                      Host Desk
+                    </span>
+                  </div>
                 </div>
                 <button
                   type="button"
@@ -500,12 +522,12 @@ export function HostWorkspaceShell({
         )}
 
         {/* ===================================================================
-            DESKTOP PERSISTENT VERTICAL SIDEBAR (1024px+)
+            TABLET & DESKTOP PERSISTENT VERTICAL SIDEBAR (768px+)
            =================================================================== */}
         <aside
           data-testid="host-desktop-sidebar"
-          className={`hidden lg:flex flex-col shrink-0 bg-[#1A2B23] text-[#FFFDF9] border-r border-[#FFFDF9]/10 p-3.5 sticky top-16 h-[calc(100vh-4rem)] overflow-y-auto transition-all duration-200 ${
-            isSidebarCollapsed ? 'w-[76px]' : 'w-[244px]'
+          className={`hidden md:flex flex-col shrink-0 bg-[#1A2B23] text-[#FFFDF9] border-r border-[#FFFDF9]/10 px-3.5 py-5 sticky top-16 h-[calc(100vh-4rem)] overflow-y-auto transition-all duration-200 ${
+            isSidebarCollapsed ? 'w-[76px]' : 'w-[224px] lg:w-[238px]'
           }`}
         >
           {renderSidebarContent(isSidebarCollapsed)}
@@ -514,42 +536,52 @@ export function HostWorkspaceShell({
         {/* ===================================================================
             MAIN HOST WORKSPACE CONTENT SURFACE
            =================================================================== */}
-        <main className="flex-1 min-w-0 px-4 sm:px-6 lg:px-7 py-5 sm:py-6 pb-24 lg:pb-10">
+        <main className="flex-1 min-w-0 px-3.5 sm:px-5 lg:px-8 py-5 sm:py-6 pb-24 md:pb-12">
           {children}
         </main>
 
         {/* ===================================================================
-            MOBILE HOST WORKSPACE BOTTOM NAVIGATION (< 1024px)
+            MOBILE HOST WORKSPACE BOTTOM NAVIGATION (< 768px)
            =================================================================== */}
         <nav
           aria-label="Mobile Host Quick Navigation"
           data-testid="host-mobile-bottom-bar"
-          className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-[#FFFDF9]/98 backdrop-blur-md border-t border-[#D9CCB8] shadow-[0_-6px_20px_rgba(26,43,35,0.08)] px-2 py-1.5 grid grid-cols-5 gap-1"
+          className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-[#FFFDF9]/98 backdrop-blur-md border-t border-[#263D32]/12 shadow-[0_-6px_20px_rgba(26,43,35,0.08)] px-2 py-1.5 grid grid-cols-5 gap-1"
         >
           <Link
             href="/account/stays/host"
-            className={`min-h-[48px] rounded-xl flex flex-col items-center justify-center gap-0.5 text-[11px] font-bold transition-colors ${
+            className={`min-h-[48px] rounded-xl flex flex-col items-center justify-center gap-0.5 text-[10px] font-extrabold transition-colors ${
               pathname === '/account/stays/host'
-                ? 'bg-[#263D32]/10 text-[#263D32]'
-                : 'text-[#5C5549]'
+                ? 'text-[#263D32]'
+                : 'text-[#948B7E]'
             }`}
           >
-            <LayoutGrid className="w-4 h-4" />
+            <LayoutGrid
+              className={`w-4 h-4 ${
+                pathname === '/account/stays/host' ? 'text-[#C55B23]' : 'text-[#948B7E]'
+              }`}
+            />
             <span>Home</span>
           </Link>
 
           <Link
             href="/account/stays/host/bookings"
-            className={`relative min-h-[48px] rounded-xl flex flex-col items-center justify-center gap-0.5 text-[11px] font-bold transition-colors ${
+            className={`relative min-h-[48px] rounded-xl flex flex-col items-center justify-center gap-0.5 text-[10px] font-extrabold transition-colors ${
               pathname?.startsWith('/account/stays/host/bookings')
-                ? 'bg-[#263D32]/10 text-[#263D32]'
-                : 'text-[#5C5549]'
+                ? 'text-[#263D32]'
+                : 'text-[#948B7E]'
             }`}
           >
-            <Inbox className="w-4 h-4" />
+            <Inbox
+              className={`w-4 h-4 ${
+                pathname?.startsWith('/account/stays/host/bookings')
+                  ? 'text-[#C55B23]'
+                  : 'text-[#948B7E]'
+              }`}
+            />
             <span>Bookings</span>
             {pendingCount > 0 && (
-              <span className="absolute top-1 right-3 min-w-[16px] h-4 px-1 rounded-full bg-[#C55B23] text-[#FFFDF9] text-[10px] font-extrabold flex items-center justify-center">
+              <span className="absolute top-1 right-3 min-w-[16px] h-4 px-1 rounded-full bg-[#C55B23] text-[#FFFDF9] text-[9px] font-extrabold flex items-center justify-center">
                 {pendingCount}
               </span>
             )}
@@ -557,32 +589,44 @@ export function HostWorkspaceShell({
 
           <Link
             href="/account/stays/host/calendar"
-            className={`min-h-[48px] rounded-xl flex flex-col items-center justify-center gap-0.5 text-[11px] font-bold transition-colors ${
+            className={`min-h-[48px] rounded-xl flex flex-col items-center justify-center gap-0.5 text-[10px] font-extrabold transition-colors ${
               pathname?.startsWith('/account/stays/host/calendar')
-                ? 'bg-[#263D32]/10 text-[#263D32]'
-                : 'text-[#5C5549]'
+                ? 'text-[#263D32]'
+                : 'text-[#948B7E]'
             }`}
           >
-            <CalendarDays className="w-4 h-4" />
+            <CalendarDays
+              className={`w-4 h-4 ${
+                pathname?.startsWith('/account/stays/host/calendar')
+                  ? 'text-[#C55B23]'
+                  : 'text-[#948B7E]'
+              }`}
+            />
             <span>Calendar</span>
           </Link>
 
           <Link
             href="/account/stays/host/properties"
-            className={`min-h-[48px] rounded-xl flex flex-col items-center justify-center gap-0.5 text-[11px] font-bold transition-colors ${
+            className={`min-h-[48px] rounded-xl flex flex-col items-center justify-center gap-0.5 text-[10px] font-extrabold transition-colors ${
               pathname?.startsWith('/account/stays/host/properties')
-                ? 'bg-[#263D32]/10 text-[#263D32]'
-                : 'text-[#5C5549]'
+                ? 'text-[#263D32]'
+                : 'text-[#948B7E]'
             }`}
           >
-            <Home className="w-4 h-4" />
+            <Home
+              className={`w-4 h-4 ${
+                pathname?.startsWith('/account/stays/host/properties')
+                  ? 'text-[#C55B23]'
+                  : 'text-[#948B7E]'
+              }`}
+            />
             <span>Properties</span>
           </Link>
 
           <button
             type="button"
             onClick={() => setIsMobileDrawerOpen(true)}
-            className="min-h-[48px] rounded-xl flex flex-col items-center justify-center gap-0.5 text-[11px] font-bold text-[#5C5549] hover:text-[#263D32] cursor-pointer"
+            className="min-h-[48px] rounded-xl flex flex-col items-center justify-center gap-0.5 text-[10px] font-extrabold text-[#948B7E] hover:text-[#263D32] cursor-pointer"
           >
             <Menu className="w-4 h-4" />
             <span>More</span>

@@ -1,5 +1,4 @@
 import React from 'react';
-import { redirect } from 'next/navigation';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { getHostProperties, getHostBookings } from '@/lib/host';
 import { HostWorkspaceShell } from '@/components/host/host-workspace-shell';
@@ -16,11 +15,7 @@ export default async function HostWorkspaceLayout({
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) {
-    redirect('/login?next=/account/stays/host');
-  }
-
-  const { properties, isHost, isAdmin } = await getHostProperties(user.id);
+  const { properties, isHost, isAdmin } = await getHostProperties(user?.id);
   const propertyIds = properties.map((p: any) => p.id);
   const bookings = propertyIds.length > 0 ? await getHostBookings(propertyIds) : [];
   const pendingCount = bookings.filter((b: any) => b.status === 'pending').length;
@@ -31,7 +26,7 @@ export default async function HostWorkspaceLayout({
       pendingCount={pendingCount}
       isHost={isHost}
       isAdmin={isAdmin}
-      userEmail={user.email || ''}
+      userEmail={user?.email || 'host@uttarkunth.com'}
     >
       {children}
     </HostWorkspaceShell>

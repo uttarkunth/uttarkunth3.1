@@ -1,8 +1,11 @@
 import React from 'react';
-import { redirect } from 'next/navigation';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { getHostProperties } from '@/lib/host';
+import {
+  getHostProperties,
+  getHostBookings,
+  buildPreviewHostBlocks,
+} from '@/lib/host';
 import { CalendarView } from '@/components/host/calendar-view';
 
 export const dynamic = 'force-dynamic';
@@ -13,51 +16,55 @@ export default async function HostCalendarPage() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) {
-    redirect('/login?next=/account/stays/host/calendar');
-  }
-
-  const { properties, isHost, isAdmin } = await getHostProperties(user.id);
-
-  if (!isHost && !isAdmin) {
-    redirect('/account/stays/host');
-  }
+  const { properties, isPreviewMode } = await getHostProperties(user?.id);
 
   const propertyIds = properties.map((p: any) => p.id);
   const roomUnitIds = properties.flatMap((p: any) =>
     Array.isArray(p.room_units) ? p.room_units.map((r: any) => r.id) : []
   );
 
-  const adminClient = createAdminClient();
-
   let confirmedBookings: any[] = [];
   let pendingBookings: any[] = [];
-  if (propertyIds.length > 0) {
-    const { data: bData } = await adminClient
-      .from('stay_bookings')
-      .select(
-        '*, properties(name, village, district), room_units(room_name, base_price)'
-      )
-      .in('property_id', propertyIds)
-      .in('status', ['pending', 'confirmed'])
-      .order('check_in', { ascending: true });
+  let blocks: any[] = [];
 
-    const allBookings = bData || [];
+  if (isPreviewMode) {
+    const allBookings = await getHostBookings(propertyIds);
     confirmedBookings = allBookings.filter((b: any) => b.status === 'confirmed');
     pendingBookings = allBookings.filter((b: any) => b.status === 'pending');
-  }
+    blocks = buildPreviewHostBlocks();
+  } else {
+    try {
+      const adminClient = createAdminClient();
+      if (propertyIds.length > 0) {
+        const { data: bData } = await adminClient
+          .from('stay_bookings')
+          .select('*, properties(name, village, district), room_units(room_name, base_price)')
+          .in('property_id', propertyIds)
+          .in('status', ['pending', 'confirmed'])
+          .order('check_in', { ascending: true });
 
-  let blocks: any[] = [];
-  if (roomUnitIds.length > 0) {
-    const { data: blockData } = await adminClient
-      .from('room_availability_blocks')
-      .select(
-        'id, room_unit_id, blocked_from, blocked_until, reason, created_at, room_units(room_name, property_id, properties(name))'
-      )
-      .in('room_unit_id', roomUnitIds)
-      .order('blocked_from', { ascending: true });
+        const allBookings = bData || [];
+        confirmedBookings = allBookings.filter((b: any) => b.status === 'confirmed');
+        pendingBookings = allBookings.filter((b: any) => b.status === 'pending');
+      }
 
-    blocks = blockData || [];
+      if (roomUnitIds.length > 0) {
+        const { data: blockData } = await adminClient
+          .from('room_availability_blocks')
+          .select(
+            'id, room_unit_id, blocked_from, blocked_until, reason, created_at, room_units(room_name, property_id, properties(name))'
+          )
+          .in('room_unit_id', roomUnitIds)
+          .order('blocked_from', { ascending: true });
+
+        blocks = blockData || [];
+      }
+    } catch {
+      const allBookings = await getHostBookings(propertyIds);
+      confirmedBookings = allBookings.filter((b: any) => b.status === 'confirmed');
+      pendingBookings = allBookings.filter((b: any) => b.status === 'pending');
+      blocks = buildPreviewHostBlocks();
+    }
   }
 
   return (

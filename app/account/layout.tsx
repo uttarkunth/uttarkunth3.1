@@ -1,5 +1,4 @@
 import React from 'react';
-import { redirect } from 'next/navigation';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { checkIsPlatformAdmin } from '@/lib/auth';
@@ -14,57 +13,52 @@ export default async function AccountLayout({
   children: React.ReactNode;
 }) {
   const supabase = createServerSupabaseClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  if (!user) {
-    redirect('/login?next=/account');
-  }
+  const isAdmin = user ? await checkIsPlatformAdmin(user.id) : false;
 
-  const isAdmin = await checkIsPlatformAdmin(user.id);
-
-  // Authoritative host and seller access check
   let isHost = false;
   let sellerStatus: string | null = null;
   let tripsCount = 0;
 
-  try {
-    const adminClient = createAdminClient();
+  if (user) {
+    try {
+      const adminClient = createAdminClient();
 
-    // 1. Check primary host ownership
-    const { count: ownedCount } = await adminClient
-      .from('properties')
-      .select('id', { count: 'exact', head: true })
-      .eq('host_id', user.id);
-
-    if ((ownedCount || 0) > 0) {
-      isHost = true;
-    } else {
-      // 2. Check co-host / manager assignments
-      const { count: assignedCount } = await (adminClient.from('property_hosts') as any)
+      const { count: ownedCount } = await adminClient
+        .from('properties')
         .select('id', { count: 'exact', head: true })
+        .eq('host_id', user.id);
+
+      if ((ownedCount || 0) > 0) {
+        isHost = true;
+      } else {
+        const { count: assignedCount } = await (adminClient.from('property_hosts') as any)
+          .select('id', { count: 'exact', head: true })
+          .eq('user_id', user.id)
+          .in('role', ['manager', 'co_host']);
+        isHost = (assignedCount || 0) > 0;
+      }
+
+      const { data: sellerRecord } = await adminClient
+        .from('sellers')
+        .select('status')
         .eq('user_id', user.id)
-        .in('role', ['manager', 'co_host']);
-      isHost = (assignedCount || 0) > 0;
+        .maybeSingle();
+      sellerStatus = (sellerRecord as any)?.status || null;
+
+      const { count } = await adminClient
+        .from('stay_bookings')
+        .select('id', { count: 'exact', head: true })
+        .or(`guest_user_id.eq.${user.id},guest_email.eq.${user.email}`);
+      tripsCount = count || 0;
+    } catch {
+      isHost = false;
+      sellerStatus = null;
+      tripsCount = 0;
     }
-
-    // 3. Check seller application / approval status
-    const { data: sellerRecord } = await adminClient
-      .from('sellers')
-      .select('status')
-      .eq('user_id', user.id)
-      .maybeSingle();
-    sellerStatus = (sellerRecord as any)?.status || null;
-
-    // 4. Query trips count for this user
-    const { count } = await adminClient
-      .from('stay_bookings')
-      .select('id', { count: 'exact', head: true })
-      .or(`guest_user_id.eq.${user.id},guest_email.eq.${user.email}`);
-    tripsCount = count || 0;
-  } catch (err) {
-    isHost = false;
-    sellerStatus = null;
-    tripsCount = 0;
   }
 
   return (
