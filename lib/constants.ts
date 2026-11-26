@@ -165,10 +165,15 @@ export const EXISTING_PROPERTIES = [
     amenities: [
       'Free Wi-Fi',
       'Mountain-view room',
+      'Kitchenette',
       'Breakfast and dinner meal plans',
       'Tea and coffee',
       'Laundry',
-      'Pet-friendly by prior agreement'
+      'Pet-friendly by prior agreement',
+      'Hot Water',
+      'Balcony',
+      'Bonfire on Request',
+      'Local Guided Hikes'
     ],
     rooms: [
       {

@@ -36,6 +36,14 @@ import {
   Coffee,
   Shirt,
   PawPrint,
+  ChefHat,
+  Laptop,
+  Trees,
+  Droplets,
+  Sun,
+  Flame,
+  Compass,
+  Car,
   Check,
   AlertTriangle,
 } from 'lucide-react';
@@ -77,6 +85,22 @@ function getAmenityChipIcon(chipId: string) {
       return <Shirt className="w-3.5 h-3.5 shrink-0" />;
     case 'pet-friendly':
       return <PawPrint className="w-3.5 h-3.5 shrink-0" />;
+    case 'kitchen':
+      return <ChefHat className="w-3.5 h-3.5 shrink-0" />;
+    case 'workation':
+      return <Laptop className="w-3.5 h-3.5 shrink-0" />;
+    case 'village-stay':
+      return <Trees className="w-3.5 h-3.5 shrink-0" />;
+    case 'hot-water':
+      return <Droplets className="w-3.5 h-3.5 shrink-0" />;
+    case 'balcony':
+      return <Sun className="w-3.5 h-3.5 shrink-0" />;
+    case 'bonfire':
+      return <Flame className="w-3.5 h-3.5 shrink-0" />;
+    case 'guided-hikes':
+      return <Compass className="w-3.5 h-3.5 shrink-0" />;
+    case 'free-parking':
+      return <Car className="w-3.5 h-3.5 shrink-0" />;
     default:
       return <Home className="w-3.5 h-3.5 shrink-0" />;
   }
@@ -1439,7 +1463,15 @@ export function SearchBar({
         <div
           data-testid="stays-direct-amenity-chips"
           aria-label="Filter stays by property amenities"
-          className="pt-1 flex items-center gap-2 overflow-x-auto md:flex-wrap no-scrollbar pb-1"
+          className={`pt-1.5 pb-1 flex flex-nowrap items-center overflow-x-auto no-scrollbar snap-x snap-mandatory gap-2 md:grid md:overflow-visible md:snap-none md:gap-2.5 ${
+            availableAmenityChips.length % 6 === 0
+              ? 'md:grid-cols-4 lg:grid-cols-6'
+              : availableAmenityChips.length % 5 === 0
+              ? 'md:grid-cols-5'
+              : availableAmenityChips.length % 4 === 0
+              ? 'md:grid-cols-4'
+              : 'md:grid-cols-4 lg:grid-cols-6'
+          }`}
         >
           {availableAmenityChips.map((chip) => {
             const isSelected = selectedAmenities.includes(chip.id);
@@ -1450,15 +1482,15 @@ export function SearchBar({
                 data-testid={`amenity-chip-${chip.id}`}
                 aria-pressed={isSelected}
                 onClick={() => handleToggleAmenityChip(chip.id)}
-                className={`font-sans min-h-[44px] px-4 py-2 rounded-full border text-xs font-semibold inline-flex items-center gap-2 shrink-0 transition-all duration-200 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#263D32] focus-visible:ring-offset-1 ${
+                className={`font-sans min-h-[40px] md:min-h-[44px] w-auto md:w-full shrink-0 snap-start px-3.5 md:px-2 py-2 rounded-full border text-xs font-semibold inline-flex items-center justify-center gap-1.5 transition-all duration-200 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#263D32] focus-visible:ring-offset-1 ${
                   isSelected
                     ? 'bg-[#263D32] border-[#263D32] text-[#FFFDF9] shadow-[0_6px_16px_rgba(38,61,50,0.22)] animate-uk-pill-pop'
                     : 'bg-[#FFFDF9]/95 backdrop-blur-md border-[#D9CCB8] text-[#29251F] hover:border-[#263D32]/60 hover:bg-[#F5F0E6]'
                 }`}
               >
                 {getAmenityChipIcon(chip.id)}
-                <span>{chip.label}</span>
-                {isSelected && <Check className="w-3.5 h-3.5 stroke-[2.5]" />}
+                <span className="whitespace-nowrap">{chip.label}</span>
+                {isSelected && <Check className="w-3.5 h-3.5 stroke-[2.5] shrink-0" />}
               </button>
             );
           })}

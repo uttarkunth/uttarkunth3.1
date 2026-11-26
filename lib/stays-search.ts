@@ -616,6 +616,32 @@ const CANONICAL_AMENITY_DEFINITIONS: CanonicalAmenityDefinition[] = [
     category: 'amenity',
     matchesAmenityText: (text) => text.includes('pet-friendly') || text.includes('pet friendly'),
   },
+  {
+    id: 'hot-water',
+    label: 'Hot Water',
+    category: 'amenity',
+    matchesAmenityText: (text) => text.includes('hot water') || text.includes('geyser'),
+  },
+  {
+    id: 'balcony',
+    label: 'Balcony',
+    category: 'amenity',
+    matchesAmenityText: (text) =>
+      text.includes('balcony') || text.includes('terrace') || text.includes('sit-out'),
+  },
+  {
+    id: 'bonfire',
+    label: 'Bonfire',
+    category: 'amenity',
+    matchesAmenityText: (text) => text.includes('bonfire') || text.includes('fireplace'),
+  },
+  {
+    id: 'guided-hikes',
+    label: 'Guided Hikes',
+    category: 'amenity',
+    matchesAmenityText: (text) =>
+      text.includes('guided hike') || text.includes('local trek') || text.includes('trekking'),
+  },
 ];
 
 /**

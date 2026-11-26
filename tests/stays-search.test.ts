@@ -215,11 +215,20 @@ describe('Stays Search Redesign — WHERE, WHEN, WHO & Direct Amenity Chips', ()
       const chips = deriveAvailableAmenityChips(EXISTING_PROPERTIES, EXISTING_REVIEWS);
       const chipIds = chips.map((c) => c.id);
 
-      // Yash Home Stay has 5 approved 5-star reviews -> Guest Favourite
+      // Yash Home Stay has 5 approved 5-star reviews -> Guest Favourite + 11 genuine property amenities = 12 symmetrical tags
+      assert.equal(
+        chips.length,
+        12,
+        'Should derive 12 symmetrical filter tags (6x2 desktop, 4x3 tablet, 3x4 sm, 2x6 mobile)'
+      );
       assert.ok(chipIds.includes('guest-favourite'), 'Should include Guest Favourite chip');
-      // Yash Home Stay has Free Wi-Fi and Mountain-view room
       assert.ok(chipIds.includes('wifi'), 'Should include Wi-Fi chip');
       assert.ok(chipIds.includes('mountain-view'), 'Should include Mountain View chip');
+      assert.ok(chipIds.includes('kitchen'), 'Should include Kitchen chip');
+      assert.ok(chipIds.includes('hot-water'), 'Should include Hot Water chip');
+      assert.ok(chipIds.includes('balcony'), 'Should include Balcony chip');
+      assert.ok(chipIds.includes('bonfire'), 'Should include Bonfire chip');
+      assert.ok(chipIds.includes('guided-hikes'), 'Should include Guided Hikes chip');
 
       // Yash Home Stay does NOT have TV or Free Parking in its published amenities, so those must not be fabricated
       assert.ok(!chipIds.includes('tv'), 'Should not show TV chip when no published property has TV');

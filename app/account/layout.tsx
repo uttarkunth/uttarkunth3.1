@@ -4,6 +4,7 @@ import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { checkIsPlatformAdmin } from '@/lib/auth';
 import { AccountNav } from '@/components/account-nav';
+import { AccountLayoutFrame } from '@/components/account-layout-frame';
 
 export const dynamic = 'force-dynamic';
 
@@ -67,16 +68,14 @@ export default async function AccountLayout({
   }
 
   return (
-    <div className="min-h-screen bg-warm-canvas/60">
+    <div className="min-h-screen bg-[#F5F0E6]">
       <AccountNav
         isAdmin={isAdmin}
         isHost={isHost}
         sellerStatus={sellerStatus}
         tripsCount={tripsCount}
       />
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
-        {children}
-      </main>
+      <AccountLayoutFrame>{children}</AccountLayoutFrame>
     </div>
   );
 }

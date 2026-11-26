@@ -623,6 +623,10 @@ export function MobileBottomNav() {
       ? 'translate-x-[400%] opacity-100 scale-100'
       : 'translate-x-0 opacity-0 scale-90';
 
+  if (cleanPathname.startsWith('/account/stays/host')) {
+    return null;
+  }
+
   return (
     <div
       ref={navContainerRef}

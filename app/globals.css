@@ -274,40 +274,43 @@
     filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.55));
   }
 
-  /* Four Pillars Card Primary CTA (Explore / Shop / Watch): Orange -> White bg with Orange words on hover */
+  /* Four Pillars Card Primary CTA (Explore / Shop / Watch): Orange -> White bg with Orange words on hover, no scale or lift */
+  .lantern-btn.lantern-btn--pillar-primary {
+    padding: 0 !important;
+    background: transparent !important;
+    transform: none !important;
+    box-shadow: 0 2px 8px rgba(16, 26, 21, 0.22);
+  }
+
+  .lantern-btn.lantern-btn--pillar-primary::before {
+    display: none !important;
+  }
+
   .lantern-btn.lantern-btn--pillar-primary:hover,
   .lantern-btn.lantern-btn--pillar-primary:focus-visible,
-  .lantern-btn.lantern-btn--pillar-secondary:hover,
-  .lantern-btn.lantern-btn--pillar-secondary:focus-visible {
-    transform: translateY(-1px);
-    box-shadow: 0 8px 26px -4px rgba(200, 90, 35, 0.42);
+  .lantern-btn.lantern-btn--pillar-primary:active {
+    transform: none !important;
+    box-shadow: 0 2px 8px rgba(16, 26, 21, 0.22);
+  }
+
+  .lantern-btn.lantern-btn--pillar-primary .lantern-btn-inner {
+    border-radius: 20px;
+    transform: none !important;
   }
 
   .lantern-btn.lantern-btn--pillar-primary:hover .lantern-btn-inner,
   .lantern-btn.lantern-btn--pillar-primary:focus-visible .lantern-btn-inner {
     background-color: #FFFDF9 !important;
     color: #C55B23 !important;
-    text-shadow: 0 0 10px rgba(197, 91, 35, 0.22);
+    text-shadow: none !important;
+    transform: none !important;
   }
 
   .lantern-btn.lantern-btn--pillar-primary:hover .lantern-btn-inner svg,
   .lantern-btn.lantern-btn--pillar-primary:focus-visible .lantern-btn-inner svg {
     color: #C55B23 !important;
-    filter: drop-shadow(0 0 6px rgba(197, 91, 35, 0.25));
-  }
-
-  /* Four Pillars Card Secondary CTA (Host / Sell / Create / Join): White -> Orange bg with White words on hover */
-  .lantern-btn.lantern-btn--pillar-secondary:hover .lantern-btn-inner,
-  .lantern-btn.lantern-btn--pillar-secondary:focus-visible .lantern-btn-inner {
-    background-color: #C55B23 !important;
-    color: #FFFDF9 !important;
-    text-shadow: 0 0 12px rgba(255, 253, 249, 0.38);
-  }
-
-  .lantern-btn.lantern-btn--pillar-secondary:hover .lantern-btn-inner svg,
-  .lantern-btn.lantern-btn--pillar-secondary:focus-visible .lantern-btn-inner svg {
-    color: #FFFDF9 !important;
-    filter: drop-shadow(0 0 6px rgba(255, 253, 249, 0.35));
+    filter: none !important;
+    transform: none !important;
   }
 
   /* Single-element Lantern Border system for utility classes (.btn-*) */

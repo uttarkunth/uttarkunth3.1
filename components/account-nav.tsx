@@ -34,6 +34,10 @@ export function AccountNav({
 }: AccountNavProps) {
   const pathname = usePathname();
 
+  if (pathname?.startsWith('/account/stays/host')) {
+    return null;
+  }
+
   const workspaceState = resolveUserWorkspaces({
     isHost,
     sellerStatus,

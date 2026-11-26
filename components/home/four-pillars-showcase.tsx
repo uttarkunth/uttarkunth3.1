@@ -5,7 +5,6 @@ import Link from 'next/link';
 import Image from 'next/image';
 import {
   ArrowRight,
-  ArrowUpRight,
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react';
@@ -630,14 +629,14 @@ export function FourPillarsShowcase({
                     </span>
                   </div>
 
-                  {/* Bottom Concise Balanced Action Buttons */}
+                  {/* Bottom Single Centered Action Button — No scale-up on hover */}
                   <div
                     className={cn(
                       'space-y-1.5 sm:space-y-2.5 transition-opacity duration-500 ease-out',
                       isActive ? 'opacity-100' : 'opacity-0 pointer-events-none'
                     )}
                   >
-                    <div className="pt-1 sm:pt-2 flex items-center justify-center gap-2">
+                    <div className="pt-1 sm:pt-2 flex items-center justify-center">
                       <Link
                         href={pillar.href}
                         data-testid={`pillar-card-primary-cta-${pillar.id}`}
@@ -650,37 +649,14 @@ export function FourPillarsShowcase({
                           }
                         }}
                         onMouseMove={handleLanternMouseMove}
-                        className="lantern-btn lantern-btn--pillar-primary group flex-1 max-w-[96px] sm:max-w-[116px] bg-[#C85A23]/45 shadow-sm whitespace-nowrap no-underline"
+                        className="lantern-btn lantern-btn--pillar-primary group inline-flex items-center justify-center whitespace-nowrap no-underline"
                       >
                         <span
                           data-testid={`pillar-card-primary-cta-inner-${pillar.id}`}
-                          className="lantern-btn-inner !gap-1 px-2.5 sm:px-4 py-1.5 sm:py-2 bg-[#C55B23] text-[#FFFDF9] text-[11.5px] sm:text-xs font-semibold tracking-wide whitespace-nowrap"
+                          className="lantern-btn-inner !gap-1.5 px-4 sm:px-5 py-1.5 sm:py-2 bg-[#C55B23] text-[#FFFDF9] text-[11.5px] sm:text-xs font-semibold tracking-wide whitespace-nowrap"
                         >
                           <span>{pillar.ctaLabel}</span>
-                          <ArrowRight className="w-3 h-3 text-[#FFFDF9] shrink-0 transition-transform duration-200 group-hover:translate-x-0.5" />
-                        </span>
-                      </Link>
-
-                      <Link
-                        href={pillar.secondaryHref}
-                        data-testid={`pillar-card-secondary-cta-${pillar.id}`}
-                        tabIndex={isActive ? 0 : -1}
-                        draggable={false}
-                        onClick={(e) => {
-                          if (didSwipeRef.current) {
-                            e.preventDefault();
-                            e.stopPropagation();
-                          }
-                        }}
-                        onMouseMove={handleLanternMouseMove}
-                        className="lantern-btn lantern-btn--pillar-secondary group flex-1 max-w-[96px] sm:max-w-[116px] bg-[#C85A23]/45 shadow-sm whitespace-nowrap no-underline"
-                      >
-                        <span
-                          data-testid={`pillar-card-secondary-cta-inner-${pillar.id}`}
-                          className="lantern-btn-inner !gap-1 px-2.5 sm:px-4 py-1.5 sm:py-2 bg-[#FFFDF9] text-[#C55B23] text-[11.5px] sm:text-xs font-semibold tracking-wide whitespace-nowrap"
-                        >
-                          <span>{pillar.secondaryLabel}</span>
-                          <ArrowUpRight className="w-3 h-3 text-[#C55B23] shrink-0 transition-transform duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                          <ArrowRight className="w-3 h-3 text-[#FFFDF9] shrink-0" />
                         </span>
                       </Link>
                     </div>

@@ -224,7 +224,7 @@ export default async function StaysPage({ searchParams }: StaysPageProps) {
         </div>
 
         {/* Hero Heading & Editorial Description */}
-        <div className="relative z-20 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 sm:pt-28 lg:pt-32 pb-7 sm:pb-9 text-center space-y-3 sm:space-y-4">
+        <div className="relative z-20 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 sm:pt-28 lg:pt-32 pb-11 sm:pb-14 lg:pb-16 text-center space-y-3 sm:space-y-4">
           <h1 className="font-serif font-normal text-3xl sm:text-5xl lg:text-[56px] text-[#FFFDF9] tracking-[0.01em] leading-[1.12] [text-shadow:0_2px_16px_rgba(8,14,10,0.85),0_1px_3px_rgba(8,14,10,0.95)]">
             Find Your Place in the Mountains.
           </h1>
@@ -240,11 +240,24 @@ export default async function StaysPage({ searchParams }: StaysPageProps) {
           </p>
         </div>
 
-        {/* Search Bar Wrapper — Top 50% over Stone Hero Background, Bottom 50% over Warm Himalayan Canvas (#F5F0E6) */}
+        {/* Search Bar Wrapper — Search Capsule Vertical Midpoint (28px mobile / 35px desktop) Aligned with Faded Bottom Edge of Stone Hero Image */}
         <div data-testid="stays-hero-search-overlap" className="relative w-full">
+          {/* Soft Flowing Fade at the Bottom of the Hero Image Centered Across the Search Capsule Midpoint */}
           <div
             aria-hidden="true"
-            className="pointer-events-none absolute inset-x-0 bottom-0 h-3/5 bg-[#F5F0E6] border-t border-[#D5C8B3]/80 z-10"
+            data-testid="stays-hero-bottom-fade"
+            className="pointer-events-none absolute inset-x-0 top-[6px] md:top-[10px] h-[42px] md:h-[48px] bg-[linear-gradient(180deg,rgba(245,240,230,0)_0%,rgba(245,240,230,0.26)_32%,rgba(245,240,230,0.64)_58%,rgba(245,240,230,0.92)_84%,#F5F0E6_100%)] z-10"
+          />
+          {/* Subtle Flowing Horizon Mist Accent Along the Image Bottom Edge (Search Bar Midline) */}
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-x-0 top-[14px] md:top-[18px] h-[28px] md:h-[34px] bg-[radial-gradient(65%_100%_at_50%_100%,rgba(245,240,230,0.55)_0%,rgba(253,226,168,0.18)_48%,transparent_100%)] z-10"
+          />
+          {/* Solid Warm Himalayan Canvas (#F5F0E6) Below the Faded Hero Horizon */}
+          <div
+            aria-hidden="true"
+            data-testid="stays-hero-bottom-canvas"
+            className="pointer-events-none absolute inset-x-0 top-[46px] md:top-[56px] bottom-0 bg-[#F5F0E6] z-10"
           />
           <div className="relative z-20 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
             <SearchBar
